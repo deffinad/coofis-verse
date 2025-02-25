@@ -1,21 +1,14 @@
-import { useState } from "react";
-import "./App.css";
-import { Components } from "remoteApp/Components";
+import { Routes, Route } from "react-router-dom";
+import Rating from "./pages/Rating";
 
+import Swapydynamic from "./pages/Swapydynamic";
 function App() {
-  const [ratingValue, setRatingValue] = useState(1);
-  
   return (
     <>
-      <Components.Input.InputField
-        id={"rating"}
-        name={"rating"}
-        label={"Rating"}
-        value={ratingValue}
-        type={"number"}
-        onChange={(e) => setRatingValue(e.target.value)}
-      />
-      <Components.Ratings value={ratingValue} />
+      <Routes>
+        <Route path="/swapydynamic" element={<Swapydynamic />} />
+        <Route path="/" element={<Rating />} />
+      </Routes>
     </>
   );
 }

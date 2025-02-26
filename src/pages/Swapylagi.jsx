@@ -15,7 +15,7 @@ const DraggableItem = ({ text, onDelete }) => {
   );
 };
 
-const Swapyswapy = () => {
+const Swapylagi = () => {
   const swapy = useRef(null);
   const container = useRef(null);
   const [rows, setRows] = useState(() => {
@@ -49,35 +49,6 @@ const Swapyswapy = () => {
     setRows((prevRows) => [...prevRows, []]);
   };
 
-  // Tambah Kolom di dalam Row
-  const addColumn = (rowIndex) => {
-    setRows((prevRows) =>
-      prevRows.map((row, index) =>
-        index === rowIndex
-          ? [
-              ...row,
-              {
-                id: Date.now().toString(),
-                component: `Component-${row.length + 1}`,
-                width: 12,
-              },
-            ]
-          : row
-      )
-    );
-  };
-
-  // Hapus Kolom
-  const removeColumn = (rowIndex, colIndex) => {
-    setRows((prevRows) =>
-      prevRows
-        .map((row, index) =>
-          index === rowIndex ? row.filter((_, i) => i !== colIndex) : row
-        )
-        .filter((row) => row.length > 0)
-    );
-  };
-
   return (
     <Box>
       <Button variant="contained" sx={{ mb: 2 }} onClick={addRow}>
@@ -90,8 +61,8 @@ const Swapyswapy = () => {
         sx={{ border: "", display: "flex", flexDirection: "column", gap: 2 }}
       >
         {rows.map((row, rowIndex) => (
-          <Box key={rowIndex} sx={{ width: "100%", border: "1px solid black" }}>
-            <Box sx={{ p:2 }}>
+          <Box key={rowIndex} sx={{ width: "100%", border: "1px dashed black" }}>
+            <Box sx={{ p: 2 }}>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>
                 Layout {rowIndex + 1}
               </Typography>
@@ -100,7 +71,7 @@ const Swapyswapy = () => {
                   variant="body2"
                   sx={{ fontStyle: "italic", color: "gray" }}
                 >
-                  (Kosong - Tambahkan Kolom)
+                  (Kosong - Tambahkan Komponen)
                 </Typography>
               ) : (
                 <Box display="flex" gap={2}>
@@ -125,13 +96,6 @@ const Swapyswapy = () => {
                   ))}
                 </Box>
               )}
-              <Button
-                variant="outlined"
-                sx={{ mt: 1 }}
-                onClick={() => addColumn(rowIndex)}
-              >
-                Tambah komponen
-              </Button>
             </Box>
           </Box>
         ))}
@@ -140,4 +104,4 @@ const Swapyswapy = () => {
   );
 };
 
-export default Swapyswapy;
+export default Swapylagi;

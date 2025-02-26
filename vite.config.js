@@ -11,7 +11,7 @@ export default defineConfig({
       remotes: {
         remoteApp: 'http://localhost:5174/dist/assets/remoteEntry.js'
       },
-      shared: ['react', 'react-dom']
+      shared: ['react', 'react-dom', '@dnd-kit/core']
     })
   ],
   build: {

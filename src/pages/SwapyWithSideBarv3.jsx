@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Button, Drawer } from "@mui/material";
+import { Box, Button, Drawer, Typography } from "@mui/material";
 import { Components } from "remoteApp/Components"; // Import remote components
 import { createSwapy } from "swapy";
 
@@ -38,7 +38,7 @@ const SwapyWithSideBarv3 = () => {
   // Tambah baris baru
   const addRow = () => {
     const newRow = {
-      id: Date.now(),
+      id: "Row" + Date.now(),
       name: "Row",
       components: [],
     };
@@ -75,6 +75,7 @@ const SwapyWithSideBarv3 = () => {
 
   // Tambah komponen ke dalam Grid yang dipilih
   const addComponentToGrid = (type) => {
+    console.log(type);
     if (!selectedGrid) return;
 
     setRows((prevRows) =>
@@ -86,7 +87,12 @@ const SwapyWithSideBarv3 = () => {
                 ...comp,
                 children: [
                   ...comp.children,
-                  { id: Date.now(), type, value: type === "rating" ? 0 : "" },
+                  {
+                    id: Date.now(),
+                    type,
+                    ...(type === "rating" ? { value: 0 } : {}),
+                    ...(type === "grid" ? { children: [] } : {}),
+                  },
                 ],
               }
             : comp
@@ -178,7 +184,7 @@ const SwapyWithSideBarv3 = () => {
                       padding: 2,
                     }}
                     onClick={(e) => {
-                      e.stopPropagation(); // Hindari mengganti selectedRow saat pilih Grid
+                      e.stopPropagation();
                       setSelectedGrid(comp.id);
                     }}
                   >
@@ -198,11 +204,22 @@ const SwapyWithSideBarv3 = () => {
                             />
                             <Components.Ratings value={child.value} />
                           </>
-                        ) : (
-                          child.type === "menu" && (
-                            <Components.Menu.Navbar></Components.Menu.Navbar>
-                          )
-                        )}
+                        ) : child.type === "menu" ? (
+                          <Components.Menu.Navbar />
+                        ) : child.type === "grid" ? (
+                          <Components.Layout.LayoutGrid
+                            style={{
+                              border: `1px solid ${
+                                selectedGrid === comp.id ? "blue" : "gray"
+                              }`,
+                              padding: 2,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedGrid(comp.id);
+                            }}
+                          ></Components.Layout.LayoutGrid>
+                        ) : null}
                       </React.Fragment>
                     ))}
                   </Components.Layout.LayoutGrid>
@@ -240,7 +257,8 @@ const SwapyWithSideBarv3 = () => {
       {/* Sidebar Kanan*/}
       <Drawer variant="permanent" anchor="right" sx={{ width: 240 }}>
         <Box sx={{ width: 240, p: 2 }}>
-       
+          <Typography>Layout: {selectedRow}</Typography>
+          <Typography>Grid: {selectedGrid}</Typography>
         </Box>
       </Drawer>
     </Box>

@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Button, Drawer, Typography } from "@mui/material";
+import { Box, Button, Drawer } from "@mui/material";
 import { Components } from "remoteApp/Components"; // Import remote components
 import { createSwapy } from "swapy";
-import { Padding } from "@mui/icons-material";
 
 const SwapyWithSideBarv3 = () => {
   const [rows, setRows] = useState([]);
@@ -11,6 +10,19 @@ const SwapyWithSideBarv3 = () => {
 
   const container = useRef(null);
   const swapy = useRef(null);
+
+  // Load dari localStorage saat pertama kali render
+  useEffect(() => {
+    const savedRows = localStorage.getItem("savedLayout");
+    if (savedRows) {
+      setRows(JSON.parse(savedRows));
+    }
+  }, []);
+
+  // Simpan ke localStorage setiap kali rows berubah
+  useEffect(() => {
+    localStorage.setItem("savedLayout", JSON.stringify(rows));
+  }, [rows]);
 
   useEffect(() => {
     if (swapy.current?.destroy) {
@@ -65,38 +77,22 @@ const SwapyWithSideBarv3 = () => {
   const addComponentToGrid = (type) => {
     if (!selectedGrid) return;
 
-    if (type === "rating") {
-      setRows((prevRows) =>
-        prevRows.map((row) => ({
-          ...row,
-          components: row.components.map((comp) =>
-            comp.id === selectedGrid
-              ? {
-                  ...comp,
-                  children: [
-                    ...comp.children,
-                    { id: Date.now(), type, value: 0 },
-                  ],
-                }
-              : comp
-          ),
-        }))
-      );
-    } else if (type === "menu") {
-      setRows((prevRows) =>
-        prevRows.map((row) => ({
-          ...row,
-          components: row.components.map((comp) =>
-            comp.id === selectedGrid
-              ? {
-                  ...comp,
-                  children: [...comp.children, { id: Date.now(), type }],
-                }
-              : comp
-          ),
-        }))
-      );
-    }
+    setRows((prevRows) =>
+      prevRows.map((row) => ({
+        ...row,
+        components: row.components.map((comp) =>
+          comp.id === selectedGrid
+            ? {
+                ...comp,
+                children: [
+                  ...comp.children,
+                  { id: Date.now(), type, value: type === "rating" ? 0 : "" },
+                ],
+              }
+            : comp
+        ),
+      }))
+    );
   };
 
   // Ubah nilai rating di dalam state rows
@@ -140,8 +136,6 @@ const SwapyWithSideBarv3 = () => {
             sx={{ mt: 2 }}
             disabled={!selectedRow && !selectedGrid}
             onClick={() => addComponent("rating")}
-
-            // onClick={() => addComponentToGrid("rating")}
           >
             Tambah Rating
           </Button>
@@ -151,8 +145,6 @@ const SwapyWithSideBarv3 = () => {
             sx={{ mt: 2 }}
             disabled={!selectedRow && !selectedGrid}
             onClick={() => addComponent("menu")}
-
-            // onClick={() => addComponentToGrid("rating")}
           >
             Tambah Menu
           </Button>
@@ -244,6 +236,13 @@ const SwapyWithSideBarv3 = () => {
           </Box>
         ))}
       </Box>
+
+      {/* Sidebar Kanan*/}
+      <Drawer variant="permanent" anchor="right" sx={{ width: 240 }}>
+        <Box sx={{ width: 240, p: 2 }}>
+       
+        </Box>
+      </Drawer>
     </Box>
   );
 };

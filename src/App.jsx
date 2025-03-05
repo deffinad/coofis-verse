@@ -8,44 +8,64 @@ import { DndContext } from "@dnd-kit/core";
 
 function App() {
   const [ratingValue, setRatingValue] = useState(1);
-  const [components, setComponents] = useState([{
-    idDroppable: [],
-    name: [],
-    props: [{}],
-    children: [{
-      idDroppable: [],
-      name: [],
-      props: [{}],
-    }]
-  }]);
-
-
-  const handleDragEnd = (e) => {
-    console.log("Dragged component ID:", e.active.id);
-    console.log(e);
-
-    components.map((compKey, index) => compKey.idDroppable === e.over.id ? console.log("Component Found") : console.log("Component Not Found"));
-
-    setComponents([
-      ...components,
-      {
-        idDroppable: e.over.id,
-        name: e.over.id,
-        props: [],
-        children: [{
-          idDroppable: e.active.id,
-          name: e.active.id,
-          props: [{}],
-        }]
-      }
-    ]);
-  };
+  // const [components, setComponents] = useState(() => loadFromLocalStorage("componentsData"));
+  const [components, setComponents] = useState([]);
 
   useEffect(() => {
     console.log("Selected Component:", components);
+    localStorage.setItem("componentsData", JSON.stringify(components));
   }, [components]);
 
+  // const loadFromLocalStorage = () => {
+  //   const savedData = localStorage.getItem("componentsData");
+  //   return savedData ? JSON.parse(savedData) : [];
+  // }
 
+  const handleDragEnd = (e) => {
+    console.log(e);
+    
+    e.over !== null
+    ? setComponents((prevComponents) => {
+      // Buat nyari index parent
+      const parentIndex = prevComponents.findIndex(comp => comp.idDroppable === e.over.id);
+    
+      if (parentIndex !== -1) {
+        // Buat nambahin children kalau parent exist
+        return prevComponents.map((comp, index) =>
+          index === parentIndex
+            ? {
+                ...comp,
+                children: [
+                  ...comp.children,
+                  {
+                    idDroppable: e.active.id,
+                    name: e.active.id,
+                    props: [{}],
+                  },
+                ],
+              }
+            : comp
+        );
+      } else {
+        // Kalau parent doesn't exist, buat parent baru
+        return [
+          ...prevComponents,
+          {
+            idDroppable: e.over.id,
+            name: e.over.id,
+            props: [],
+            children: [
+              {
+                idDroppable: e.active.id,
+                name: e.active.id,
+                props: [{}],
+              },
+            ],
+          },
+        ];
+      }
+      }) : null;
+  };
 
   return (
     <DndContext onDragEnd={handleDragEnd}>

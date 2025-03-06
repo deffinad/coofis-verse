@@ -90,50 +90,74 @@ const Swapyswapy = () => {
         sx={{ border: "", display: "flex", flexDirection: "column", gap: 2 }}
       >
         {rows.map((row, rowIndex) => (
-          <Box key={rowIndex} sx={{ width: "100%", border: "1px solid black" }}>
-            <Box sx={{ p:2 }}>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                Layout {rowIndex + 1}
-              </Typography>
-              {row.length === 0 ? (
-                <Typography
-                  variant="body2"
-                  sx={{ fontStyle: "italic", color: "gray" }}
-                >
-                  (Kosong - Tambahkan Kolom)
-                </Typography>
-              ) : (
-                <Box display="flex" gap={2}>
-                  {row.map((item, itemIndex) => (
-                    <Box
-                      key={item.id}
-                      data-swapy-slot={`${rowIndex}-${itemIndex}`}
-                      sx={{
-                        flex: item.width / 12,
-                        minWidth: "100px",
-                        border: "1px dashed black",
-                        p: 1,
-                      }}
-                    >
-                      <Box data-swapy-item={`${rowIndex}-${itemIndex}`}>
-                        <DraggableItem
-                          text={item.component}
-                          onDelete={() => removeColumn(rowIndex, itemIndex)}
-                        />
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-              <Button
-                variant="outlined"
-                sx={{ mt: 1 }}
-                onClick={() => addColumn(rowIndex)}
+          <Box
+            key={rowIndex}
+            sx={{ width: "100%", border: "1px solid black" }}
+            // data-swapy-slot={`${rowIndex}`} // Pastikan slot ada di level paling luar
+          >
+            {row.map((item, itemIndex) => (
+              <Box
+                key={item.id}
+                // data-swapy-item={`${rowIndex}-${itemIndex}`} // Item langsung ada dalam slot
+                sx={{
+                  flex: item.width / 12,
+                  minWidth: "100px",
+                  border: "10px dashed red",
+                  p: 1,
+                }}
               >
-                Tambah komponen
-              </Button>
-            </Box>
+                <DraggableItem
+                  text={item.component}
+                  onDelete={() => removeColumn(rowIndex, itemIndex)}
+                />
+              </Box>
+            ))}
           </Box>
+
+          // <Box data-swapy-slot={`${rowIndex}`} key={rowIndex} sx={{ width: "100%", border: "1px solid black" }}>
+          //   <Box sx={{ p:2 }}>
+          //     <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          //       Layout {rowIndex + 1}
+          //     </Typography>
+          //     {row.length === 0 ? (
+          //       <Typography
+          //         variant="body2"
+          //         sx={{ fontStyle: "italic", color: "gray" }}
+          //       >
+          //         (Kosong - Tambahkan Kolom)
+          //       </Typography>
+          //     ) : (
+          //       <Box display="flex" gap={2}>
+          //         {row.map((item, itemIndex) => (
+          //           <Box
+          //             key={item.id}
+          //             data-swapy-item={`${rowIndex}-${itemIndex}`}
+          //             sx={{
+          //               flex: item.width / 12,
+          //               minWidth: "100px",
+          //               border: "10px dashed red",
+          //               p: 1,
+          //             }}
+          //           >
+          //             <Box>
+          //               <DraggableItem
+          //                 text={item.component}
+          //                 onDelete={() => removeColumn(rowIndex, itemIndex)}
+          //               />
+          //             </Box>
+          //           </Box>
+          //         ))}
+          //       </Box>
+          //     )}
+          //     <Button
+          //       variant="outlined"
+          //       sx={{ mt: 1 }}
+          //       onClick={() => addColumn(rowIndex)}
+          //     >
+          //       Tambah komponen
+          //     </Button>
+          //   </Box>
+          // </Box>
         ))}
       </Box>
     </Box>

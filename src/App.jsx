@@ -8,6 +8,7 @@ import SwapyWithSideBar from "./pages/SwapyWithSideBar";
 import SwapyWithSideBarV2 from "./pages/SwapyWithSideBarV2";
 import SwapyWithSideBarv3 from "./pages/SwapyWithSideBarv3";
 import SwapyWithSideBarv4 from "./pages/SwapyWithSideBarv4";
+import LayoutManager from "./pages/LayoutManager";
 function App() {
   return (
     <>
@@ -17,6 +18,7 @@ function App() {
         <Route path="/swapysidebarv2" element={<SwapyWithSideBarV2 />} />
         <Route path="/swapysidebarv3" element={<SwapyWithSideBarv3 />} />
         <Route path="/swapysidebarv4" element={<SwapyWithSideBarv4 />} />
+        <Route path="/layoutmanager" element={<LayoutManager />} />
         <Route path="/kocak" element={<KocakLayout />} />
         <Route path="/swapylagi" element={<Swapylagi />} />
         <Route path="/rating" element={<Rating />} />

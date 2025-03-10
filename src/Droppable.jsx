@@ -8,11 +8,11 @@ export function Droppable({id, children}) {
     id: id,
   });
   const style = {
-    border: isOver ? '1px solid green' : '1px dashed black',
+    border: isOver ? '3px solid green' : '3px dashed black',
   };
   
   return (
-    <div ref={setNodeRef} style={{height: '100%',width: '100% !important', ...style}}>
+    <div ref={setNodeRef} style={{height: '100%', ...style}}>
       {children}
     </div>
   );

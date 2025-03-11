@@ -10,16 +10,14 @@ import {
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
 
-const LayoutManager = () => {
+const LayoutManagerv2 = () => {
   const [pages, setPages] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [selectedGrid, setSelectedGrid] = useState(null);
-  const container = useRef(null);
   const containerRefs = useRef({});
-  const swapy = useRef(null);
   const [newSize, setNewSize] = useState(selectedGrid?.size || 12);
   const [currentPage, setCurrentPage] = useState(null);
-  const [selectedLayoutIndex, SetSelectedLayoutIndex] = useState();
+  const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
   // get json from local storage
   useEffect(() => {
@@ -297,10 +295,8 @@ const LayoutManager = () => {
   };
 
   const saveOrder = (layoutIndex) => {
-
     const updatedPages = pages.map((page) => {
       if (!page.layouts[layoutIndex]) return page;
-
 
       const childrenMap = Object.fromEntries(
         page.layouts[layoutIndex].children.map((component) => [
@@ -308,7 +304,6 @@ const LayoutManager = () => {
           { children: component.children, size: component.size },
         ])
       );
-
 
       const updatedChildren = temp?.newSlotItemMap?.asArray.map((slotItem) => {
         const matchedComponent = page.layouts[layoutIndex].children.find(
@@ -319,7 +314,7 @@ const LayoutManager = () => {
           ...matchedComponent,
           id: slotItem.item,
           children: childrenMap[slotItem.item]?.children || [],
-          size: childrenMap[slotItem.item]?.size || 12, 
+          size: childrenMap[slotItem.item]?.size || 12,
         };
       });
 
@@ -355,6 +350,7 @@ const LayoutManager = () => {
                   ? "1px solid green"
                   : "1px dashed grey",
               padding: 1,
+              borderRadius: '10px'
             }}
             minHeight={"50px"}
             data-swapy-item={`${comp.id}`}
@@ -430,7 +426,12 @@ const LayoutManager = () => {
               variant="outlined"
               fullWidth
               sx={{ mb: 1 }}
-              onClick={() => setCurrentPage(page.id)}
+              onClick={() => {
+                setSelectedLayout("")
+                setSelectedLayoutIndex("")
+                setSelectedGrid("")
+                setCurrentPage(page.id);
+              }}
             >
               {page.name}
             </Button>
@@ -453,16 +454,21 @@ const LayoutManager = () => {
                   ref={(el) => (containerRefs.current[layout.id] = el)}
                   key={layout.id}
                   sx={{
-                    border: `1px solid ${
-                      selectedLayout === layout.id ? "green" : "red"
-                    }`,
+                    border:
+                      selectedLayout === layout.id ? "1px solid green" : "",
+                    borderRadius: "10px",
                     padding: 1,
                     marginBottom: 2,
                     minHeight: "100px",
+                    boxShadow:
+                      selectedLayout === layout.id
+                        ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
+                        : "0px 2px 5px rgba(0, 0, 0, 0.2)",
                   }}
                   onClick={() => {
                     setSelectedLayout(layout.id);
-                    SetSelectedLayoutIndex(layoutidx);
+                    setSelectedLayoutIndex(layoutidx);
+                    setSelectedGrid(null);
                   }}
                 >
                   <Grid container spacing={2}>
@@ -552,4 +558,4 @@ const LayoutManager = () => {
   );
 };
 
-export default LayoutManager;
+export default LayoutManagerv2;

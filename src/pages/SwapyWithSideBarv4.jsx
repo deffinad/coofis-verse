@@ -13,6 +13,7 @@ import { createSwapy } from "swapy";
 const SwapyWithSideBarv4 = () => {
   const [rows, setRows] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRowOrder, setSelectedRowOrder] = useState();
   const [selectedComponent, setSelectedComponent] = useState(null);
 
   const container = useRef(null);
@@ -42,18 +43,51 @@ const SwapyWithSideBarv4 = () => {
     localStorage.setItem("savedLayout", JSON.stringify(rows));
   }, [rows]);
 
+  console.log(rows);
+
   useEffect(() => {
-    if (swapy.current?.destroy) {
-      swapy.current.destroy();
-    }
-    if (container.current) {
-      swapy.current = createSwapy(container.current);
-      swapy.current.onSwap((event) => console.log("Swapped:", event));
-    }
+    rows.forEach((row) => {
+      if (!containerRefs.current[row.idDroppable]) return;
+      if (containerRefs.current[row.idDroppable].swapy?.destroy) {
+        containerRefs.current[row.idDroppable].swapy.destroy();
+      }
+
+      // Inisialisasi Swapy
+      containerRefs.current[row.idDroppable].swapy = createSwapy(
+        containerRefs.current[row.idDroppable]
+      );
+
+      containerRefs.current[row.idDroppable].swapy.onSwap((event) => {
+        console.log(`Swapped in ${row.idDroppable}:`, event);
+        // setTemp(event);
+      });
+    });
+
+    return () => {
+      rows.forEach((row) => {
+        if (containerRefs.current[row.idDroppable]?.swapy?.destroy) {
+          containerRefs.current[row.idDroppable].swapy.destroy();
+        }
+      });
+    };
   }, [rows]);
 
+  // useEffect(() => {
+  //   if (swapy.current?.destroy) {
+  //     swapy.current.destroy();
+  //   }
+  //   if (container.current) {
+  //     swapy.current = createSwapy(container.current);
+  //     swapy.current.onSwap((event) => console.log("Swapped:", event));
+  //   }
+  // }, [rows]);
+
   const addRow = () => {
-    const newRow = { id: "Layout" + Date.now(), name: "Layout", components: [] };
+    const newRow = {
+      id: "Layout" + Date.now(),
+      name: "Layout",
+      components: [],
+    };
     setRows([...rows, newRow]);
     setSelectedRow(newRow.id);
   };
@@ -169,9 +203,16 @@ const SwapyWithSideBarv4 = () => {
     );
   };
 
+  const containerRefs = useRef({});
+
   const renderComponents = (components) => {
     return components.map((comp) => (
-      <Grid item xs={comp.size} key={comp.id}>
+      <Grid
+        item
+        xs={comp.size}
+        key={comp.id}
+        data-swapy-slot={comp.idDroppable}
+      >
         {comp.type === "grid" ? (
           <Grid
             sx={{
@@ -183,8 +224,9 @@ const SwapyWithSideBarv4 = () => {
                 cursor: "pointer",
                 border: "1px solid green",
               },
-              padding: comp.type === "grid" ? 1 : 0, // Padding hanya untuk grid
+              padding: 1, // Grid selalu punya padding
             }}
+            data-swapy-item={comp.idDroppable}
             minHeight={"50px"}
             onClick={(e) => {
               e.stopPropagation();
@@ -192,10 +234,11 @@ const SwapyWithSideBarv4 = () => {
               setNewSize(comp.size);
             }}
           >
-            {renderComponents(comp.children, comp.id)}
+            {renderComponents(comp.children)}
+            {/* {comp.children && renderComponents(comp.children)} */}
           </Grid>
         ) : (
-          React.createElement(Components[comp.type], { key: comp.id, ...comp })
+          React.createElement(Components[comp.type], { ...comp })
         )}
       </Grid>
     ));
@@ -238,9 +281,10 @@ const SwapyWithSideBarv4 = () => {
         </Box>
       </Drawer>
 
-      <Box ref={container} sx={{ flexGrow: 1, p: 5, mt: 2 }}>
+      <Box sx={{ flexGrow: 1, p: 5, mt: 2 }}>
         {rows.map((row, rowIndex) => (
           <Box
+            ref={(el) => (containerRefs.current[row.idDroppable] = el)}
             key={row.id}
             sx={{
               border: `2px solid ${selectedRow === row.id ? "green" : "red"}`,
@@ -252,6 +296,7 @@ const SwapyWithSideBarv4 = () => {
             }}
             onClick={() => {
               setSelectedRow(row.id);
+              setSelectedRowOrder(rowIndex);
               setSelectedComponent(null);
             }}
           >

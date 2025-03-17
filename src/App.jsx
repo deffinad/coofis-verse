@@ -12,6 +12,7 @@ import LayoutManager from "./pages/LayoutManager";
 import SwapyKocak from "./pages/SwapyKocak";
 import LayoutManagerv2 from "./pages/LayoutManagerv2";
 import ModulComponents from "./pages/ModulComponents";
+import LayoutManagerv3 from "./pages/LayoutManagerv3";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/layoutmanager" element={<LayoutManager />} />
 
           <Route path="/layoutmanagerv2" element={<LayoutManagerv2 />} />
+          <Route path="/layoutmanagerv3" element={<LayoutManagerv3 />} />
           <Route path="/modulcomponent" element={<ModulComponents />} />
 
           <Route path="/kocak" element={<KocakLayout />} />

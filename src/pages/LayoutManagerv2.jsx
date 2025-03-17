@@ -6,9 +6,12 @@ import {
   Typography,
   Grid,
   TextField,
+  MenuItem,
 } from "@mui/material";
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
+
+const LOCAL_STORAGE_KEY = "inputProps";
 
 const LayoutManagerv2 = () => {
   const [pages, setPages] = useState([]);
@@ -19,6 +22,44 @@ const LayoutManagerv2 = () => {
   const [currentPage, setCurrentPage] = useState(null);
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
+  const [isPreview, setIsPreview] = useState(true);
+
+  const [value, setValue] = useState(""); 
+  const [inputProps, setInputProps] = useState(null);
+  const [editedProps, setEditedProps] = useState(null);
+
+  // Load data dari Local Storage saat komponen pertama kali dirender
+  useEffect(() => {
+    const storedProps = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (storedProps) {
+      const parsedProps = JSON.parse(storedProps);
+      setInputProps(parsedProps);
+      setEditedProps(parsedProps);
+      setValue(parsedProps.value || "");
+    }
+  }, []);
+
+  // Fungsi untuk menangkap props saat input diklik
+  const handleInspect = (props) => {
+    setInputProps(props);
+    setEditedProps(props);
+  };
+
+  // Fungsi untuk mengubah nilai di form properties
+  const handleChangeProps = (key, newValue) => {
+    setEditedProps((prevProps) => ({
+      ...prevProps,
+      [key]: newValue,
+    }));
+  };
+
+  // Fungsi untuk menyimpan perubahan props ke state dan local storage
+  const handleSaveProps = () => {
+    setInputProps(editedProps);
+    setValue(editedProps.value);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(editedProps)); // Simpan ke Local Storage
+  };
+
   // get json from local storage
   useEffect(() => {
     const savedPages = localStorage.getItem("savedPages");
@@ -37,35 +78,36 @@ const LayoutManagerv2 = () => {
 
   // create swapy
   useEffect(() => {
-    pages.forEach((page) => {
-      page.layouts.forEach((layout) => {
-        if (!containerRefs.current[layout.id]) return;
-        if (containerRefs.current[layout.id].swapy?.destroy) {
-          containerRefs.current[layout.id].swapy.destroy();
-        }
+    if (!currentPage) return;
 
-        // Inisialisasi Swapy
-        containerRefs.current[layout.id].swapy = createSwapy(
-          containerRefs.current[layout.id]
-        );
+    const activePage = pages.find((p) => p.id === currentPage);
+    if (!activePage) return;
 
-        containerRefs.current[layout.id].swapy.onSwap((event) => {
-          console.log(`Swapped in ${layout.id}:`, event);
-          setTemp(event);
-        });
+    activePage.layouts.forEach((layout) => {
+      if (!containerRefs.current[layout.id]) return;
+
+      if (containerRefs.current[layout.id].swapy?.destroy) {
+        containerRefs.current[layout.id].swapy.destroy();
+      }
+
+      containerRefs.current[layout.id].swapy = createSwapy(
+        containerRefs.current[layout.id]
+      );
+
+      containerRefs.current[layout.id].swapy.onSwap((event) => {
+        console.log(`Swapped in ${layout.id}:`, event);
+        setTemp(event);
       });
     });
 
     return () => {
-      pages.forEach((page) => {
-        page.layouts.forEach((layout) => {
-          if (containerRefs.current[layout.id]?.swapy?.destroy) {
-            containerRefs.current[layout.id].swapy.destroy();
-          }
-        });
+      activePage.layouts.forEach((layout) => {
+        if (containerRefs.current[layout.id]?.swapy?.destroy) {
+          containerRefs.current[layout.id].swapy.destroy();
+        }
       });
     };
-  }, [pages]);
+  }, [currentPage, pages]);
 
   // add page
   const addPage = () => {
@@ -147,16 +189,12 @@ const LayoutManagerv2 = () => {
       size: 12,
     };
 
-    switch (type) {
-      case "Ratings":
-        newComponent.value = 0;
-        break;
-      case "Navbar":
-        break;
-      case "Text":
-        break;
-      default:
-        break;
+    if (type === "Ratings") {
+      newComponent.value = 0;
+    }
+
+    if (type === "Grid") {
+      newComponent.children = [];
     }
 
     const gridselect = pages
@@ -168,6 +206,8 @@ const LayoutManagerv2 = () => {
       alert("Grid sudah terisi");
       return;
     }
+
+    console.log("ini kocak", newComponent);
 
     setPages((prevPages) =>
       prevPages.map((page) =>
@@ -207,8 +247,6 @@ const LayoutManagerv2 = () => {
     } else {
       setCurrentPage(null);
     }
-
-    localStorage.setItem("pages", JSON.stringify(updatedPages));
   };
 
   // delete layout
@@ -298,43 +336,45 @@ const LayoutManagerv2 = () => {
     const updatedPages = pages.map((page) => {
       if (!page.layouts[layoutIndex]) return page;
 
-      const childrenMap = Object.fromEntries(
-        page.layouts[layoutIndex].children.map((component) => [
-          component.id,
-          { children: component.children, size: component.size },
-        ])
-      );
-
-      const updatedChildren = temp?.newSlotItemMap?.asArray.map((slotItem) => {
-        const matchedComponent = page.layouts[layoutIndex].children.find(
-          (component) => component.id === slotItem.slot
-        );
-
-        return {
-          ...matchedComponent,
-          id: slotItem.item,
-          children: childrenMap[slotItem.item]?.children || [],
-          size: childrenMap[slotItem.item]?.size || 12,
-        };
-      });
-
       return {
         ...page,
-        layouts: page.layouts.map((layout, index) =>
-          index === layoutIndex
-            ? { ...layout, children: updatedChildren }
-            : layout
-        ),
+        layouts: page.layouts.map((layout, index) => {
+          if (index !== layoutIndex) return { ...layout };
+
+          const childrenCopy = JSON.parse(JSON.stringify(layout.children));
+
+          const childrenMap = Object.fromEntries(
+            childrenCopy.map((component) => [
+              component.id,
+              { children: component.children, size: component.size },
+            ])
+          );
+
+          const updatedChildren = childrenCopy.map((component) => {
+            const slotItem = temp?.newSlotItemMap?.asArray.find(
+              (slot) => slot.slot === component.id
+            );
+
+            if (!slotItem) return component;
+
+            return {
+              ...component,
+              id: slotItem.item,
+              children: childrenMap[slotItem.item]?.children || [],
+            };
+          });
+
+          return { ...layout, children: updatedChildren };
+        }),
       };
     });
 
-    // Simpan seluruh pages ke localStorage
+    localStorage.removeItem("savedPages");
     localStorage.setItem("savedPages", JSON.stringify(updatedPages));
-
-    alert(`Order saved for layout ${layoutIndex}!`);
+    window.location.reload();
   };
 
-  const renderComponents = (components) =>
+  const renderComponents = (components, layoutId, layoutidx) =>
     components.map((comp) => (
       <Grid
         item
@@ -344,18 +384,31 @@ const LayoutManagerv2 = () => {
       >
         {comp.type === "grid" ? (
           <Grid
-            sx={{
-              border:
-                selectedGrid?.id === comp.id
-                  ? "1px solid green"
-                  : "1px dashed grey",
-              padding: 1,
-              borderRadius: '10px'
-            }}
+            sx={
+              isPreview
+                ? {
+                    border:
+                      selectedGrid?.id === comp.id
+                        ? "1px solid green"
+                        : "1px dashed grey",
+                    padding: 1,
+                    borderRadius: "10px",
+                  }
+                : {
+                    border:
+                      selectedGrid?.id === comp.id
+                        ? "1px solid green"
+                        : "1px dashed grey",
+                    padding: 1,
+                    borderRadius: "10px",
+                  }
+            }
             minHeight={"50px"}
             data-swapy-item={`${comp.id}`}
             onClick={(e) => {
               e.stopPropagation();
+              setSelectedLayoutIndex(layoutidx);
+              setSelectedLayout(layoutId);
               setSelectedGrid(comp);
               setNewSize(comp.size);
             }}
@@ -363,7 +416,25 @@ const LayoutManagerv2 = () => {
             {renderComponents(comp.children)}
           </Grid>
         ) : (
-          React.createElement(Components[comp.type], { key: comp.id, ...comp })
+          React.createElement(Components?.[comp.type], {
+            key: comp.id,
+            // ...inputProps,
+            // onClick: () =>
+            //   handleInspect({
+            //     id: inputProps?.id || "",
+            //     name: inputProps?.name || "",
+            //     label: inputProps?.label || "",
+            //     value: value,
+            //     type: inputProps?.type || "text",
+            //   }),
+            // onChange: (e) => {
+            //   const newValue =
+            //     inputProps.type === "number"
+            //       ? Number(e.target.value)
+            //       : e.target.value;
+            //   setInputProps((prevProps) => ({ ...prevProps, value: newValue }));
+            // },
+          })
         )}
       </Grid>
     ));
@@ -408,6 +479,15 @@ const LayoutManagerv2 = () => {
           </Button>
           <Button
             variant="outlined"
+            color="info"
+            disabled={!(selectedGrid && selectedLayout && currentPage)}
+            onClick={() => addComponentToGrid("Input")}
+            sx={{ width: "100%", mt: 2 }}
+          >
+            Input
+          </Button>
+          <Button
+            variant="outlined"
             fullWidth
             sx={{ mt: 2 }}
             disabled={!(selectedGrid && selectedLayout && currentPage)}
@@ -427,9 +507,17 @@ const LayoutManagerv2 = () => {
               fullWidth
               sx={{ mb: 1 }}
               onClick={() => {
-                setSelectedLayout("")
-                setSelectedLayoutIndex("")
-                setSelectedGrid("")
+                Object.values(containerRefs.current).forEach((ref) => {
+                  if (ref?.swapy?.destroy) {
+                    ref.swapy.destroy();
+                  }
+                });
+
+                containerRefs.current = {};
+
+                setSelectedLayout("");
+                setSelectedLayoutIndex("");
+                setSelectedGrid("");
                 setCurrentPage(page.id);
               }}
             >
@@ -469,10 +557,11 @@ const LayoutManagerv2 = () => {
                     setSelectedLayout(layout.id);
                     setSelectedLayoutIndex(layoutidx);
                     setSelectedGrid(null);
+                    setEditedProps(null);
                   }}
                 >
                   <Grid container spacing={2}>
-                    {renderComponents(layout.children)}
+                    {renderComponents(layout.children, layout.id, layoutidx)}
                   </Grid>
                 </Box>
               ))}
@@ -513,20 +602,6 @@ const LayoutManagerv2 = () => {
           >
             Hapus Grid
           </Button>
-
-          <Typography sx={{ mt: 4 }}>Layout: {selectedLayout}</Typography>
-          <Typography>Component: {selectedGrid?.id}</Typography>
-          <Typography>Col: {selectedGrid?.size}</Typography>
-
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => saveOrder(selectedLayoutIndex)}
-            sx={{ mt: 2 }}
-          >
-            Save Order
-          </Button>
-
           {selectedGrid && (
             <form
               onSubmit={(e) => {
@@ -545,13 +620,65 @@ const LayoutManagerv2 = () => {
               <Button
                 type="submit"
                 variant="contained"
+                color="primary"
                 fullWidth
-                sx={{ mt: 2 }}
               >
-                Simpan
+                Save
               </Button>
             </form>
           )}
+          {editedProps ? (
+            <Box
+              component="form"
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            >
+              <Typography sx={{ mt: 4 }}>Layout: {selectedLayout}</Typography>
+              <Typography>Component: {selectedGrid?.id}</Typography>
+              {Object.keys(editedProps).map((key) =>
+                key === "type" ? (
+                  <TextField
+                    select
+                    key={key}
+                    label={key}
+                    value={editedProps[key]}
+                    onChange={(e) => handleChangeProps(key, e.target.value)}
+                    size="small"
+                  >
+                    <MenuItem value="text">text</MenuItem>
+                    <MenuItem value="number">number</MenuItem>
+                  </TextField>
+                ) : (
+                  <TextField
+                    key={key}
+                    label={key}
+                    value={editedProps[key]}
+                    onChange={(e) => handleChangeProps(key, e.target.value)}
+                    size="small"
+                  />
+                )
+              )}
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={handleSaveProps}
+              >
+                Save
+              </Button>
+            </Box>
+          ) : (
+            <Typography variant="body2">
+              {/* Klik input untuk melihat props */}
+            </Typography>
+          )}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => saveOrder(selectedLayoutIndex)}
+            sx={{ mt: 2 }}
+          >
+            Save Order
+          </Button>
         </Box>
       </Drawer>
     </Box>

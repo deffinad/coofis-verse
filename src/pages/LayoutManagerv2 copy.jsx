@@ -17,7 +17,7 @@ import DraggableComponent from "../DraggableComponent";
 
 const LOCAL_STORAGE_KEY = "inputProps";
 
-const LayoutManagerv3 = () => {
+const LayoutManagerv2 = () => {
   const [pages, setPages] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [selectedGrid, setSelectedGrid] = useState(null);
@@ -31,8 +31,6 @@ const LayoutManagerv3 = () => {
   const [value, setValue] = useState("");
   const [inputProps, setInputProps] = useState(null);
   const [editedProps, setEditedProps] = useState(null);
-
-  const [droppedComponents, setDroppedComponents] = useState([]);
 
   // Load data dari Local Storage saat komponen pertama kali dirender
   useEffect(() => {
@@ -278,19 +276,17 @@ const LayoutManagerv3 = () => {
   const handleDeleteGrid = () => {
     if (!selectedGrid || !currentPage || !selectedLayout) return;
 
-    const removeComponent = (components) => {
-      const updatedComponents = components
-        .filter((comp) => comp.id !== selectedGrid) // Perbaiki filter ID
+    const removeComponent = (components) =>
+      components
+        .filter((comp) => comp.id !== selectedGrid.id)
         .map((comp) =>
           comp.type === "grid"
             ? { ...comp, children: removeComponent(comp.children) }
             : comp
         );
-      return updatedComponents;
-    };
 
-    setPages((prevPages) => {
-      const newPages = prevPages.map((page) =>
+    setPages((prevPages) =>
+      prevPages.map((page) =>
         page.id === currentPage
           ? {
               ...page,
@@ -301,9 +297,8 @@ const LayoutManagerv3 = () => {
               ),
             }
           : page
-      );
-      return newPages;
-    });
+      )
+    );
 
     setSelectedGrid(null);
   };
@@ -383,62 +378,69 @@ const LayoutManagerv3 = () => {
     window.location.reload();
   };
 
-  const [gridComponents, setGridComponents] = useState({}); // 🔹 State untuk menyimpan komponen di setiap grid
+  const renderComponents = (components, layoutId, layoutidx) =>
+    components.map((comp) => (
+      <Grid
+        item
+        xs={comp.size}
+        key={comp.id}
+        data-swapy-slot={comp.type === "grid" ? `${comp.id}` : undefined}
+      >
+        {comp.type === "grid" ? (
+          <Grid
+            sx={
+              isPreview
+                ? {
+                    border:
+                      selectedGrid?.id === comp.id
+                        ? "1px solid green"
+                        : "1px dashed grey",
+                    padding: 1,
+                    borderRadius: "10px",
+                  }
+                : {
+                    border:
+                      selectedGrid?.id === comp.id
+                        ? "1px solid green"
+                        : "1px dashed grey",
+                    padding: 1,
+                    borderRadius: "10px",
+                  }
+            }
+            minHeight={"50px"}
+            data-swapy-item={`${comp.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedLayoutIndex(layoutidx);
+              setSelectedLayout(layoutId);
+              setSelectedGrid(comp);
+              setNewSize(comp.size);
+            }}
+          >
+            {renderComponents(comp.children)}
+          </Grid>
+        ) : (
+          React.createElement(Components?.[comp.type], {
+            key: comp.id,
+          })
+        )}
+      </Grid>
+    ));
 
   const handleDragEnd = (event) => {
     const { over, active } = event;
-    console.log("Event Drop:", event);
 
-    if (over) {
-      const gridId = over.id; // ID grid yang menjadi target drop
-      const newComponent = {
-        id: `navbar-${Date.now()}`, // Generate ID unik
-        type: "Navbar",
-      };
-
-      setPages((prevPages) =>
-        prevPages.map((page) => ({
-          ...page,
-          layouts: page.layouts.map((layout) => ({
-            ...layout,
-            children: layout.children.map((grid) =>
-              grid.id === gridId
-                ? {
-                    ...grid,
-                    children: [
-                      ...(Array.isArray(grid.children) ? grid.children : []), // 🔹 Pastikan children adalah array
-                      newComponent, // 🔹 Tambahkan komponen baru ke dalam children
-                    ],
-                  }
-                : grid
-            ),
-          })),
-        }))
-      );
+    if (over && over.id === "drop-zone-1") {
+      setDroppedComponents((prev) => [
+        ...prev,
+        {
+          id: `input-${prev.length + 1}`, // Generate ID unik
+          type: "input",
+          props: { placeholder: `Input ${prev.length + 1}` },
+        },
+      ]);
     }
   };
-
-  const renderComponents = (components) =>
-    components.map((comp) => {
-      return (
-          <DroppableGrid
-            key={comp.id}
-            id={comp.id}
-            onClick={() => setSelectedGrid(comp.id)}
-            selectedGrid={selectedGrid}
-          >
-              {comp.children && comp.children.length > 0 ? (
-                comp.children.map((child) =>
-                  React.createElement(Components?.[child.type], {
-                    key: child.id,
-                  })
-                )
-              ) : (
-                <p style={{ color: "gray" }}>Empty Grid</p> // 🔹 Jika grid kosong
-              )}
-          </DroppableGrid>
-      );
-    });
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
@@ -484,15 +486,10 @@ const LayoutManagerv3 = () => {
               color="info"
               disabled={!(selectedGrid && selectedLayout && currentPage)}
               onClick={() => addComponentToGrid("Input")}
-              sx={{ width: "100%", mt: 2, mb: 2 }}
+              sx={{ width: "100%", mt: 2 }}
             >
               Input
             </Button>
-            <DraggableComponent id="Navbar">
-              <div style={{ padding: "10px", border: "1px solid black" }}>
-                <Components.Navbar />
-              </div>
-            </DraggableComponent>
             <Button
               variant="outlined"
               fullWidth
@@ -567,7 +564,9 @@ const LayoutManagerv3 = () => {
                       setEditedProps(null);
                     }}
                   >
-                    {renderComponents(layout.children, layout.id, layoutidx)}
+                    <Grid container spacing={2}>
+                      {renderComponents(layout.children, layout.id, layoutidx)}
+                    </Grid>
                   </Box>
                 ))}
             </>
@@ -691,4 +690,4 @@ const LayoutManagerv3 = () => {
   );
 };
 
-export default LayoutManagerv3;
+export default LayoutManagerv2;

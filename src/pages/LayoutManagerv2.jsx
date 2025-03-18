@@ -11,6 +11,10 @@ import {
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
 
+import { DndContext } from "@dnd-kit/core";
+import DroppableGrid from "../DroppableGrid";
+import DraggableComponent from "../DraggableComponent";
+
 const LOCAL_STORAGE_KEY = "inputProps";
 
 const LayoutManagerv2 = () => {
@@ -24,7 +28,7 @@ const LayoutManagerv2 = () => {
   const [temp, setTemp] = useState();
   const [isPreview, setIsPreview] = useState(true);
 
-  const [value, setValue] = useState(""); 
+  const [value, setValue] = useState("");
   const [inputProps, setInputProps] = useState(null);
   const [editedProps, setEditedProps] = useState(null);
 
@@ -418,22 +422,6 @@ const LayoutManagerv2 = () => {
         ) : (
           React.createElement(Components?.[comp.type], {
             key: comp.id,
-            // ...inputProps,
-            // onClick: () =>
-            //   handleInspect({
-            //     id: inputProps?.id || "",
-            //     name: inputProps?.name || "",
-            //     label: inputProps?.label || "",
-            //     value: value,
-            //     type: inputProps?.type || "text",
-            //   }),
-            // onChange: (e) => {
-            //   const newValue =
-            //     inputProps.type === "number"
-            //       ? Number(e.target.value)
-            //       : e.target.value;
-            //   setInputProps((prevProps) => ({ ...prevProps, value: newValue }));
-            // },
           })
         )}
       </Grid>

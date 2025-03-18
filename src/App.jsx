@@ -29,6 +29,8 @@ function App() {
           <Route path="/layoutmanagerv2" element={<LayoutManagerv2 />} />
           <Route path="/layoutmanagerv3" element={<LayoutManagerv3 />} />
           <Route path="/modulcomponent" element={<ModulComponents />} />
+          
+          <Route path="/hasilboy" element={<ModulComponents />} />
 
           <Route path="/kocak" element={<KocakLayout />} />
           <Route path="/swapylagi" element={<Swapylagi />} />

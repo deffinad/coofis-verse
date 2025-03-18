@@ -483,6 +483,15 @@ const LayoutManagerv2 = () => {
           >
             Navbar
           </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            sx={{ mt: 2 }}
+            disabled={!(selectedGrid && selectedLayout && currentPage)}
+            onClick={() => addComponentToGrid("ArsipCuti")}
+          >
+            Arsip Cuti
+          </Button>
         </Box>
         <Box sx={{ width: 240, p: 2 }}>
           <Typography variant="h5" gutterBottom>
@@ -521,6 +530,7 @@ const LayoutManagerv2 = () => {
             <Typography variant="h4">
               {pages.find((page) => page.id === currentPage)?.name}
             </Typography>
+            {/* <Components.ArsipCuti /> */}
 
             {/* show layout */}
             {pages
@@ -548,7 +558,7 @@ const LayoutManagerv2 = () => {
                     setEditedProps(null);
                   }}
                 >
-                  <Grid container spacing={2}>
+                  <Grid container spacing={1}>
                     {renderComponents(layout.children, layout.id, layoutidx)}
                   </Grid>
                 </Box>

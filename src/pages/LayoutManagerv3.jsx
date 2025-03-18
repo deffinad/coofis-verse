@@ -26,13 +26,10 @@ const LayoutManagerv3 = () => {
   const [currentPage, setCurrentPage] = useState(null);
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
-  const [isPreview, setIsPreview] = useState(true);
 
   const [value, setValue] = useState("");
   const [inputProps, setInputProps] = useState(null);
   const [editedProps, setEditedProps] = useState(null);
-
-  const [droppedComponents, setDroppedComponents] = useState([]);
 
   // Load data dari Local Storage saat komponen pertama kali dirender
   useEffect(() => {
@@ -185,62 +182,6 @@ const LayoutManagerv3 = () => {
     );
   };
 
-  // add component to grid
-  const addComponentToGrid = (type) => {
-    if (!selectedLayout || !selectedGrid) return;
-
-    const newComponent = {
-      id: `comp${Date.now()}`,
-      type,
-      size: 12,
-    };
-
-    if (type === "Ratings") {
-      newComponent.value = 0;
-    }
-
-    if (type === "Grid") {
-      newComponent.children = [];
-    }
-
-    const gridselect = pages
-      .find((page) => page.id === currentPage)
-      ?.layouts.find((layout) => layout.id === selectedLayout)
-      ?.children.find((grid) => grid.id === selectedGrid.id);
-
-    if (gridselect?.children.length === 1) {
-      alert("Grid sudah terisi");
-      return;
-    }
-
-    console.log("ini kocak", newComponent);
-
-    setPages((prevPages) =>
-      prevPages.map((page) =>
-        page.id === currentPage
-          ? {
-              ...page,
-              layouts: page.layouts.map((layout) =>
-                layout.id === selectedLayout
-                  ? {
-                      ...layout,
-                      children: layout.children.map((grid) =>
-                        grid.id === selectedGrid.id
-                          ? {
-                              ...grid,
-                              children: [...grid.children, newComponent],
-                            }
-                          : grid
-                      ),
-                    }
-                  : layout
-              ),
-            }
-          : page
-      )
-    );
-  };
-
   // delete page
   const deletePage = () => {
     if (!currentPage) return;
@@ -280,7 +221,7 @@ const LayoutManagerv3 = () => {
 
     const removeComponent = (components) => {
       const updatedComponents = components
-        .filter((comp) => comp.id !== selectedGrid) // Perbaiki filter ID
+        .filter((comp) => comp.id !== selectedGrid?.id)
         .map((comp) =>
           comp.type === "grid"
             ? { ...comp, children: removeComponent(comp.children) }
@@ -383,17 +324,41 @@ const LayoutManagerv3 = () => {
     window.location.reload();
   };
 
-  const [gridComponents, setGridComponents] = useState({}); // 🔹 State untuk menyimpan komponen di setiap grid
-
   const handleDragEnd = (event) => {
     const { over, active } = event;
-    console.log("Event Drop:", event);
+    // console.log("Event Drop:", event);
 
     if (over) {
-      const gridId = over.id; // ID grid yang menjadi target drop
-      const newComponent = {
-        id: `navbar-${Date.now()}`, // Generate ID unik
-        type: "Navbar",
+      const gridId = over.id;
+
+      const componentType = active?.id || "Unknown";
+
+      const componentAttributes = {
+        Navbar: {
+          id: `navbar-${Date.now()}`,
+          type: "Navbar",
+          menuItems: ["Home", "About", "Contact"],
+        },
+        Ratings: { id: `ratings-${Date.now()}`, type: "Ratings", score: 5 },
+        ArsipCuti: {
+          id: `arsipcuti-${Date.now()}`,
+          type: "ArsipCuti",
+          history: [],
+        },
+        Input: {
+          id: `input-${Date.now()}`,
+          type: "Input",
+          placeholder: "Enter text",
+        },
+        ArsipCuti: {
+          id: `arsipcuti-${Date.now()}`,
+          type: "ArsipCuti",
+        },
+      };
+
+      const newComponent = componentAttributes[componentType] || {
+        id: `unknown-${Date.now()}`,
+        type: "Unknown",
       };
 
       setPages((prevPages) =>
@@ -406,8 +371,8 @@ const LayoutManagerv3 = () => {
                 ? {
                     ...grid,
                     children: [
-                      ...(Array.isArray(grid.children) ? grid.children : []), // 🔹 Pastikan children adalah array
-                      newComponent, // 🔹 Tambahkan komponen baru ke dalam children
+                      ...(Array.isArray(grid.children) ? grid.children : []),
+                      newComponent,
                     ],
                   }
                 : grid
@@ -418,27 +383,42 @@ const LayoutManagerv3 = () => {
     }
   };
 
-  const renderComponents = (components) =>
+  const renderComponents = (components, layoutId, layoutidx) =>
     components.map((comp) => {
       return (
+        <Grid
+          item
+          xs={comp.size}
+          key={comp.id}
+          data-swapy-slot={comp.type === "grid" ? `${comp.id}` : undefined}
+        >
           <DroppableGrid
             key={comp.id}
             id={comp.id}
-            onClick={() => setSelectedGrid(comp.id)}
+            onClick={() => {
+              setSelectedLayoutIndex(layoutidx);
+              setSelectedLayout(layoutId);
+              setSelectedGrid(comp);
+              setNewSize(comp.size);
+            }}
             selectedGrid={selectedGrid}
+            size={comp.size}
           >
-              {comp.children && comp.children.length > 0 ? (
-                comp.children.map((child) =>
-                  React.createElement(Components?.[child.type], {
-                    key: child.id,
-                  })
-                )
-              ) : (
-                <p style={{ color: "gray" }}>Empty Grid</p> // 🔹 Jika grid kosong
-              )}
+            {comp.children && comp.children.length > 0 ? (
+              comp.children.map((child) =>
+                React.createElement(Components?.[child.type], {
+                  key: child.id,
+                })
+              )
+            ) : (
+              <p style={{ color: "gray" }}>Empty Grid</p>
+            )}
           </DroppableGrid>
+        </Grid>
       );
     });
+
+  console.log(pages);
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
@@ -470,38 +450,45 @@ const LayoutManagerv3 = () => {
             <Typography variant="h5" gutterBottom>
               Daftar Komponen
             </Typography>
-            <Button
-              variant="outlined"
-              color="info"
-              disabled={!(selectedGrid && selectedLayout && currentPage)}
-              onClick={() => addComponentToGrid("Ratings")}
-              sx={{ width: "100%" }}
-            >
-              Ratings
-            </Button>
-            <Button
-              variant="outlined"
-              color="info"
-              disabled={!(selectedGrid && selectedLayout && currentPage)}
-              onClick={() => addComponentToGrid("Input")}
-              sx={{ width: "100%", mt: 2, mb: 2 }}
-            >
-              Input
-            </Button>
-            <DraggableComponent id="Navbar">
-              <div style={{ padding: "10px", border: "1px solid black" }}>
-                <Components.Navbar />
-              </div>
+            <DraggableComponent id="Ratings">
+              <Button
+                variant="outlined"
+                color="info"
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ width: "100%" }}
+              >
+                Ratings
+              </Button>
             </DraggableComponent>
-            <Button
-              variant="outlined"
-              fullWidth
-              sx={{ mt: 2 }}
-              disabled={!(selectedGrid && selectedLayout && currentPage)}
-              onClick={() => addComponentToGrid("Navbar")}
-            >
-              Navbar
-            </Button>
+            <DraggableComponent id="Input">
+              <Button
+                variant="outlined"
+                color="info"
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ width: "100%", mt: 2, mb: 2 }}
+              >
+                Input
+              </Button>
+            </DraggableComponent>
+            <DraggableComponent id="Navbar">
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+              >
+                Navbar
+              </Button>
+            </DraggableComponent>
+            <DraggableComponent id="ArsipCuti">
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ mt: 2 }}
+              >
+                ArsipCuti
+              </Button>
+            </DraggableComponent>
           </Box>
           <Box sx={{ width: 240, p: 2 }}>
             <Typography variant="h5" gutterBottom>
@@ -567,7 +554,9 @@ const LayoutManagerv3 = () => {
                       setEditedProps(null);
                     }}
                   >
-                    {renderComponents(layout.children, layout.id, layoutidx)}
+                    <Grid container spacing={2}>
+                      {renderComponents(layout.children, layout.id, layoutidx)}
+                    </Grid>
                   </Box>
                 ))}
             </>

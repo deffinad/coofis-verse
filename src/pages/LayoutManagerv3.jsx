@@ -7,6 +7,9 @@ import {
   Grid,
   TextField,
   MenuItem,
+  ListItem,
+  ListItemText,
+  IconButton,
 } from "@mui/material";
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
@@ -15,6 +18,7 @@ import { DndContext } from "@dnd-kit/core";
 import DroppableGrid from "../DroppableGrid";
 import DraggableComponent from "../DraggableComponent";
 import { Height } from "@mui/icons-material";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const LOCAL_STORAGE_KEY = "inputProps";
 
@@ -28,6 +32,7 @@ const LayoutManagerv3 = () => {
   const [currentPage, setCurrentPage] = useState(null);
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
+  const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
 
   // get json from local storage
   useEffect(() => {
@@ -309,7 +314,11 @@ const LayoutManagerv3 = () => {
         Navbar: {
           id: `navbar-${Date.now()}`,
           type: "Navbar",
-          menuItems: ["Home", "About", "Contact"],
+          menuItems: [
+            { label: "Home", path: "/" },
+            { label: "About", path: "/about" },
+            { label: "Contact", path: "/contact" },
+          ],
         },
         Ratings: { id: `ratings-${Date.now()}`, type: "Ratings", score: 5 },
         ArsipCuti: {
@@ -362,13 +371,6 @@ const LayoutManagerv3 = () => {
   const gridRef = useRef(null);
   const [atribut, setAtribute] = useState();
 
-  const handleGridClick = () => {
-    if (gridRef.current) {
-      const height = gridRef.current.getBoundingClientRect().height;
-      setNewHeight(height);
-    }
-  };
-  console.log("yagesya", atribut);
   const renderComponents = (components, layoutId, layoutidx) =>
     components.map((comp) => {
       return (
@@ -407,8 +409,6 @@ const LayoutManagerv3 = () => {
         </Grid>
       );
     });
-
-  console.log(pages);
 
   const [formData, setFormData] = useState(atribut);
 
@@ -468,7 +468,68 @@ const LayoutManagerv3 = () => {
       });
     });
   };
-  console.log("awikawok", formData);
+
+  const handleAddMenuItem = () => {
+    if (newMenuItem.label && newMenuItem.path) {
+      setNewMenuItem({ label: "", path: "" });
+
+      setPages((prevPages) =>
+        prevPages.map((page) => ({
+          ...page,
+          layouts: page.layouts.map((layout) => ({
+            ...layout,
+            children: layout.children.map((grid) =>
+              grid.id === selectedGrid?.id
+                ? {
+                    ...grid,
+                    children: grid.children.map((child) =>
+                      child.id === atribut?.id
+                        ? {
+                            ...child,
+                            menuItems: [
+                              ...(child.menuItems || []),
+                              newMenuItem,
+                            ],
+                          }
+                        : child
+                    ),
+                  }
+                : grid
+            ),
+          })),
+        }))
+      );
+    }
+  };
+
+  const handleDeleteMenuItem = (indexToDelete) => {
+    setPages((prevPages) =>
+      prevPages.map((page) => ({
+        ...page,
+        layouts: page.layouts.map((layout) => ({
+          ...layout,
+          children: layout.children.map((grid) =>
+            grid.id === selectedGrid?.id
+              ? {
+                  ...grid,
+                  children: grid.children.map((child) =>
+                    child.id === atribut?.id
+                      ? {
+                          ...child,
+                          menuItems: child.menuItems.filter(
+                            (_, index) => index !== indexToDelete
+                          ),
+                        }
+                      : child
+                  ),
+                }
+              : grid
+          ),
+        })),
+      }))
+    );
+  };
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <Box sx={{ display: "flex" }}>
@@ -742,6 +803,66 @@ const LayoutManagerv3 = () => {
                       >
                         Simpan
                       </Button>
+                    </>
+                  ) : atribut.type === "Navbar" ? (
+                    <>
+                      {/* Form untuk menambah menu item */}
+                      <Box>
+                        <TextField
+                          label="Label"
+                          variant="outlined"
+                          value={newMenuItem.label}
+                          onChange={(e) =>
+                            setNewMenuItem((prev) => ({
+                              ...prev,
+                              label: e.target.value,
+                            }))
+                          }
+                          sx={{ mt: 2 }}
+                        />
+                        <TextField
+                          label="Path"
+                          variant="outlined"
+                          value={newMenuItem.path}
+                          onChange={(e) =>
+                            setNewMenuItem((prev) => ({
+                              ...prev,
+                              path: e.target.value,
+                            }))
+                          }
+                          sx={{ mt: 2 }}
+                        />
+                        <Button
+                          variant="contained"
+                          onClick={handleAddMenuItem}
+                          sx={{ mt: 2 }}
+                        >
+                          Add Menu Item
+                        </Button>
+                      </Box>
+
+                      {/* List Menu Item */}
+                      <Box>
+                        {atribut.menuItems?.map((item, index) => (
+                          <ListItem
+                            key={index}
+                            secondaryAction={
+                              <IconButton
+                                edge="end"
+                                aria-label="delete"
+                                onClick={() => handleDeleteMenuItem(index)}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            }
+                          >
+                            <ListItemText
+                              primary={item.label}
+                              secondary={item.path}
+                            />
+                          </ListItem>
+                        ))}
+                      </Box>
                     </>
                   ) : (
                     <></>

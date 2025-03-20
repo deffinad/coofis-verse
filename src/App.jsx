@@ -13,6 +13,8 @@ import SwapyKocak from "./pages/SwapyKocak";
 import LayoutManagerv2 from "./pages/LayoutManagerv2";
 import ModulComponents from "./pages/ModulComponents";
 import LayoutManagerv3 from "./pages/LayoutManagerv3";
+import Hasil from "./pages/Hasil";
+import Hasilv2 from "./pages/Hasilv2";
 
 function App() {
   return (
@@ -30,7 +32,8 @@ function App() {
           <Route path="/layoutmanagerv3" element={<LayoutManagerv3 />} />
           <Route path="/modulcomponent" element={<ModulComponents />} />
           
-          <Route path="/hasilboy" element={<ModulComponents />} />
+          <Route path="/hasil" element={<Hasil />} />
+          <Route path="/hasilv2" element={<Hasilv2 />} />
 
           <Route path="/kocak" element={<KocakLayout />} />
           <Route path="/swapylagi" element={<Swapylagi />} />

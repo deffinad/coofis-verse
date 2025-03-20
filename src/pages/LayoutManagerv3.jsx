@@ -14,6 +14,7 @@ import { createSwapy } from "swapy";
 import { DndContext } from "@dnd-kit/core";
 import DroppableGrid from "../DroppableGrid";
 import DraggableComponent from "../DraggableComponent";
+import { Height } from "@mui/icons-material";
 
 const LOCAL_STORAGE_KEY = "inputProps";
 
@@ -23,45 +24,10 @@ const LayoutManagerv3 = () => {
   const [selectedGrid, setSelectedGrid] = useState(null);
   const containerRefs = useRef({});
   const [newSize, setNewSize] = useState(selectedGrid?.size || 12);
+  const [newHeight, setNewHeight] = useState(selectedGrid?.height || "100%");
   const [currentPage, setCurrentPage] = useState(null);
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
-
-  const [value, setValue] = useState("");
-  const [inputProps, setInputProps] = useState(null);
-  const [editedProps, setEditedProps] = useState(null);
-
-  // Load data dari Local Storage saat komponen pertama kali dirender
-  useEffect(() => {
-    const storedProps = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedProps) {
-      const parsedProps = JSON.parse(storedProps);
-      setInputProps(parsedProps);
-      setEditedProps(parsedProps);
-      setValue(parsedProps.value || "");
-    }
-  }, []);
-
-  // Fungsi untuk menangkap props saat input diklik
-  const handleInspect = (props) => {
-    setInputProps(props);
-    setEditedProps(props);
-  };
-
-  // Fungsi untuk mengubah nilai di form properties
-  const handleChangeProps = (key, newValue) => {
-    setEditedProps((prevProps) => ({
-      ...prevProps,
-      [key]: newValue,
-    }));
-  };
-
-  // Fungsi untuk menyimpan perubahan props ke state dan local storage
-  const handleSaveProps = () => {
-    setInputProps(editedProps);
-    setValue(editedProps.value);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(editedProps)); // Simpan ke Local Storage
-  };
 
   // get json from local storage
   useEffect(() => {
@@ -158,11 +124,10 @@ const LayoutManagerv3 = () => {
     if (layoutIndex === -1) return;
 
     const newGrid = {
-      id: `grid${currentPageIndex + 1}${layoutIndex + 1}${
-        pages[currentPageIndex].layouts[layoutIndex].children.length + 1
-      }`,
+      id: `grid-${Date.now()}`,
       type: "grid",
       size: 12,
+      height: 80,
       children: [],
     };
 
@@ -249,7 +214,7 @@ const LayoutManagerv3 = () => {
     setSelectedGrid(null);
   };
 
-  const updateComponentSize = (componentId, newSize) => {
+  const updateComponentSize = (componentId, newSize, newHeight) => {
     setPages((prevPages) =>
       prevPages.map((page) => ({
         ...page,
@@ -258,24 +223,31 @@ const LayoutManagerv3 = () => {
           children: updateSizeRecursively(
             layout.children,
             componentId,
-            newSize
+            newSize,
+            newHeight
           ),
         })),
       }))
     );
   };
 
-  const updateSizeRecursively = (components, componentId, newSize) => {
+  const updateSizeRecursively = (
+    components,
+    componentId,
+    newSize,
+    newHeight
+  ) => {
     return components.map((comp) =>
       comp.id === componentId
-        ? { ...comp, size: newSize }
+        ? { ...comp, size: newSize, height: newHeight }
         : comp.type === "grid"
         ? {
             ...comp,
             children: updateSizeRecursively(
               comp.children,
               componentId,
-              newSize
+              newSize,
+              newHeight
             ),
           }
         : comp
@@ -348,7 +320,11 @@ const LayoutManagerv3 = () => {
         Input: {
           id: `input-${Date.now()}`,
           type: "Input",
-          placeholder: "Enter text",
+          name: "userInput",
+          label: "Your Name",
+          value: "",
+          placeholder: "Enter your name",
+          tipe: "text",
         },
         ArsipCuti: {
           id: `arsipcuti-${Date.now()}`,
@@ -383,10 +359,21 @@ const LayoutManagerv3 = () => {
     }
   };
 
+  const gridRef = useRef(null);
+  const [atribut, setAtribute] = useState();
+
+  const handleGridClick = () => {
+    if (gridRef.current) {
+      const height = gridRef.current.getBoundingClientRect().height;
+      setNewHeight(height);
+    }
+  };
+  console.log("yagesya", atribut);
   const renderComponents = (components, layoutId, layoutidx) =>
     components.map((comp) => {
       return (
         <Grid
+          ref={gridRef}
           item
           xs={comp.size}
           key={comp.id}
@@ -400,14 +387,17 @@ const LayoutManagerv3 = () => {
               setSelectedLayout(layoutId);
               setSelectedGrid(comp);
               setNewSize(comp.size);
+              setNewHeight(comp.height);
+              setAtribute(comp.children[0]);
             }}
             selectedGrid={selectedGrid}
-            size={comp.size}
+            height={comp.height}
           >
             {comp.children && comp.children.length > 0 ? (
               comp.children.map((child) =>
                 React.createElement(Components?.[child.type], {
                   key: child.id,
+                  ...child,
                 })
               )
             ) : (
@@ -420,6 +410,65 @@ const LayoutManagerv3 = () => {
 
   console.log(pages);
 
+  const [formData, setFormData] = useState(atribut);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    const payload = {
+      id: atribut?.id,
+      label: formData?.label,
+      name: formData?.name,
+      placeholder: formData?.placeholder,
+      tipe: formData?.tipe,
+      value: formData?.value,
+    };
+    console.log("Data yang disimpan:", payload);
+
+    setPages((prevPages) => {
+      return prevPages.map((page) => {
+        console.log("Mapping Page:", page);
+        return {
+          ...page,
+          layouts: page.layouts.map((layout) => {
+            console.log("Mapping Layout:", layout);
+            return {
+              ...layout,
+              children: layout.children.map((grid) => {
+                console.log("Mapping Grid:", grid);
+                if (grid.id === selectedGrid?.id) {
+                  console.log("Grid yang dipilih:", grid);
+                  return {
+                    ...grid,
+                    children: grid.children.map((child) => {
+                      console.log("Mapping Child:", child);
+                      if (child.id === payload?.id) {
+                        console.log("Child yang diupdate:", child);
+                        return {
+                          ...child,
+                          label: payload?.label,
+                          name: payload?.name,
+                          placeholder: payload?.placeholder,
+                          tipe: payload?.tipe,
+                          value: payload?.value,
+                        };
+                      }
+                      return child;
+                    }),
+                  };
+                }
+                return grid;
+              }),
+            };
+          }),
+        };
+      });
+    });
+  };
+  console.log("awikawok", formData);
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <Box sx={{ display: "flex" }}>
@@ -551,7 +600,7 @@ const LayoutManagerv3 = () => {
                       setSelectedLayout(layout.id);
                       setSelectedLayoutIndex(layoutidx);
                       setSelectedGrid(null);
-                      setEditedProps(null);
+                      setAtribute(null);
                     }}
                   >
                     <Grid container spacing={2}>
@@ -600,7 +649,11 @@ const LayoutManagerv3 = () => {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  updateComponentSize(selectedGrid.id, parseInt(newSize));
+                  updateComponentSize(
+                    selectedGrid.id,
+                    parseInt(newSize),
+                    parseInt(newHeight)
+                  );
                 }}
               >
                 <TextField
@@ -609,8 +662,16 @@ const LayoutManagerv3 = () => {
                   fullWidth
                   value={newSize}
                   onChange={(e) => setNewSize(e.target.value)}
-                  sx={{ mt: 2 }}
+                  sx={{ mt: 2, mb: 2 }}
                 />
+                {/* <TextField
+                  label="Ubah Height"
+                  type="number"
+                  fullWidth
+                  value={newHeight}
+                  onChange={(e) => setNewHeight(e.target.value)}
+                  sx={{ mt: 2, mb: 2 }}
+                /> */}
                 <Button
                   type="submit"
                   variant="contained"
@@ -621,49 +682,72 @@ const LayoutManagerv3 = () => {
                 </Button>
               </form>
             )}
-            {editedProps ? (
-              <Box
-                component="form"
-                sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-              >
-                <Typography sx={{ mt: 4 }}>Layout: {selectedLayout}</Typography>
-                <Typography>Component: {selectedGrid?.id}</Typography>
-                {Object.keys(editedProps).map((key) =>
-                  key === "type" ? (
-                    <TextField
-                      select
-                      key={key}
-                      label={key}
-                      value={editedProps[key]}
-                      onChange={(e) => handleChangeProps(key, e.target.value)}
-                      size="small"
-                    >
-                      <MenuItem value="text">text</MenuItem>
-                      <MenuItem value="number">number</MenuItem>
-                    </TextField>
+            {atribut && (
+              <>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body1">
+                    <strong>ID:</strong> {atribut?.id}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Type:</strong> {atribut?.type}
+                  </Typography>
+                  {/* Editable Fields */}
+                  {atribut.type === "Input" ? (
+                    <>
+                      <TextField
+                        label="Name"
+                        name="name"
+                        value={formData?.name || ""}
+                        onChange={handleInputChange}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                      />
+                      <TextField
+                        label="Label"
+                        name="label"
+                        value={formData?.label || ""}
+                        onChange={handleInputChange}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                      />
+                      <TextField
+                        label="Placeholder"
+                        name="placeholder"
+                        value={formData?.placeholder || ""}
+                        onChange={handleInputChange}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                      />
+                      <TextField
+                        label="Tipe"
+                        name="tipe"
+                        value={formData?.tipe || ""}
+                        onChange={handleInputChange}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                      />
+                      <TextField
+                        label="Value"
+                        name="value"
+                        value={formData?.value || ""}
+                        onChange={handleInputChange}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                      />
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSubmit}
+                        sx={{ mt: 2 }}
+                      >
+                        Simpan
+                      </Button>
+                    </>
                   ) : (
-                    <TextField
-                      key={key}
-                      label={key}
-                      value={editedProps[key]}
-                      onChange={(e) => handleChangeProps(key, e.target.value)}
-                      size="small"
-                    />
-                  )
-                )}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={handleSaveProps}
-                >
-                  Save
-                </Button>
-              </Box>
-            ) : (
-              <Typography variant="body2">
-                {/* Klik input untuk melihat props */}
-              </Typography>
+                    <></>
+                  )}
+                </Box>
+              </>
             )}
             <Button
               variant="contained"

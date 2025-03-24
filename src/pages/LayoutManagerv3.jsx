@@ -27,8 +27,11 @@ const LayoutManagerv3 = () => {
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [selectedGrid, setSelectedGrid] = useState(null);
   const containerRefs = useRef({});
-  const [newSize, setNewSize] = useState(selectedGrid?.size || 12);
-  const [newHeight, setNewHeight] = useState(selectedGrid?.height || "100%");
+  const gridRef = useRef(null);
+  const [atribut, setAtribute] = useState();
+  const [formData, setFormData] = useState(atribut);
+  const [newSize, setNewSize] = useState();
+  const [newHeight, setNewHeight] = useState();
   const [currentPage, setCurrentPage] = useState(null);
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
@@ -236,27 +239,22 @@ const LayoutManagerv3 = () => {
     );
   };
 
-  const updateSizeRecursively = (
-    components,
-    componentId,
-    newSize,
-    newHeight
-  ) => {
-    return components.map((comp) =>
-      comp.id === componentId
-        ? { ...comp, size: newSize, height: newHeight }
-        : comp.type === "grid"
-        ? {
-            ...comp,
-            children: updateSizeRecursively(
-              comp.children,
-              componentId,
-              newSize,
-              newHeight
-            ),
-          }
-        : comp
-    );
+  const updateSizeRecursively = (components, gridId, newSize, newHeight) => {
+    return components.map((comp) => {
+      const updatedComp =
+        comp.id === gridId ? { ...comp, size: newSize } : comp;
+
+      if (updatedComp.type === "grid") {
+        return {
+          ...updatedComp,
+          children: updatedComp.children.map((child) =>
+            child.id === atribut?.id ? { ...child, height: newHeight } : child
+          ),
+        };
+      }
+
+      return updatedComp;
+    });
   };
 
   const saveOrder = (layoutIndex) => {
@@ -303,8 +301,6 @@ const LayoutManagerv3 = () => {
 
   const handleDragEnd = (event) => {
     const { over, active } = event;
-    // console.log("Event Drop:", event);
-
     if (over) {
       const gridId = over.id;
 
@@ -319,6 +315,7 @@ const LayoutManagerv3 = () => {
             { label: "About", path: "/about" },
             { label: "Contact", path: "/contact" },
           ],
+          height: 65,
         },
         Ratings: { id: `ratings-${Date.now()}`, type: "Ratings", score: 5 },
         ArsipCuti: {
@@ -368,9 +365,6 @@ const LayoutManagerv3 = () => {
     }
   };
 
-  const gridRef = useRef(null);
-  const [atribut, setAtribute] = useState();
-
   const renderComponents = (components, layoutId, layoutidx) =>
     components.map((comp) => {
       return (
@@ -389,7 +383,7 @@ const LayoutManagerv3 = () => {
               setSelectedLayout(layoutId);
               setSelectedGrid(comp);
               setNewSize(comp.size);
-              setNewHeight(comp.height);
+              setNewHeight(comp.children[0].height);
               setAtribute(comp.children[0]);
             }}
             selectedGrid={selectedGrid}
@@ -409,8 +403,6 @@ const LayoutManagerv3 = () => {
         </Grid>
       );
     });
-
-  const [formData, setFormData] = useState(atribut);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -469,8 +461,36 @@ const LayoutManagerv3 = () => {
     });
   };
 
+  const handleUpdateHeightComponent = () => {
+    setPages((prevPages) =>
+      prevPages.map((page) => ({
+        ...page,
+        layouts: page.layouts.map((layout) => ({
+          ...layout,
+          children: layout.children.map((grid) => {
+            if (grid.id === selectedGrid?.id) {
+              return {
+                ...grid,
+                children: grid.children.map((child) => {
+                  if (child.id === atribut?.id) {
+                    return {
+                      ...child,
+                      height: newHeight,
+                    };
+                  }
+                  return child;
+                }),
+              };
+            }
+            return grid;
+          }),
+        })),
+      }))
+    );
+  };
+
   const handleAddMenuItem = () => {
-    if (newMenuItem.label && newMenuItem.path) {
+    if (newMenuItem.label && newMenuItem.path && newHeight !== undefined) {
       setNewMenuItem({ label: "", path: "" });
 
       setPages((prevPages) =>
@@ -478,27 +498,31 @@ const LayoutManagerv3 = () => {
           ...page,
           layouts: page.layouts.map((layout) => ({
             ...layout,
-            children: layout.children.map((grid) =>
-              grid.id === selectedGrid?.id
-                ? {
-                    ...grid,
-                    children: grid.children.map((child) =>
-                      child.id === atribut?.id
-                        ? {
-                            ...child,
-                            menuItems: [
-                              ...(child.menuItems || []),
-                              newMenuItem,
-                            ],
-                          }
-                        : child
-                    ),
-                  }
-                : grid
-            ),
+            children: layout.children.map((grid) => {
+              if (grid.id === selectedGrid?.id) {
+                console.log("Grid ditemukan:", grid);
+                return {
+                  ...grid,
+                  children: grid.children.map((child) => {
+                    if (child.id === atribut?.id) {
+                      console.log("Child ditemukan, update height:", newHeight);
+                      return {
+                        ...child,
+                        menuItems: [...(child.menuItems || []), newMenuItem],
+                        height: newHeight,
+                      };
+                    }
+                    return child;
+                  }),
+                };
+              }
+              return grid;
+            }),
           })),
         }))
       );
+    } else {
+      console.error("Label, Path, atau Height tidak valid.");
     }
   };
 
@@ -715,6 +739,7 @@ const LayoutManagerv3 = () => {
                     parseInt(newSize),
                     parseInt(newHeight)
                   );
+                  // handleUpdateHeightComponent();
                 }}
               >
                 <TextField
@@ -725,14 +750,14 @@ const LayoutManagerv3 = () => {
                   onChange={(e) => setNewSize(e.target.value)}
                   sx={{ mt: 2, mb: 2 }}
                 />
-                {/* <TextField
+                <TextField
                   label="Ubah Height"
                   type="number"
                   fullWidth
                   value={newHeight}
                   onChange={(e) => setNewHeight(e.target.value)}
                   sx={{ mt: 2, mb: 2 }}
-                /> */}
+                />
                 <Button
                   type="submit"
                   variant="contained"

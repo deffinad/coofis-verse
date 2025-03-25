@@ -1,48 +1,82 @@
 import { Routes, Route } from "react-router-dom";
-import Rating from "./pages/Rating";
-
-import Swapydynamic from "./pages/Swapydynamic";
-import Swapylagi from "./pages/Swapylagi";
-import KocakLayout from "./pages/kocak";
-import SwapyWithSideBar from "./pages/SwapyWithSideBar";
-import SwapyWithSideBarV2 from "./pages/SwapyWithSideBarV2";
-import SwapyWithSideBarv3 from "./pages/SwapyWithSideBarv3";
-import SwapyWithSideBarv4 from "./pages/SwapyWithSideBarv4";
-import LayoutManager from "./pages/LayoutManager";
-import SwapyKocak from "./pages/SwapyKocak";
-import LayoutManagerv2 from "./pages/LayoutManagerv2";
-import ModulComponents from "./pages/ModulComponents";
 import LayoutManagerv3 from "./pages/LayoutManagerv3";
-import Hasil from "./pages/Hasil";
-import Hasilv2 from "./pages/Hasilv2";
 import LayoutManagerv4 from "./pages/LayoutManagerv4";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import ProtectedRoute from "./pages/auth/ProtectedRoute";
+import Hasilv2 from "./pages/Hasilv2";
+import { isAuthenticated } from "./services/authServices";
+import { Navigate } from "react-router-dom";
+
+const ProtectedLoginRoute = ({ children }) => {
+  return isAuthenticated() ? <Navigate to="/layoutmanagerv4" /> : children;
+};
 
 function App() {
   return (
-    <>
-        <Routes>
-          <Route path="/swapydykocak" element={<SwapyKocak />} />
-          <Route path="/swapydynamic" element={<Swapydynamic />} />
-          <Route path="/swapysidebar" element={<SwapyWithSideBar />} />
-          <Route path="/swapysidebarv2" element={<SwapyWithSideBarV2 />} />
-          <Route path="/swapysidebarv3" element={<SwapyWithSideBarv3 />} />
-          <Route path="/swapysidebarv4" element={<SwapyWithSideBarv4 />} />
-          <Route path="/layoutmanager" element={<LayoutManager />} />
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <ProtectedLoginRoute>
+            <Login />
+          </ProtectedLoginRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <ProtectedLoginRoute>
+            <Register />
+          </ProtectedLoginRoute>
+        }
+      />
 
-          <Route path="/layoutmanagerv2" element={<LayoutManagerv2 />} />
-          <Route path="/layoutmanagerv3" element={<LayoutManagerv3 />} />
-          <Route path="/layoutmanagerv4" element={<LayoutManagerv4 />} />
-          <Route path="/modulcomponent" element={<ModulComponents />} />
-          
-          <Route path="/hasil" element={<Hasil />} />
-          <Route path="/hasilv2" element={<Hasilv2 />} />
-
-          <Route path="/kocak" element={<KocakLayout />} />
-          <Route path="/swapylagi" element={<Swapylagi />} />
-          <Route path="/rating" element={<Rating />} />
-        </Routes>
-    </>
+      <Route
+        path="/layoutmanagerv3"
+        element={
+          <ProtectedRoute>
+            <LayoutManagerv3 />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/layoutmanagerv4"
+        element={
+          <ProtectedRoute>
+            <LayoutManagerv4 />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hasil"
+        element={
+          <ProtectedRoute>
+            <Hasilv2 />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 
 export default App;
+
+{
+  /* <Route path="/swapydykocak" element={<SwapyKocak />} />
+<Route path="/swapydynamic" element={<Swapydynamic />} />
+<Route path="/swapysidebar" element={<SwapyWithSideBar />} />
+<Route path="/swapysidebarv2" element={<SwapyWithSideBarV2 />} />
+<Route path="/swapysidebarv3" element={<SwapyWithSideBarv3 />} />
+<Route path="/swapysidebarv4" element={<SwapyWithSideBarv4 />} />
+<Route path="/layoutmanager" element={<LayoutManager />} />
+
+<Route path="/layoutmanagerv2" element={<LayoutManagerv2 />} />
+<Route path="/modulcomponent" element={<ModulComponents />} />
+
+<Route path="/hasil" element={<Hasil />} />
+
+<Route path="/kocak" element={<KocakLayout />} />
+<Route path="/swapylagi" element={<Swapylagi />} />
+<Route path="/rating" element={<Rating />} /> */
+}

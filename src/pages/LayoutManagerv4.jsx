@@ -21,8 +21,10 @@ import { KuotaCuti2 } from "../json/DocsKuotaCuti2";
 import { DateData } from "../json/DateData";
 import { DataKuota } from "../json/DocsKuota";
 import { DataCuti } from "../json/DocsCuti";
+import { getUserByUsername } from "../services/authServices";
 
 const LayoutManagerv4 = () => {
+  const [user, setUser] = useState(null);
   const [pages, setPages] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [selectedGrid, setSelectedGrid] = useState(null);
@@ -36,6 +38,27 @@ const LayoutManagerv4 = () => {
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
   const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
+
+  // get user by username
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const username = localStorage.getItem("username");
+
+      if (!username) {
+        setError("Username not found. Please login.");
+        return;
+      }
+
+      try {
+        const userData = await getUserByUsername(username);
+        setUser(userData.user);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // get json from local storage
   useEffect(() => {
@@ -538,6 +561,11 @@ const LayoutManagerv4 = () => {
       <Box sx={{ display: "flex" }}>
         <Drawer variant="permanent" anchor="left" sx={{ width: 240 }}>
           <Box sx={{ width: 240, p: 2 }}>
+            <Typography variant="h5" gutterBottom>
+              {user?.username}
+            </Typography>
+          </Box>
+          <Box sx={{ width: 240, p: 2 }}>
             <Button variant="contained" fullWidth onClick={addPage}>
               Tambah Halaman
             </Button>
@@ -662,6 +690,32 @@ const LayoutManagerv4 = () => {
                 {page.name}
               </Button>
             ))}
+
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mt: 2 }}
+              onClick={() => {
+                window.open("/hasil", "_blank"); 
+              }}
+            >
+              Preview
+            </Button>
+
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mt: 2 }}
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("username");
+                window.location.href = "/login";
+              }}
+            >
+              Logout
+            </Button>
           </Box>
         </Drawer>
 

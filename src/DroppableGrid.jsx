@@ -2,7 +2,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { Height } from "@mui/icons-material";
 import { Grid } from "@mui/material";
 
-const DroppableGrid = ({ id, children, onClick, selectedGrid, height }) => {
+const DroppableGrid = ({ id, children, onClick, selectedGrid }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <Grid
@@ -17,8 +17,6 @@ const DroppableGrid = ({ id, children, onClick, selectedGrid, height }) => {
         minHeight: "50px",
         borderRadius: "10px",
       }}
-      // minHeight={height}
-      // height={height}
       data-swapy-item={id}
       onClick={(e) => {
         e.stopPropagation();

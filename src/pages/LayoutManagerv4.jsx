@@ -6,23 +6,23 @@ import {
   Typography,
   Grid,
   TextField,
-  MenuItem,
   ListItem,
   ListItemText,
   IconButton,
 } from "@mui/material";
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
-
 import { DndContext } from "@dnd-kit/core";
 import DroppableGrid from "../DroppableGrid";
 import DraggableComponent from "../DraggableComponent";
-import { Height } from "@mui/icons-material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { KuotaCuti1 } from "../json/DocsKuotaCuti1";
+import { KuotaCuti2 } from "../json/DocsKuotaCuti2";
+import { DateData } from "../json/DateData";
+import { DataKuota } from "../json/DocsKuota";
+import { DataCuti } from "../json/DocsCuti";
 
-const LOCAL_STORAGE_KEY = "inputProps";
-
-const LayoutManagerv3 = () => {
+const LayoutManagerv4 = () => {
   const [pages, setPages] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [selectedGrid, setSelectedGrid] = useState(null);
@@ -331,12 +331,35 @@ const LayoutManagerv3 = () => {
           id: `arsipcuti-${Date.now()}`,
           type: "ArsipCuti",
         },
+        KuotaCutiSaatIni: {
+          id: `kuotacutisaatini-${Date.now()}`,
+          config1: KuotaCuti1,
+          config2: KuotaCuti2,
+          type: "KuotaCutiSaatIni",
+        },
+        ListDate: {
+          id: `listdate-${Date.now()}`,
+          config: DateData,
+          type: "ListDate",
+        },
+        MonitoringKuota: {
+          id: `monitoringkuota-${Date.now()}`,
+          config: DataKuota,
+          type: "MonitoringKuota",
+        },
+        StatusDokumenCutiDashboard: {
+          id: `statusdokumencutidashboard-${Date.now()}`,
+          config: DataCuti,
+          type: "StatusDokumenCutiDashboard",
+        },
       };
 
       const newComponent = componentAttributes[componentType] || {
         id: `unknown-${Date.now()}`,
         type: "Unknown",
       };
+
+      console.log(newComponent);
 
       setPages((prevPages) =>
         prevPages.map((page) => ({
@@ -360,7 +383,6 @@ const LayoutManagerv3 = () => {
     }
   };
 
-  
   const renderComponents = (components, layoutId, layoutidx) =>
     components.map((comp) => {
       return (
@@ -379,7 +401,6 @@ const LayoutManagerv3 = () => {
               setSelectedLayout(layoutId);
               setSelectedGrid(comp);
               setNewSize(comp.size);
-              // setNewHeight(comp.children[0].height || 0);
               setAtribute(comp.children[0]);
             }}
             selectedGrid={selectedGrid}
@@ -447,34 +468,6 @@ const LayoutManagerv3 = () => {
         };
       });
     });
-  };
-
-  const handleUpdateHeightComponent = () => {
-    setPages((prevPages) =>
-      prevPages.map((page) => ({
-        ...page,
-        layouts: page.layouts.map((layout) => ({
-          ...layout,
-          children: layout.children.map((grid) => {
-            if (grid.id === selectedGrid?.id) {
-              return {
-                ...grid,
-                children: grid.children.map((child) => {
-                  if (child.id === atribut?.id) {
-                    return {
-                      ...child,
-                      height: newHeight,
-                    };
-                  }
-                  return child;
-                }),
-              };
-            }
-            return grid;
-          }),
-        })),
-      }))
-    );
   };
 
   const handleAddMenuItem = () => {
@@ -574,27 +567,18 @@ const LayoutManagerv3 = () => {
               <Button
                 variant="outlined"
                 color="info"
+                fullWidth
                 disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ width: "100%" }}
               >
                 Ratings
               </Button>
             </DraggableComponent>
-            {/* <DraggableComponent id="Input">
-              <Button
-                variant="outlined"
-                color="info"
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ width: "100%", mt: 2, mb: 2 }}
-              >
-                Input
-              </Button>
-            </DraggableComponent> */}
             <DraggableComponent id="Navbar">
               <Button
                 variant="outlined"
                 fullWidth
                 disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ mt: 1 }}
               >
                 Navbar
               </Button>
@@ -604,9 +588,49 @@ const LayoutManagerv3 = () => {
                 variant="outlined"
                 fullWidth
                 disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 2 }}
+                sx={{ mt: 1 }}
               >
                 ArsipCuti
+              </Button>
+            </DraggableComponent>
+            <DraggableComponent id="KuotaCutiSaatIni">
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ mt: 1 }}
+              >
+                Kuota Cuti
+              </Button>
+            </DraggableComponent>
+            <DraggableComponent id="ListDate">
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ mt: 1 }}
+              >
+                List Date
+              </Button>
+            </DraggableComponent>
+            <DraggableComponent id="MonitoringKuota">
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ mt: 1 }}
+              >
+                Monitoring Kuota
+              </Button>
+            </DraggableComponent>
+            <DraggableComponent id="StatusDokumenCutiDashboard">
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{ mt: 1 }}
+              >
+                Status Dokumen Cuti
               </Button>
             </DraggableComponent>
           </Box>
@@ -725,7 +749,6 @@ const LayoutManagerv3 = () => {
                     parseInt(newSize),
                     parseInt(newHeight)
                   );
-                  // handleUpdateHeightComponent();
                 }}
               >
                 <TextField
@@ -896,4 +919,4 @@ const LayoutManagerv3 = () => {
   );
 };
 
-export default LayoutManagerv3;
+export default LayoutManagerv4;

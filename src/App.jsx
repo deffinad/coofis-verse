@@ -15,6 +15,7 @@ import ModulComponents from "./pages/ModulComponents";
 import LayoutManagerv3 from "./pages/LayoutManagerv3";
 import Hasil from "./pages/Hasil";
 import Hasilv2 from "./pages/Hasilv2";
+import LayoutManagerv4 from "./pages/LayoutManagerv4";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
 
           <Route path="/layoutmanagerv2" element={<LayoutManagerv2 />} />
           <Route path="/layoutmanagerv3" element={<LayoutManagerv3 />} />
+          <Route path="/layoutmanagerv4" element={<LayoutManagerv4 />} />
           <Route path="/modulcomponent" element={<ModulComponents />} />
           
           <Route path="/hasil" element={<Hasil />} />

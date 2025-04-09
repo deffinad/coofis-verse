@@ -35,25 +35,25 @@ function App() {
       <Route
         path="/layoutmanagerv3"
         element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <LayoutManagerv3 />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         }
       />
       <Route
         path="/layoutmanagerv4"
         element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <LayoutManagerv4 />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         }
       />
       <Route
         path="/hasil"
         element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <Hasilv2 />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         }
       />
     </Routes>

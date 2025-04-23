@@ -1,9 +1,10 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useRef, useState } from 'react'
 import { FONTS, SPACING } from '@/shared/AppConst'
-import { Box, Divider, Grid, Stack, Typography } from '@mui/material'
-import { grey } from '@mui/material/colors'
+import { Box, Button, Divider, Grid, IconButton, Stack, Tooltip, Typography } from '@mui/material'
+import { grey, red } from '@mui/material/colors'
 import Card from 'remoteApp/Card'
-import { Add, DragIndicator, MoreVert } from '@mui/icons-material'
+import { Add, DeleteOutline, DragIndicator, MoreVert } from '@mui/icons-material'
 import { DndContext } from '@dnd-kit/core'
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
 import { dataComponents } from '@/json/DocsComponent'
@@ -16,84 +17,18 @@ const WIDTH_DRAWER = 250
 const HEIGHT_NAVBAR = 64
 
 const Layout = () => {
-    const [pages, setPages] = useState([]);
-    const [selectedLayout, setSelectedLayout] = useState(null);
-    const containerRefs = useRef({});
     const gridRef = useRef(null);
-    const [atribut, setAtribute] = useState();
-    const [formData, setFormData] = useState(atribut);
-    const [newSize, setNewSize] = useState();
-    const [currentPage, setCurrentPage] = useState(null);
+    const containerRefs = useRef({});
     const [temp, setTemp] = useState();
     const [show, setShow] = useState(true);
+    const [pages, setPages] = useState([]);
+    const [newSize, setNewSize] = useState();
+    const [atribut, setAtribute] = useState();
+    const [formData, setFormData] = useState(atribut);
     const [lastScrollY, setLastScrollY] = useState(0);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-
-            if (currentScrollY > lastScrollY) {
-                setShow(false); // scrolling down
-            } else {
-                setShow(true); // scrolling up
-            }
-
-            setLastScrollY(currentScrollY);
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
-
-    // get json from local storage
-    useEffect(() => {
-        const savedPages = localStorage.getItem("savedPages");
-        const currentpages = localStorage.getItem("curentPages");
-        if (savedPages) {
-            setPages(JSON.parse(savedPages));
-            console.log(JSON.parse(savedPages))
-            setCurrentPage(JSON.parse(currentpages));
-        }
-    }, []);
-
-    // save json to local storage
-    useEffect(() => {
-        localStorage.setItem("savedPages", JSON.stringify(pages));
-        localStorage.setItem("curentPages", JSON.stringify(currentPage));
-    }, [pages, currentPage]);
-
-    // create swapy
-    useEffect(() => {
-        if (!currentPage) return;
-
-        const activePage = pages.find((p) => p.id === currentPage);
-        if (!activePage) return;
-
-        activePage.layouts.forEach((layout) => {
-            if (!containerRefs.current[layout.id]) return;
-
-            if (containerRefs.current[layout.id].swapy?.destroy) {
-                containerRefs.current[layout.id].swapy.destroy();
-            }
-
-            containerRefs.current[layout.id].swapy = createSwapy(
-                containerRefs.current[layout.id]
-            );
-
-            containerRefs.current[layout.id].swapy.onSwap((event) => {
-                console.log(`Swapped in ${layout.id}:`, event);
-                setTemp(event);
-            });
-        });
-
-        return () => {
-            activePage.layouts.forEach((layout) => {
-                if (containerRefs.current[layout.id]?.swapy?.destroy) {
-                    containerRefs.current[layout.id].swapy.destroy();
-                }
-            });
-        };
-    }, [currentPage, pages]);
+    const [currentPage, setCurrentPage] = useState(null);
+    const [selectedGrid, setSelectedGrid] = useState(null);
+    const [selectedLayout, setSelectedLayout] = useState(null);
 
     // add page
     const addPage = () => {
@@ -116,14 +51,84 @@ const Layout = () => {
             name: "Layout",
             size: 12,
             height: 100,
+            children: [],
         };
         const tempPages = pages.map((page, idx) =>
             idx === currentPageIndex
                 ? { ...page, layouts: [...page.layouts, newLayout] }
                 : page
         )
-        console.log(tempPages)
         setPages(tempPages);
+    };
+
+    // add grid inside layout
+    const addGrid = () => {
+        if (!currentPage || !selectedLayout) return;
+
+        const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
+        if (currentPageIndex === -1) return;
+
+        const layoutIndex = pages[currentPageIndex].layouts.findIndex(
+            (l) => l.id === selectedLayout
+        );
+        if (layoutIndex === -1) return;
+
+        const newGrid = {
+            id: `grid-${Date.now()}`,
+            type: "grid",
+            size: 12,
+            height: 80,
+            children: [],
+        };
+
+        setPages((prevPages) =>
+            prevPages.map((page, pIdx) =>
+                pIdx === currentPageIndex
+                    ? {
+                        ...page,
+                        layouts: page.layouts.map((layout, lIdx) =>
+                            lIdx === layoutIndex
+                                ? { ...layout, children: [...layout.children, newGrid] }
+                                : layout
+                        ),
+                    }
+                    : page
+            )
+        );
+    };
+
+    // delete grid
+    const deleteGrid = () => {
+        if (!selectedGrid || !currentPage || !selectedLayout) return;
+
+        const removeComponent = (components) => {
+            const updatedComponents = components
+                .filter((comp) => comp.id !== selectedGrid?.id)
+                .map((comp) =>
+                    comp.type === "grid"
+                        ? { ...comp, children: removeComponent(comp.children) }
+                        : comp
+                );
+            return updatedComponents;
+        };
+
+        setPages((prevPages) => {
+            const newPages = prevPages.map((page) =>
+                page.id === currentPage
+                    ? {
+                        ...page,
+                        layouts: page.layouts.map((layout) =>
+                            layout.id === selectedLayout
+                                ? { ...layout, children: removeComponent(layout.children) }
+                                : layout
+                        ),
+                    }
+                    : page
+            );
+            return newPages;
+        });
+
+        setSelectedGrid(null);
     };
 
     // delete page
@@ -270,23 +275,23 @@ const Layout = () => {
                 },
                 KuotaCutiSaatIni: {
                     id: `kuotacutisaatini-${Date.now()}`,
-                    config1: KuotaCuti1,
-                    config2: KuotaCuti2,
+                    config1: {},
+                    config2: {},
                     type: "KuotaCutiSaatIni",
                 },
                 ListDate: {
                     id: `listdate-${Date.now()}`,
-                    config: DateData,
+                    config: {},
                     type: "ListDate",
                 },
                 MonitoringKuota: {
                     id: `monitoringkuota-${Date.now()}`,
-                    config: DataKuota,
+                    config: {},
                     type: "MonitoringKuota",
                 },
                 StatusDokumenCutiDashboard: {
                     id: `statusdokumencutidashboard-${Date.now()}`,
-                    config: DataCuti,
+                    config: {},
                     type: "StatusDokumenCutiDashboard",
                 },
             };
@@ -338,8 +343,9 @@ const Layout = () => {
                                 setSelectedLayout(layoutId);
                                 setNewSize(comp.size);
                                 setAtribute(comp.children[0]);
+                                setSelectedGrid(comp);
                             }}
-                        // selectedGrid={selectedGrid}
+                            selectedGrid={selectedGrid}
                         >
                             {comp.children && comp.children.length > 0 ? (
                                 comp.children.map((child) =>
@@ -425,6 +431,75 @@ const Layout = () => {
 
         return randomId
     }
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+
+            if (currentScrollY > lastScrollY) {
+                setShow(false); // scrolling down
+            } else {
+                setShow(true); // scrolling up
+            }
+
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
+
+    // get json from local storage
+    useEffect(() => {
+        const savedPages = localStorage.getItem("savedPages");
+        const currentpages = localStorage.getItem("curentPages");
+        if (savedPages) {
+            setPages(JSON.parse(savedPages));
+            setCurrentPage(JSON.parse(currentpages));
+        }
+    }, []);
+
+    // save json to local storage
+    useEffect(() => {
+        localStorage.setItem("savedPages", JSON.stringify(pages));
+        localStorage.setItem("curentPages", JSON.stringify(currentPage));
+    }, [pages, currentPage]);
+
+    // create swapy
+    useEffect(() => {
+        console.log('currentPage', currentPage);
+        console.log('pages', pages);
+
+        if (!currentPage) return;
+
+        const activePage = pages.find((p) => p.id === currentPage);
+        if (!activePage) return;
+
+        activePage.layouts.forEach((layout) => {
+            if (!containerRefs.current[layout.id]) return;
+
+            if (containerRefs.current[layout.id].swapy?.destroy) {
+                containerRefs.current[layout.id].swapy.destroy();
+            }
+
+            containerRefs.current[layout.id].swapy = createSwapy(
+                containerRefs.current[layout.id]
+            );
+
+            containerRefs.current[layout.id].swapy.onSwap((event) => {
+                console.log(`Swapped in ${layout.id}:`, event);
+                setTemp(event);
+            });
+        });
+
+        return () => {
+            activePage.layouts.forEach((layout) => {
+                if (containerRefs.current[layout.id]?.swapy?.destroy) {
+                    containerRefs.current[layout.id].swapy.destroy();
+                }
+            });
+        };
+    }, [currentPage, pages]);
 
     return (
         <DndContext onDragEnd={handleDragEnd}>
@@ -512,38 +587,105 @@ const Layout = () => {
                         </Stack>
                     </Card>
 
-                    <Stack padding={SPACING}>
+                    <Stack id="wrapperLayout" height={'100%'} padding={SPACING} onClick={() => setSelectedLayout(null)}>
                         {currentPage && (
                             <>
-                                {/* show layout */}
-                                {pages
-                                    .find((page, pageidx) => page.id === currentPage)
-                                    ?.layouts.map((layout, layoutidx) => (
+                                {
+                                    pages.find((page) => page.id === currentPage)?.layouts.length === 0 ? (
                                         <Box
-                                            ref={(el) => (containerRefs.current[layout.id] = el)}
-                                            key={layout.id}
                                             sx={{
-                                                border:
-                                                    selectedLayout === layout.id ? "1px solid green" : "",
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                border: "1px dashed green",
                                                 borderRadius: "10px",
                                                 padding: 1,
                                                 marginBottom: 2,
                                                 minHeight: "100px",
-                                                boxShadow:
-                                                    selectedLayout === layout.id
-                                                        ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
-                                                        : "0px 2px 5px rgba(0, 0, 0, 0.2)",
+                                                cursor: 'pointer',
                                             }}
-                                            onClick={() => {
-                                                setSelectedLayout(layout.id);
-                                                setAtribute(null);
-                                            }}
+                                            onClick={addLayout}
                                         >
-                                            <Grid container spacing={2}>
-                                                {/* {renderComponents(layout.children, layout.id, layoutidx)} */}
-                                            </Grid>
+                                            <Stack alignItems={'center'} justifyContent={'center'}>
+                                                <Typography color={'gray'}>No Layouts</Typography>
+                                            </Stack>
+                                            <Stack alignItems={'center'} justifyContent={'center'}>
+                                                <Typography color={'gray'}>Click To Add Layout</Typography>
+                                            </Stack>
                                         </Box>
-                                    ))}
+                                    ) : (
+                                        <>
+                                            {/* show layout */}
+                                            {pages
+                                                .find((page) => page.id === currentPage)
+                                                ?.layouts.map((layout, layoutidx) => (
+                                                    <Box
+                                                        ref={(el) => (containerRefs.current[layout.id] = el)}
+                                                        key={layout.id}
+                                                        sx={{
+                                                            position: selectedLayout === layout.id ? 'relative' : '',
+                                                            border:
+                                                                selectedLayout === layout.id ? "1px solid green" : "",
+                                                            borderRadius: "10px",
+                                                            padding: 1,
+                                                            marginBottom: 2,
+                                                            minHeight: "100px",
+                                                            boxShadow:
+                                                                selectedLayout === layout.id
+                                                                    ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
+                                                                    : "0px 2px 5px rgba(0, 0, 0, 0.2)",
+                                                        }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedLayout(layout.id);
+                                                            setAtribute(null);
+                                                        }}
+                                                    >
+                                                        {layout.children.length > 0 &&
+                                                            <Grid container spacing={2}>
+                                                                {renderComponents(layout?.children, layout.id, layoutidx)}
+                                                            </Grid>
+                                                        }
+                                                        {/* Delete Layout Button */}
+                                                        <Stack
+                                                            alignItems={'center'}
+                                                            justifyContent={'center'}
+                                                            sx={{
+                                                                position: 'absolute',
+                                                                top: 0,
+                                                                right: 0,
+                                                                cursor: 'pointer',
+                                                            }}
+                                                        >
+                                                            <Tooltip placement='bottom' title='Delete layout'>
+                                                                <IconButton onClick={deleteLayout}>
+                                                                    <DeleteOutline sx={{ '&:hover': { color: red[900] } }} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Stack>
+                                                        {/* Add Grid Button */}
+                                                        <Stack
+                                                            alignItems={'center'}
+                                                            justifyContent={'center'}
+                                                            sx={{
+                                                                position: 'absolute',
+                                                                bottom: -20,
+                                                                right: 13,
+                                                                left: 13,
+                                                            }}
+                                                        >
+                                                            <Stack alignItems={'center'} justifyContent={'center'} onClick={addGrid} sx={{ border: '1px solid black', borderRadius: '10px', cursor: 'pointer' }}>
+                                                                <Card sx={{ backgroundColor: 'white', color: 'black', paddingX: SPACING * 2, paddingY: 0.5 }}>
+                                                                    <Typography sx={{ fontSize: 14 }}>Add Layout (Item)</Typography>
+                                                                </Card>
+                                                            </Stack>
+                                                        </Stack>
+                                                    </Box>
+                                                ))}
+                                        </>
+                                    )
+                                }
                             </>
                         )}
                     </Stack>

@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import { Routes, Route } from 'react-router-dom';
 import LayoutManagerv3 from './pages/LayoutManagerv3';
 import LayoutManagerv4 from './pages/LayoutManagerv4';

@@ -1,6 +1,6 @@
-import { useDroppable } from "@dnd-kit/core";
-import { Height } from "@mui/icons-material";
 import { Grid } from "@mui/material";
+import PropTypes from "prop-types";
+import { useDroppable } from "@dnd-kit/core";
 
 const DroppableGrid = ({ id, children, onClick, selectedGrid }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -11,8 +11,8 @@ const DroppableGrid = ({ id, children, onClick, selectedGrid }) => {
         border: isOver
           ? "2px solid blue"
           : selectedGrid?.id === id
-          ? "1px solid green"
-          : "1px dashed grey",
+            ? "1px solid green"
+            : "1px dashed grey",
         padding: 1,
         minHeight: "50px",
         borderRadius: "10px",
@@ -26,6 +26,13 @@ const DroppableGrid = ({ id, children, onClick, selectedGrid }) => {
       {children}
     </Grid>
   );
+};
+
+DroppableGrid.propTypes = {
+  id: PropTypes.string.isRequired,
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+  selectedGrid: PropTypes.any,
 };
 
 export default DroppableGrid;

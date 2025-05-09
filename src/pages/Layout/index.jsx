@@ -1,10 +1,10 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useRef, useState } from 'react'
 import { FONTS, SPACING } from '@/shared/AppConst'
-import { Box, Button, Divider, Grid, IconButton, Stack, Tooltip, Typography } from '@mui/material'
+import { Box, Button, Divider, Grid, IconButton, Input, Stack, Tooltip, Typography } from '@mui/material'
 import { grey, red } from '@mui/material/colors'
 import Card from 'remoteApp/Card'
-import { Add, DeleteOutline, DragIndicator, MoreVert } from '@mui/icons-material'
+import { Add, DeleteOutline, DragIndicator, MoreVert, Save } from '@mui/icons-material'
 import { DndContext } from '@dnd-kit/core'
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
 import { dataComponents } from '@/json/DocsComponent'
@@ -17,28 +17,47 @@ const WIDTH_DRAWER = 250
 const HEIGHT_NAVBAR = 64
 
 const Layout = () => {
-    const gridRef = useRef(null);
     const containerRefs = useRef({});
-    const [temp, setTemp] = useState();
-    const [show, setShow] = useState(true);
     const [pages, setPages] = useState([]);
-    const [newSize, setNewSize] = useState();
-    const [atribut, setAtribute] = useState();
-    const [formData, setFormData] = useState(atribut);
-    const [lastScrollY, setLastScrollY] = useState(0);
     const [currentPage, setCurrentPage] = useState(null);
-    const [selectedGrid, setSelectedGrid] = useState(null);
     const [selectedLayout, setSelectedLayout] = useState(null);
 
     // add page
     const addPage = () => {
+        const newLayout = {
+            id: generateId(),
+            name: "Container",
+            properties: {
+                size: 12,
+                height: '100%'
+            },
+            children: [],
+        };
+
         const newPage = {
             id: `pages${pages.length + 1}`,
             name: `Page ${pages.length + 1}`,
-            layouts: [],
+            layouts: [newLayout],
         };
         setPages([...pages, newPage]);
         setCurrentPage(newPage.id);
+    };
+
+    const pushLayoutById = (data, id, newLayout) => {
+        for (const item of data) {
+            if (item.id === id) {
+                item.children = item.children || [];
+                item.children.push(newLayout);
+                return true;
+            }
+
+            if (item.children && item.children.length > 0) {
+                const added = pushLayoutById(item.children, id, newLayout);
+                if (added) return true;
+            }
+        }
+
+        return false;
     };
 
     // add layout inside page
@@ -48,87 +67,27 @@ const Layout = () => {
 
         const newLayout = {
             id: generateId(),
-            name: "Layout",
-            size: 12,
-            height: 100,
             children: [],
         };
-        const tempPages = pages.map((page, idx) =>
-            idx === currentPageIndex
-                ? { ...page, layouts: [...page.layouts, newLayout] }
-                : page
-        )
+
+        let tempPages = [...pages]
+        let tempLayout = tempPages[currentPageIndex]
+        if (selectedLayout !== null) {
+            newLayout['name'] = 'Container'
+            newLayout['properties'] = {
+                size: 12,
+                height: '300px'
+            }
+            pushLayoutById(tempLayout?.layouts, selectedLayout?.id, newLayout);
+        } else {
+            newLayout['name'] = 'Layout'
+            newLayout['properties'] = {
+                size: 12,
+                height: '100%'
+            }
+            tempLayout?.layouts.push(newLayout)
+        }
         setPages(tempPages);
-    };
-
-    // add grid inside layout
-    const addGrid = () => {
-        if (!currentPage || !selectedLayout) return;
-
-        const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
-        if (currentPageIndex === -1) return;
-
-        const layoutIndex = pages[currentPageIndex].layouts.findIndex(
-            (l) => l.id === selectedLayout
-        );
-        if (layoutIndex === -1) return;
-
-        const newGrid = {
-            id: `grid-${Date.now()}`,
-            type: "grid",
-            size: 12,
-            height: 80,
-            children: [],
-        };
-
-        setPages((prevPages) =>
-            prevPages.map((page, pIdx) =>
-                pIdx === currentPageIndex
-                    ? {
-                        ...page,
-                        layouts: page.layouts.map((layout, lIdx) =>
-                            lIdx === layoutIndex
-                                ? { ...layout, children: [...layout.children, newGrid] }
-                                : layout
-                        ),
-                    }
-                    : page
-            )
-        );
-    };
-
-    // delete grid
-    const deleteGrid = () => {
-        if (!selectedGrid || !currentPage || !selectedLayout) return;
-
-        const removeComponent = (components) => {
-            const updatedComponents = components
-                .filter((comp) => comp.id !== selectedGrid?.id)
-                .map((comp) =>
-                    comp.type === "grid"
-                        ? { ...comp, children: removeComponent(comp.children) }
-                        : comp
-                );
-            return updatedComponents;
-        };
-
-        setPages((prevPages) => {
-            const newPages = prevPages.map((page) =>
-                page.id === currentPage
-                    ? {
-                        ...page,
-                        layouts: page.layouts.map((layout) =>
-                            layout.id === selectedLayout
-                                ? { ...layout, children: removeComponent(layout.children) }
-                                : layout
-                        ),
-                    }
-                    : page
-            );
-            return newPages;
-        });
-
-        setSelectedGrid(null);
     };
 
     // delete page
@@ -145,100 +104,33 @@ const Layout = () => {
         }
     };
 
+    const removeLayoutById = (layouts, targetId) => {
+        return layouts
+            .map(layout => {
+                if (layout.id === targetId) {
+                    return null;
+                }
+
+                if (layout.children && layout.children.length > 0) {
+                    layout.children = removeLayoutById(layout.children, targetId);
+                }
+
+                return layout;
+            })
+            .filter(Boolean);
+    };
+
     // delete layout
     const deleteLayout = () => {
-        if (!selectedLayout || !currentPage) return;
+        const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
+        if (currentPageIndex === -1) return;
 
-        setPages((prevPages) =>
-            prevPages.map((page) =>
-                page.id === currentPage
-                    ? {
-                        ...page,
-                        layouts: page.layouts.filter(
-                            (layout) => layout.id !== selectedLayout
-                        ),
-                    }
-                    : page
-            )
-        );
+        let tempPages = [...pages]
+        let tempLayout = tempPages[currentPageIndex]
+
+        tempLayout.layouts = removeLayoutById(tempLayout.layouts, selectedLayout?.id);
+        setPages(tempPages)
         setSelectedLayout(null);
-    };
-
-    const updateComponentSize = (componentId, newSize, newHeight) => {
-        setPages((prevPages) =>
-            prevPages.map((page) => ({
-                ...page,
-                layouts: page.layouts.map((layout) => ({
-                    ...layout,
-                    children: updateSizeRecursively(
-                        layout.children,
-                        componentId,
-                        newSize,
-                        newHeight
-                    ),
-                })),
-            }))
-        );
-    };
-
-    const updateSizeRecursively = (components, gridId, newSize, newHeight) => {
-        return components.map((comp) => {
-            const updatedComp =
-                comp.id === gridId ? { ...comp, size: newSize } : comp;
-
-            if (updatedComp.type === "grid") {
-                return {
-                    ...updatedComp,
-                    children: updatedComp.children.map((child) =>
-                        child.id === atribut?.id ? { ...child, height: newHeight } : child
-                    ),
-                };
-            }
-
-            return updatedComp;
-        });
-    };
-
-    const saveOrder = (layoutIndex) => {
-        const updatedPages = pages.map((page) => {
-            if (!page.layouts[layoutIndex]) return page;
-
-            return {
-                ...page,
-                layouts: page.layouts.map((layout, index) => {
-                    if (index !== layoutIndex) return { ...layout };
-
-                    const childrenCopy = JSON.parse(JSON.stringify(layout.children));
-
-                    const childrenMap = Object.fromEntries(
-                        childrenCopy.map((component) => [
-                            component.id,
-                            { children: component.children, size: component.size },
-                        ])
-                    );
-
-                    const updatedChildren = childrenCopy.map((component) => {
-                        const slotItem = temp?.newSlotItemMap?.asArray.find(
-                            (slot) => slot.slot === component.id
-                        );
-
-                        if (!slotItem) return component;
-
-                        return {
-                            ...component,
-                            id: slotItem.item,
-                            children: childrenMap[slotItem.item]?.children || [],
-                        };
-                    });
-
-                    return { ...layout, children: updatedChildren };
-                }),
-            };
-        });
-
-        localStorage.removeItem("savedPages");
-        localStorage.setItem("savedPages", JSON.stringify(updatedPages));
-        window.location.reload();
     };
 
     const handleDragEnd = (event) => {
@@ -301,8 +193,6 @@ const Layout = () => {
                 type: "Unknown",
             };
 
-            console.log(newComponent);
-
             setPages((prevPages) =>
                 prevPages.map((page) => ({
                     ...page,
@@ -325,49 +215,60 @@ const Layout = () => {
         }
     };
 
-    const renderComponents = (components, layoutId, layoutidx) => {
-        return (
-            components.map((comp) => {
-                return (
-                    <Grid
-                        ref={gridRef}
-                        item
-                        xs={comp.size}
-                        key={comp.id}
-                        data-swapy-slot={comp.type === "grid" ? `${comp.id}` : undefined}
-                    >
-                        <DroppableGrid
-                            key={comp.id}
-                            id={comp.id}
-                            onClick={() => {
-                                setSelectedLayout(layoutId);
-                                setNewSize(comp.size);
-                                setAtribute(comp.children[0]);
-                                setSelectedGrid(comp);
-                            }}
-                            selectedGrid={selectedGrid}
-                        >
-                            {comp.children && comp.children.length > 0 ? (
-                                comp.children.map((child) =>
-                                    React.createElement(Components?.[child.type], {
-                                        key: child.id,
-                                        ...child,
-                                    })
-                                )
-                            ) : (
-                                <p style={{ color: "gray" }}>Empty Grid</p>
-                            )}
-                        </DroppableGrid>
-                    </Grid>
-                )
-            })
-        )
+    const generateId = () => {
+        const randomId = Math.random().toString(36).substring(2, 10)
+
+        return randomId
     }
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
+    // get json from local storage
+    useEffect(() => {
+        const savedPages = localStorage.getItem("savedPages");
+        const currentpages = localStorage.getItem("curentPages");
+        if (savedPages) {
+            setPages(JSON.parse(savedPages));
+            setCurrentPage(JSON.parse(currentpages));
+        }
+    }, []);
+
+    // save json to local storage
+    useEffect(() => {
+        console.log(pages)
+        // localStorage.setItem("savedPages", JSON.stringify(pages));
+        // localStorage.setItem("curentPages", JSON.stringify(currentPage));
+    }, [pages, currentPage]);
+
+    // create swapy
+    useEffect(() => {
+        if (!currentPage) return;
+
+        const activePage = pages.find((p) => p.id === currentPage);
+        if (!activePage) return;
+
+        activePage.layouts.forEach((layout) => {
+            if (!containerRefs.current[layout.id]) return;
+
+            if (containerRefs.current[layout.id].swapy?.destroy) {
+                containerRefs.current[layout.id].swapy.destroy();
+            }
+
+            containerRefs.current[layout.id].swapy = createSwapy(
+                containerRefs.current[layout.id]
+            );
+
+            containerRefs.current[layout.id].swapy.onSwap((event) => {
+                console.log(`Swapped in ${layout.id}:`, event);
+            });
+        });
+
+        return () => {
+            activePage.layouts.forEach((layout) => {
+                if (containerRefs.current[layout.id]?.swapy?.destroy) {
+                    containerRefs.current[layout.id].swapy.destroy();
+                }
+            });
+        };
+    }, [currentPage, pages]);
 
     const renderTreeItemComponent = (data) => {
         const renderLabel = (item) => {
@@ -418,7 +319,7 @@ const Layout = () => {
 
                         containerRefs.current = {};
 
-                        setSelectedLayout("");
+                        setSelectedLayout(null);
                         setCurrentPage(item.id);
                     }}
                 />
@@ -426,80 +327,126 @@ const Layout = () => {
         )
     }
 
-    const generateId = () => {
-        const randomId = Math.random().toString(36).substring(2, 10)
-
-        return randomId
+    const renderTreeItemLayers = (data) => {
+        const renderLabel = (item) => {
+            return (
+                <Stack direction={'row'} spacing={SPACING} alignItems={'center'} justifyContent={'space-between'}>
+                    <Stack>
+                        <Typography>{item.name}</Typography>
+                    </Stack>
+                    {/* {!item.children && (
+                        <Stack>
+                            <DragIndicator sx={{ fontSize: '18px' }} />
+                        </Stack>
+                    )} */}
+                </Stack>
+            )
+        }
+        return (
+            data.map(item => (
+                <TreeItem key={item.id} itemId={item.id} label={renderLabel(item)} sx={styleTreeItem}>
+                    {item.children.length !== 0 && renderTreeItemLayers(item.children)}
+                </TreeItem>
+            ))
+        )
     }
 
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+    const renderLayout = (data) => {
+        return data.map((layout, index) => (
+            <Grid
+                key={layout.id}
+                size={{ xs: parseInt(layout.properties.size) }}
+                sx={{ position: 'relative' }}
+                minHeight={layout.properties.height}
+            >
+                <Box
+                    ref={(el) => (containerRefs.current[layout.id] = el)}
+                    sx={{
+                        border:
+                            selectedLayout?.id === layout.id ? "1px solid green" : "1px dashed green",
+                        borderRadius: "10px",
+                        height: '100%',
+                        boxShadow:
+                            selectedLayout?.id === layout.id
+                                ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
+                                : "",
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedLayout(layout);
+                    }}
+                >
+                    {layout.children.length > 0 &&
+                        <Grid container spacing={SPACING} margin={SPACING}>
+                            {renderLayout(layout.children)}
+                        </Grid>
+                    }
 
-            if (currentScrollY > lastScrollY) {
-                setShow(false); // scrolling down
-            } else {
-                setShow(true); // scrolling up
-            }
+                    {layout.id === selectedLayout?.id && (
+                        <>
+                            {/* Delete Layout Button */}
+                            <Stack
+                                alignItems={'center'}
+                                justifyContent={'center'}
+                                sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    right: 0,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <Tooltip placement='bottom' title='Delete layout'>
+                                    <IconButton onClick={deleteLayout}>
+                                        <DeleteOutline sx={{ '&:hover': { color: red[900] } }} />
+                                    </IconButton>
+                                </Tooltip>
+                            </Stack>
 
-            setLastScrollY(currentScrollY);
-        };
+                            {/* Add Grid Button */}
+                            {/* <Stack
+                                alignItems={'center'}
+                                justifyContent={'center'}
+                                sx={{
+                                    position: 'absolute',
+                                }}
+                            >
+                                <Stack alignItems={'center'} justifyContent={'center'} onClick={addLayout} sx={{ border: '1px solid black', borderRadius: '10px', cursor: 'pointer' }}>
+                                    <Card sx={{ backgroundColor: 'white', color: 'black', paddingX: SPACING * 2, paddingY: 0.5 }}>
+                                        <Typography sx={{ fontSize: 14 }}>Add Layout (Item)</Typography>
+                                    </Card>
+                                </Stack>
+                            </Stack> */}
+                        </>
+                    )}
+                </Box>
+            </Grid>
+        ))
+    }
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
+    const handleChangeProperties = (name, value) => {
+        const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
+        if (currentPageIndex === -1) return;
 
-    // get json from local storage
-    useEffect(() => {
-        const savedPages = localStorage.getItem("savedPages");
-        const currentpages = localStorage.getItem("curentPages");
-        if (savedPages) {
-            setPages(JSON.parse(savedPages));
-            setCurrentPage(JSON.parse(currentpages));
-        }
-    }, []);
-
-    // save json to local storage
-    useEffect(() => {
-        localStorage.setItem("savedPages", JSON.stringify(pages));
-        localStorage.setItem("curentPages", JSON.stringify(currentPage));
-    }, [pages, currentPage]);
-
-    // create swapy
-    useEffect(() => {
-        console.log('currentPage', currentPage);
-        console.log('pages', pages);
-
-        if (!currentPage) return;
-
-        const activePage = pages.find((p) => p.id === currentPage);
-        if (!activePage) return;
-
-        activePage.layouts.forEach((layout) => {
-            if (!containerRefs.current[layout.id]) return;
-
-            if (containerRefs.current[layout.id].swapy?.destroy) {
-                containerRefs.current[layout.id].swapy.destroy();
-            }
-
-            containerRefs.current[layout.id].swapy = createSwapy(
-                containerRefs.current[layout.id]
-            );
-
-            containerRefs.current[layout.id].swapy.onSwap((event) => {
-                console.log(`Swapped in ${layout.id}:`, event);
-                setTemp(event);
-            });
-        });
-
-        return () => {
-            activePage.layouts.forEach((layout) => {
-                if (containerRefs.current[layout.id]?.swapy?.destroy) {
-                    containerRefs.current[layout.id].swapy.destroy();
+        const editPropertiesById = (data, id) => {
+            for (const item of data) {
+                if (item.id === id) {
+                    item.properties[name] = value
+                    return true;
                 }
-            });
+
+                if (item.children && item.children.length > 0) {
+                    const added = editPropertiesById(item.children, id);
+                    if (added) return true;
+                }
+            }
+            return false;
         };
-    }, [currentPage, pages]);
+
+        let tempPages = [...pages]
+        let tempLayout = tempPages[currentPageIndex]
+        editPropertiesById(tempLayout?.layouts, selectedLayout?.id);
+        setPages(tempPages)
+    }
 
     return (
         <DndContext onDragEnd={handleDragEnd}>
@@ -545,21 +492,7 @@ const Layout = () => {
                             </Card>
 
                             <SimpleTreeView>
-                                <TreeItem sx={styleTreeItem} itemId="grid" label="Data Grid">
-                                    <TreeItem sx={styleTreeItem} itemId="grid-community" label="@mui/x-data-grid" />
-                                    <TreeItem sx={styleTreeItem} itemId="grid-pro" label="@mui/x-data-grid-pro" />
-                                    <TreeItem sx={styleTreeItem} itemId="grid-premium" label="@mui/x-data-grid-premium" />
-                                </TreeItem>
-                                <TreeItem sx={styleTreeItem} itemId="pickers" label="Date and Time Pickers">
-                                    <TreeItem sx={styleTreeItem} itemId="pickers-community" label="@mui/x-date-pickers" />
-                                    <TreeItem sx={styleTreeItem} itemId="pickers-pro" label="@mui/x-date-pickers-pro" />
-                                </TreeItem>
-                                <TreeItem sx={styleTreeItem} itemId="charts" label="Charts">
-                                    <TreeItem sx={styleTreeItem} itemId="charts-community" label="@mui/x-charts" />
-                                </TreeItem>
-                                <TreeItem sx={styleTreeItem} itemId="tree-view" label="Tree View">
-                                    <TreeItem sx={styleTreeItem} itemId="tree-view-community" label="@mui/x-tree-view" />
-                                </TreeItem>
+                                {renderTreeItemLayers(pages.find(page => page.id === currentPage)?.layouts ?? [])}
                             </SimpleTreeView>
                         </Stack>
 
@@ -580,14 +513,25 @@ const Layout = () => {
                     </Stack>
                 </Card>
 
-                <Card sx={{ ...styleMainContent, padding: 0 }}>
+                <Card sx={{ ...styleMainContent }}>
                     <Card bgColor={grey[900]} sx={{ color: 'white' }}>
                         <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'}>
-                            <Typography fontWeight={FONTS.SEMI_BOLD}>{pages.find((page) => page.id === currentPage)?.name}</Typography>
+                            <Stack>
+                                <Typography fontWeight={FONTS.SEMI_BOLD}>{pages.find((page) => page.id === currentPage)?.name}</Typography>
+                            </Stack>
+
+                            <Stack direction={'row'} alignItems={'center'} spacing={SPACING / 2}>
+                                <Stack>
+                                    <Add onClick={addLayout} />
+                                </Stack>
+                                <Stack>
+                                    <Save />
+                                </Stack>
+                            </Stack>
                         </Stack>
                     </Card>
 
-                    <Stack id="wrapperLayout" height={'100%'} padding={SPACING} onClick={() => setSelectedLayout(null)}>
+                    <Stack id="wrapperLayout" height={'100%'}>
                         {currentPage && (
                             <>
                                 {
@@ -600,9 +544,7 @@ const Layout = () => {
                                                 alignItems: 'center',
                                                 border: "1px dashed green",
                                                 borderRadius: "10px",
-                                                padding: 1,
-                                                marginBottom: 2,
-                                                minHeight: "100px",
+                                                height: '100%',
                                                 cursor: 'pointer',
                                             }}
                                             onClick={addLayout}
@@ -617,72 +559,9 @@ const Layout = () => {
                                     ) : (
                                         <>
                                             {/* show layout */}
-                                            {pages
-                                                .find((page) => page.id === currentPage)
-                                                ?.layouts.map((layout, layoutidx) => (
-                                                    <Box
-                                                        ref={(el) => (containerRefs.current[layout.id] = el)}
-                                                        key={layout.id}
-                                                        sx={{
-                                                            position: selectedLayout === layout.id ? 'relative' : '',
-                                                            border:
-                                                                selectedLayout === layout.id ? "1px solid green" : "",
-                                                            borderRadius: "10px",
-                                                            padding: 1,
-                                                            marginBottom: 2,
-                                                            minHeight: "100px",
-                                                            boxShadow:
-                                                                selectedLayout === layout.id
-                                                                    ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
-                                                                    : "0px 2px 5px rgba(0, 0, 0, 0.2)",
-                                                        }}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedLayout(layout.id);
-                                                            setAtribute(null);
-                                                        }}
-                                                    >
-                                                        {layout.children.length > 0 &&
-                                                            <Grid container spacing={2}>
-                                                                {renderComponents(layout?.children, layout.id, layoutidx)}
-                                                            </Grid>
-                                                        }
-                                                        {/* Delete Layout Button */}
-                                                        <Stack
-                                                            alignItems={'center'}
-                                                            justifyContent={'center'}
-                                                            sx={{
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                right: 0,
-                                                                cursor: 'pointer',
-                                                            }}
-                                                        >
-                                                            <Tooltip placement='bottom' title='Delete layout'>
-                                                                <IconButton onClick={deleteLayout}>
-                                                                    <DeleteOutline sx={{ '&:hover': { color: red[900] } }} />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        </Stack>
-                                                        {/* Add Grid Button */}
-                                                        <Stack
-                                                            alignItems={'center'}
-                                                            justifyContent={'center'}
-                                                            sx={{
-                                                                position: 'absolute',
-                                                                bottom: -20,
-                                                                right: 13,
-                                                                left: 13,
-                                                            }}
-                                                        >
-                                                            <Stack alignItems={'center'} justifyContent={'center'} onClick={addGrid} sx={{ border: '1px solid black', borderRadius: '10px', cursor: 'pointer' }}>
-                                                                <Card sx={{ backgroundColor: 'white', color: 'black', paddingX: SPACING * 2, paddingY: 0.5 }}>
-                                                                    <Typography sx={{ fontSize: 14 }}>Add Layout (Item)</Typography>
-                                                                </Card>
-                                                            </Stack>
-                                                        </Stack>
-                                                    </Box>
-                                                ))}
+                                            <Grid container sx={{ height: '100%' }}>
+                                                {renderLayout(pages.find(page => page.id === currentPage)?.layouts)}
+                                            </Grid>
                                         </>
                                     )
                                 }
@@ -700,26 +579,18 @@ const Layout = () => {
                                 </Stack>
                             </Stack>
                         </Card>
-                    </Stack>
-                </Card>
 
-                <Card
-                    sx={{
-                        position: 'fixed',
-                        backgroundColor: grey[900],
-                        bottom: 10,
-                        left: `calc(${WIDTH_DRAWER + SPACING * 8 * 2}px + ((100vw - ${(WIDTH_DRAWER + SPACING * 8 * 2) * 2}px) / 2) - 50px)`,
-                        color: 'white',
-                        paddingY: 1.5,
-                        paddingX: SPACING,
-                        transition: '0.5s ease-in-out',
-                        transform: show ? 'translateY(0)' : 'translateY(200%)',
-                    }}
-                >
-                    <Stack alignItems={'center'} justifyContent={'center'} onClick={addLayout}>
-                        <Card sx={{ backgroundColor: 'white', color: 'black', paddingX: SPACING * 2, paddingY: 0.5 }}>
-                            <Typography sx={{ fontSize: 14 }}>Add Layout</Typography>
-                        </Card>
+                        <Stack>
+                            {
+                                selectedLayout !== null &&
+                                Object.keys(selectedLayout.properties).map((item, index) => (
+                                    <Stack key={index} spacing={1}>
+                                        <Typography textTransform={'capitalize'}>{item}</Typography>
+                                        <Input value={selectedLayout.properties[item]} onChange={(e) => handleChangeProperties(item, e.target.value)} />
+                                    </Stack>
+                                ))
+                            }
+                        </Stack>
                     </Stack>
                 </Card>
             </Stack>
@@ -749,11 +620,13 @@ const styleMainContent = {
     flexGrow: 1,
     marginLeft: `${WIDTH_DRAWER + ((SPACING * 8 * 2))}px`,
     marginRight: `${WIDTH_DRAWER + ((SPACING * 8 * 2))}px`,
-    backgroundColor: 'white',
-    minHeight: '100vh',
+    backgroundColor: 'transparent',
+    minHeight: '80vh',
     marginTop: `calc(${HEIGHT_NAVBAR + SPACING * 8}px)`,
     marginBottom: SPACING,
     borderRadius: SPACING,
+    padding: 0,
+    gap: SPACING
 }
 
 const styleNavbar = {

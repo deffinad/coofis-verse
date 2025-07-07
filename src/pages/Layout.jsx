@@ -15,17 +15,16 @@ import {
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
 import { DndContext } from "@dnd-kit/core";
-import DroppableGrid from "../DroppableGrid";
-import DraggableComponent from "../DraggableComponent";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { KuotaCuti1 } from "../json/DocsKuotaCuti1";
 import { KuotaCuti2 } from "../json/DocsKuotaCuti2";
 import { DateData } from "../json/DateData";
 import { DataKuota } from "../json/DocsKuota";
 import { DataCuti } from "../json/DocsCuti";
-import { getUserByUsername } from "../services/authServices";
+import DroppableGrid from "@/shared/components/DroppableGrid";
+import DraggableComponent from "@/shared/components/DraggableComponent";
 
-const LayoutManagerv4 = () => {
+const Layout = () => {
   const [user, setUser] = useState(null);
   const [pages, setPages] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
@@ -40,27 +39,6 @@ const LayoutManagerv4 = () => {
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
   const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
-
-  // get user by username
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const username = localStorage.getItem("username");
-
-      if (!username) {
-        setError("Username not found. Please login.");
-        return;
-      }
-
-      try {
-        const userData = await getUserByUsername(username);
-        setUser(userData.user);
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-
-    fetchUserData();
-  }, []);
 
   // get json from local storage
   useEffect(() => {
@@ -975,4 +953,4 @@ const LayoutManagerv4 = () => {
   );
 };
 
-export default LayoutManagerv4;
+export default Layout;

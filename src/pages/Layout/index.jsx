@@ -1,17 +1,19 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useRef, useState } from 'react'
 import { FONTS, SPACING } from '@/shared/AppConst'
-import { Box, Button, Divider, Grid, IconButton, Input, Stack, Tooltip, Typography } from '@mui/material'
+import { Box, Divider, Grid, IconButton, Input, Stack, Tooltip, Typography } from '@mui/material'
 import { grey, red } from '@mui/material/colors'
 import Card from 'remoteApp/Card'
 import { Add, DeleteOutline, DragIndicator, MoreVert, Save } from '@mui/icons-material'
-import { DndContext } from '@dnd-kit/core'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
 import { dataComponents } from '@/json/DocsComponent'
 import DraggableComponent from '@/DraggableComponent'
-import DroppableGrid from '@/DroppableGrid'
 import { createSwapy } from 'swapy'
 import { Components } from "remoteApp/Components";
+import PropTypes from 'prop-types'
+import Droppable from '@/shared/components/Droppable'
+import Draggable from '@/shared/components/Draggable'
 
 const WIDTH_DRAWER = 250
 const HEIGHT_NAVBAR = 64
@@ -21,6 +23,7 @@ const Layout = () => {
     const [pages, setPages] = useState([]);
     const [currentPage, setCurrentPage] = useState(null);
     const [selectedLayout, setSelectedLayout] = useState(null);
+    const [activeDragItem, setActiveDragItem] = useState(null)
 
     // add page
     const addPage = () => {
@@ -73,14 +76,14 @@ const Layout = () => {
         let tempPages = [...pages]
         let tempLayout = tempPages[currentPageIndex]
         if (selectedLayout !== null) {
-            newLayout['name'] = 'Container'
+            newLayout['name'] = 'Layout'
             newLayout['properties'] = {
                 size: 12,
                 height: '300px'
             }
             pushLayoutById(tempLayout?.layouts, selectedLayout?.id, newLayout);
         } else {
-            newLayout['name'] = 'Layout'
+            newLayout['name'] = 'Container'
             newLayout['properties'] = {
                 size: 12,
                 height: '100%'
@@ -133,87 +136,33 @@ const Layout = () => {
         setSelectedLayout(null);
     };
 
+    const handleDragStart = (event) => {
+        const { active } = event;
+        const draggedItem = dataComponents[1].children.find(item => item.componentName === active.id);
+        setActiveDragItem(draggedItem);
+    };
+
     const handleDragEnd = (event) => {
         const { over, active } = event;
         if (over) {
-            const gridId = over.id;
+            const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
+            if (currentPageIndex === -1) return;
 
-            const componentType = active?.id || "Unknown";
-
-            const componentAttributes = {
-                Navbar: {
-                    id: `navbar-${Date.now()}`,
-                    type: "Navbar",
-                    menuItems: [
-                        { label: "Home", path: "/" },
-                        { label: "About", path: "/about" },
-                        { label: "Contact", path: "/contact" },
-                    ],
-                    height: 65,
-                },
-                Ratings: { id: `ratings-${Date.now()}`, type: "Ratings", score: 5 },
-                Input: {
-                    id: `input-${Date.now()}`,
-                    type: "Input",
-                    name: "userInput",
-                    label: "Your Name",
-                    value: "",
-                    placeholder: "Enter your name",
-                    tipe: "text",
-                },
-                ArsipCuti: {
-                    id: `arsipcuti-${Date.now()}`,
-                    type: "ArsipCuti",
-                },
-                KuotaCutiSaatIni: {
-                    id: `kuotacutisaatini-${Date.now()}`,
-                    config1: {},
-                    config2: {},
-                    type: "KuotaCutiSaatIni",
-                },
-                ListDate: {
-                    id: `listdate-${Date.now()}`,
-                    config: {},
-                    type: "ListDate",
-                },
-                MonitoringKuota: {
-                    id: `monitoringkuota-${Date.now()}`,
-                    config: {},
-                    type: "MonitoringKuota",
-                },
-                StatusDokumenCutiDashboard: {
-                    id: `statusdokumencutidashboard-${Date.now()}`,
-                    config: {},
-                    type: "StatusDokumenCutiDashboard",
-                },
+            const newLayout = {
+                id: 'component' + generateId(),
+                name: active.id
             };
 
-            const newComponent = componentAttributes[componentType] || {
-                id: `unknown-${Date.now()}`,
-                type: "Unknown",
-            };
-
-            setPages((prevPages) =>
-                prevPages.map((page) => ({
-                    ...page,
-                    layouts: page.layouts.map((layout) => ({
-                        ...layout,
-                        children: layout.children.map((grid) =>
-                            grid.id === gridId
-                                ? {
-                                    ...grid,
-                                    children: [
-                                        ...(Array.isArray(grid.children) ? grid.children : []),
-                                        newComponent,
-                                    ],
-                                }
-                                : grid
-                        ),
-                    })),
-                }))
-            );
+            let tempPages = [...pages]
+            let tempLayout = tempPages[currentPageIndex]
+            pushLayoutById(tempLayout?.layouts, over.id, newLayout);
+            setPages(tempPages);
         }
     };
+
+    const handleDragCancel = () => {
+        setActiveDragItem(null)
+    }
 
     const generateId = () => {
         const randomId = Math.random().toString(36).substring(2, 10)
@@ -288,11 +237,11 @@ const Layout = () => {
         return (
             data.map(item => (
                 item.draggable ? (
-                    <DraggableComponent key={item.id} id={item.componentName}>
+                    <Draggable key={item.id} id={item.componentName}>
                         <TreeItem itemId={item.id} label={renderLabel(item)}>
                             {item.children && renderTreeItemComponent(item.children)}
                         </TreeItem>
-                    </DraggableComponent>
+                    </Draggable>
                 ) : (
                     <TreeItem key={item.id} itemId={item.id} label={renderLabel(item)} sx={styleTreeItem}>
                         {item.children && renderTreeItemComponent(item.children)}
@@ -344,8 +293,8 @@ const Layout = () => {
         }
         return (
             data.map(item => (
-                <TreeItem key={item.id} itemId={item.id} label={renderLabel(item)} sx={styleTreeItem}>
-                    {item.children.length !== 0 && renderTreeItemLayers(item.children)}
+                <TreeItem key={item.id} itemId={item.id} label={renderLabel(item)} sx={styleTreeItem} onClick={() => setSelectedLayout(item)}>
+                    {(item.children && item.children.length !== 0) && renderTreeItemLayers(item.children)}
                 </TreeItem>
             ))
         )
@@ -355,55 +304,49 @@ const Layout = () => {
         return data.map((layout, index) => (
             <Grid
                 key={layout.id}
-                size={{ xs: parseInt(layout.properties.size) }}
+                size={{ xs: layout.properties ? parseInt(layout.properties.size) : 12 }}
                 sx={{ position: 'relative' }}
-                minHeight={layout.properties.height}
+                minHeight={layout.properties ? layout.properties.height : 'auto'}
             >
-                <Box
-                    ref={(el) => (containerRefs.current[layout.id] = el)}
-                    sx={{
-                        border:
-                            selectedLayout?.id === layout.id ? "1px solid green" : "1px dashed green",
-                        borderRadius: "10px",
-                        height: '100%',
-                        boxShadow:
-                            selectedLayout?.id === layout.id
-                                ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
-                                : "",
-                    }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedLayout(layout);
-                    }}
-                >
-                    {layout.children.length > 0 &&
-                        <Grid container spacing={SPACING} margin={SPACING}>
-                            {renderLayout(layout.children)}
-                        </Grid>
-                    }
+                {layout.id.includes('component') ? (
+                    React.createElement(Components?.[layout.name], {
+                        key: layout.id,
+                    })
+                ) : (
+                    <Droppable
+                        key={layout.id}
+                        id={layout.id}
+                        selectedLayout={selectedLayout}
+                        onClick={() => setSelectedLayout(layout)}
+                    >
+                        {layout.children && layout.children.length > 0 &&
+                            <Grid container spacing={SPACING} margin={SPACING}>
+                                {renderLayout(layout.children)}
+                            </Grid>
+                        }
 
-                    {layout.id === selectedLayout?.id && (
-                        <>
-                            {/* Delete Layout Button */}
-                            <Stack
-                                alignItems={'center'}
-                                justifyContent={'center'}
-                                sx={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <Tooltip placement='bottom' title='Delete layout'>
-                                    <IconButton onClick={deleteLayout}>
-                                        <DeleteOutline sx={{ '&:hover': { color: red[900] } }} />
-                                    </IconButton>
-                                </Tooltip>
-                            </Stack>
+                        {layout.id === selectedLayout?.id && (
+                            <>
+                                {/* Delete Layout Button */}
+                                <Stack
+                                    alignItems={'center'}
+                                    justifyContent={'center'}
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 0,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <Tooltip placement='bottom' title='Delete layout'>
+                                        <IconButton onClick={deleteLayout}>
+                                            <DeleteOutline sx={{ '&:hover': { color: red[900] } }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Stack>
 
-                            {/* Add Grid Button */}
-                            {/* <Stack
+                                {/* Add Grid Button */}
+                                {/* <Stack
                                 alignItems={'center'}
                                 justifyContent={'center'}
                                 sx={{
@@ -416,9 +359,10 @@ const Layout = () => {
                                     </Card>
                                 </Stack>
                             </Stack> */}
-                        </>
-                    )}
-                </Box>
+                            </>
+                        )}
+                    </Droppable>
+                )}
             </Grid>
         ))
     }
@@ -449,14 +393,18 @@ const Layout = () => {
     }
 
     return (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+        >
             {/* Navbar */}
             <Stack sx={styleNavbar}>
                 <p>Deffin</p>
             </Stack>
 
             <Stack direction="row" sx={{ minHeight: '100vh', position: 'relative', bgcolor: grey[100] }}>
-                <Card sx={{ ...styleDrawer, left: SPACING * 8, overflowX: 'hidden', overflowY: 'auto' }}>
+                <Card sx={{ ...styleDrawer, left: SPACING * 8 }}>
                     <Stack spacing={SPACING}>
                         <Stack spacing={SPACING / 2}>
                             <Card bgColor={grey[900]} sx={{ color: 'white', paddingY: 1 }}>
@@ -594,8 +542,28 @@ const Layout = () => {
                     </Stack>
                 </Card>
             </Stack>
+
+            <DragOverlay dropAnimation={null}>
+                {activeDragItem ? <TreeItemPreview item={activeDragItem} /> : null}
+            </DragOverlay>
         </DndContext>
     )
+}
+
+const TreeItemPreview = ({ item }) => (
+    <Stack
+        sx={{
+            padding: 1,
+            border: '1px solid #ccc',
+            backgroundColor: 'white',
+        }}
+    >
+        <Typography>{item.label}</Typography>
+    </Stack>
+);
+
+TreeItemPreview.propTypes = {
+    item: PropTypes.any
 }
 
 const styleTreeItem = {
@@ -613,7 +581,10 @@ const styleDrawer = {
     transform: 'translateY(-50%)',
     borderRadius: SPACING,
     boxSizing: 'border-box',
-    padding: 1
+    padding: 1,
+    zIndex: 10,
+    overflowX: 'hidden',
+    overflowY: 'auto'
 }
 
 const styleMainContent = {

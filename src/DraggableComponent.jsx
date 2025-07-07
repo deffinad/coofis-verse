@@ -1,4 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
+import PropTypes from 'prop-types'
 
 const DraggableComponent = ({ id, children }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -19,4 +20,8 @@ const DraggableComponent = ({ id, children }) => {
   );
 };
 
+DraggableComponent.propTypes = {
+  id: PropTypes.any,
+  children: PropTypes.node
+}
 export default DraggableComponent;

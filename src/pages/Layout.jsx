@@ -8,9 +8,15 @@ import {
   Typography,
   Grid,
   TextField,
+  List,
   ListItem,
   ListItemText,
+  ListItemButton,
   IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  InputAdornment,
 } from "@mui/material";
 import { Components } from "remoteApp/Components";
 import { createSwapy } from "swapy";
@@ -23,6 +29,15 @@ import { DataKuota } from "../json/DocsKuota";
 import { DataCuti } from "../json/DocsCuti";
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import DraggableComponent from "@/shared/components/DraggableComponent";
+import EditorNavbar from "./components/EditorNavbar";
+import MenuPages from "./components/MenuPages";
+import AddIcon from "@mui/icons-material/Add";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import DividingLine from "./components/DividingLine";
 
 const Layout = () => {
   const [user, setUser] = useState(null);
@@ -39,6 +54,8 @@ const Layout = () => {
   const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
   const [temp, setTemp] = useState();
   const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [selectedPageForMenu, setSelectedPageForMenu] = useState(null);
 
   // get json from local storage
   useEffect(() => {
@@ -89,6 +106,34 @@ const Layout = () => {
     };
   }, [currentPage, pages]);
 
+  // EditorNavbar function
+  const handleSave = () => {
+    console.log("Saving...");
+    localStorage.setItem("savedPages", JSON.stringify(pages));
+    alert("Project saved!");
+  };
+
+  // menu pages function
+  const handleMenuOpen = (event, page) => {
+    event.stopPropagation(); // Mencegah event lain terpanggil
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedPageForMenu(page);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedPageForMenu(null);
+  };
+
+  const handlePreview = () => {
+    window.open("/hasil", "_blank");
+  };
+
+  const handlePublish = () => {
+    console.log("Publishing...");
+    alert("Project published!");
+  };
+
   // add page
   const addPage = () => {
     const newPage = {
@@ -101,35 +146,43 @@ const Layout = () => {
   };
 
   // add layout inside page
-  const addLayout = () => {
-    const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
-    if (currentPageIndex === -1) return;
+  const addLayout = (pageId) => {
+    const pageIndex = pages.findIndex((p) => p.id === pageId);
+    if (pageIndex === -1) return;
 
     const newLayout = {
-      id: `layouts${currentPageIndex + 1}${
-        pages[currentPageIndex].layouts.length + 1
-      }`,
+      id: `layouts${pageIndex + 1}${pages[pageIndex].layouts.length + 1}`,
       name: "Layout",
       children: [],
     };
 
     setPages(
       pages.map((page, idx) =>
-        idx === currentPageIndex
+        idx === pageIndex
           ? { ...page, layouts: [...page.layouts, newLayout] }
           : page
       )
     );
+
+    setCurrentPage(pageId);
   };
 
   // add Grid inside layout
-  const addGrid = () => {
-    if (!currentPage || !selectedLayout) return;
+  const addGrid = (pageId) => {
+    if (!pageId || !selectedLayout) {
+      alert("Silakan aktifkan halaman dan pilih layout terlebih dahulu.");
+      return;
+    }
 
-    const currentPageIndex = pages.findIndex((p) => p.id === currentPage);
-    if (currentPageIndex === -1) return;
+    if (pageId !== currentPage) {
+      alert("Anda hanya bisa menambah grid pada halaman yang sedang aktif.");
+      return;
+    }
 
-    const layoutIndex = pages[currentPageIndex].layouts.findIndex(
+    const pageIndex = pages.findIndex((p) => p.id === pageId);
+    if (pageIndex === -1) return;
+
+    const layoutIndex = pages[pageIndex].layouts.findIndex(
       (l) => l.id === selectedLayout
     );
     if (layoutIndex === -1) return;
@@ -144,7 +197,7 @@ const Layout = () => {
 
     setPages((prevPages) =>
       prevPages.map((page, pIdx) =>
-        pIdx === currentPageIndex
+        pIdx === pageIndex
           ? {
               ...page,
               layouts: page.layouts.map((layout, lIdx) =>
@@ -159,16 +212,18 @@ const Layout = () => {
   };
 
   // delete page
-  const deletePage = () => {
-    if (!currentPage) return;
-    const updatedPages = pages.filter((page) => page.id !== currentPage);
+  const deletePage = (pageIdToDelete) => {
+    if (!pageIdToDelete) return;
+
+    const updatedPages = pages.filter((page) => page.id !== pageIdToDelete);
     setPages(updatedPages);
 
-    // Set halaman aktif ke halaman pertama setelah dihapus
-    if (updatedPages.length > 0) {
-      setCurrentPage(updatedPages[0].id);
-    } else {
-      setCurrentPage(null);
+    if (currentPage === pageIdToDelete) {
+      if (updatedPages.length > 0) {
+        setCurrentPage(updatedPages[0].id);
+      } else {
+        setCurrentPage(null);
+      }
     }
   };
 
@@ -306,7 +361,6 @@ const Layout = () => {
     const { over, active } = event;
     if (over) {
       const gridId = over.id;
-
       const componentType = active?.id || "Unknown";
 
       const componentAttributes = {
@@ -330,10 +384,7 @@ const Layout = () => {
           placeholder: "Enter your name",
           tipe: "text",
         },
-        ArsipCuti: {
-          id: `arsipcuti-${Date.now()}`,
-          type: "ArsipCuti",
-        },
+        ArsipCuti: { id: `arsipcuti-${Date.now()}`, type: "ArsipCuti" },
         KuotaCutiSaatIni: {
           id: `kuotacutisaatini-${Date.now()}`,
           config1: KuotaCuti1,
@@ -362,8 +413,6 @@ const Layout = () => {
         type: "Unknown",
       };
 
-      console.log(newComponent);
-
       setPages((prevPages) =>
         prevPages.map((page) => ({
           ...page,
@@ -387,41 +436,39 @@ const Layout = () => {
   };
 
   const renderComponents = (components, layoutId, layoutidx) =>
-    components.map((comp) => {
-      return (
-        <Grid
-          ref={gridRef}
-          item
-          xs={comp.size}
+    components.map((comp) => (
+      <Grid
+        ref={gridRef}
+        item
+        xs={comp.size}
+        key={comp.id}
+        data-swapy-slot={comp.type === "grid" ? `${comp.id}` : undefined}
+      >
+        <DroppableGrid
           key={comp.id}
-          data-swapy-slot={comp.type === "grid" ? `${comp.id}` : undefined}
+          id={comp.id}
+          onClick={() => {
+            setSelectedLayoutIndex(layoutidx);
+            setSelectedLayout(layoutId);
+            setSelectedGrid(comp);
+            setNewSize(comp.size);
+            setAtribute(comp.children[0]);
+          }}
+          selectedGrid={selectedGrid}
         >
-          <DroppableGrid
-            key={comp.id}
-            id={comp.id}
-            onClick={() => {
-              setSelectedLayoutIndex(layoutidx);
-              setSelectedLayout(layoutId);
-              setSelectedGrid(comp);
-              setNewSize(comp.size);
-              setAtribute(comp.children[0]);
-            }}
-            selectedGrid={selectedGrid}
-          >
-            {comp.children && comp.children.length > 0 ? (
-              comp.children.map((child) =>
-                React.createElement(Components?.[child.type], {
-                  key: child.id,
-                  ...child,
-                })
-              )
-            ) : (
-              <p style={{ color: "gray" }}>Empty Grid</p>
-            )}
-          </DroppableGrid>
-        </Grid>
-      );
-    });
+          {comp.children && comp.children.length > 0 ? (
+            comp.children.map((child) =>
+              React.createElement(Components?.[child.type], {
+                key: child.id,
+                ...child,
+              })
+            )
+          ) : (
+            <p style={{ color: "gray" }}>Empty Grid</p>
+          )}
+        </DroppableGrid>
+      </Grid>
+    ));
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -536,418 +583,761 @@ const Layout = () => {
     );
   };
 
+  const sectionLayers = [
+    {
+      title: "Header",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada layer)
+        </Typography>
+      ),
+    },
+    {
+      title: "Section 1",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada layer)
+        </Typography>
+      ),
+    },
+    {
+      title: "Section 2",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada layer)
+        </Typography>
+      ),
+    },
+    {
+      title: "Section 3",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada layer)
+        </Typography>
+      ),
+    },
+    {
+      title: "Footer",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada layer)
+        </Typography>
+      ),
+    },
+  ];
+
+  const sectionComponents = [
+    {
+      title: "Page",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada komponen)
+        </Typography>
+      ),
+    },
+    {
+      title: "Layout",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada komponen)
+        </Typography>
+      ),
+    },
+    {
+      title: "Menu",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada komponen)
+        </Typography>
+      ),
+    },
+    {
+      title: "Form",
+      content: (
+        <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+          (Belum ada komponen)
+        </Typography>
+      ),
+    },
+    {
+      title: "Widget",
+      content: (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            width: "100%",
+          }}
+        >
+          {[
+            "Ratings",
+            "Navbar",
+            "ArsipCuti",
+            "KuotaCutiSaatIni",
+            "ListDate",
+            "MonitoringKuota",
+            "StatusDokumenCutiDashboard",
+          ].map((id) => (
+            <DraggableComponent key={id} id={id}>
+              <Button
+                variant="outlined"
+                fullWidth
+                disabled={!(selectedGrid && selectedLayout && currentPage)}
+                sx={{
+                  color: "#1E1E1E",
+                  borderColor: "#1E1E1E",
+                  justifyContent: "flex-start",
+                  textTransform: "none",
+                }}
+              >
+                {id}
+              </Button>
+            </DraggableComponent>
+          ))}
+        </Box>
+      ),
+    },
+  ];
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <Box sx={{ display: "flex" }}>
-        <Drawer variant="permanent" anchor="left" sx={{ width: 240 }}>
-          <Box sx={{ width: 240, p: 2 }}>
-            <Typography variant="h5" gutterBottom>
-              {user?.username}
-            </Typography>
-          </Box>
-          <Box sx={{ width: 240, p: 2 }}>
-            <Button variant="contained" fullWidth onClick={addPage}>
-              Tambah Halaman
-            </Button>
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={addLayout}
-            >
-              Tambah Layout
-            </Button>
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{ mt: 2 }}
-              disabled={!selectedLayout}
-              onClick={() => addGrid()}
-            >
-              Tambah Grid
-            </Button>
-          </Box>
-          <Box sx={{ width: 240, p: 2 }}>
-            <Typography variant="h5" gutterBottom>
-              Daftar Komponen
-            </Typography>
-            <DraggableComponent id="Ratings">
-              <Button
-                variant="outlined"
-                color="info"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-              >
-                Ratings
-              </Button>
-            </DraggableComponent>
-            <DraggableComponent id="Navbar">
-              <Button
-                variant="outlined"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 1 }}
-              >
-                Navbar
-              </Button>
-            </DraggableComponent>
-            <DraggableComponent id="ArsipCuti">
-              <Button
-                variant="outlined"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 1 }}
-              >
-                ArsipCuti
-              </Button>
-            </DraggableComponent>
-            <DraggableComponent id="KuotaCutiSaatIni">
-              <Button
-                variant="outlined"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 1 }}
-              >
-                Kuota Cuti
-              </Button>
-            </DraggableComponent>
-            <DraggableComponent id="ListDate">
-              <Button
-                variant="outlined"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 1 }}
-              >
-                List Date
-              </Button>
-            </DraggableComponent>
-            <DraggableComponent id="MonitoringKuota">
-              <Button
-                variant="outlined"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 1 }}
-              >
-                Monitoring Kuota
-              </Button>
-            </DraggableComponent>
-            <DraggableComponent id="StatusDokumenCutiDashboard">
-              <Button
-                variant="outlined"
-                fullWidth
-                disabled={!(selectedGrid && selectedLayout && currentPage)}
-                sx={{ mt: 1 }}
-              >
-                Status Dokumen Cuti
-              </Button>
-            </DraggableComponent>
-          </Box>
-          <Box sx={{ width: 240, p: 2 }}>
-            <Typography variant="h5" gutterBottom>
-              Daftar Halaman
-            </Typography>
-            {pages.map((page) => (
-              <Button
-                key={page.id}
-                variant="outlined"
-                fullWidth
-                sx={{ mb: 1 }}
-                onClick={() => {
-                  Object.values(containerRefs.current).forEach((ref) => {
-                    if (ref?.swapy?.destroy) {
-                      ref.swapy.destroy();
-                    }
-                  });
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "#F5F5F5",
+        }}
+      >
+        <EditorNavbar
+          onSave={handleSave}
+          onPreview={handlePreview}
+          onPublish={handlePublish}
+          projectName={
+            pages.find((p) => p.id === currentPage)?.name || "Untitled Project"
+          }
+        />
+        <Box sx={{ display: "flex", flexGrow: 1 }}>
+          {/* Left Menu */}
+          <Box
+            sx={{
+              flexShrink: 0,
+              maxWidth: "300px",
+              border: "1px solid #D9D9D9",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 2,
+              m: 3,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <MenuPages
+              anchorEl={menuAnchorEl}
+              onClose={handleMenuClose}
+              selectedPage={selectedPageForMenu}
+              onDeletePage={deletePage}
+            />
 
-                  containerRefs.current = {};
-
-                  setSelectedLayout("");
-                  setSelectedLayoutIndex("");
-                  setSelectedGrid("");
-                  setCurrentPage(page.id);
+            {/* Bagian Atas: Pages & Actions */}
+            <Box sx={{ p: 1 }}>
+              {/* Header "Pages" */}
+              <Box
+                sx={{
+                  backgroundColor: "#2C2C2C",
+                  color: "#FFFFFF",
+                  borderRadius: 2,
+                  p: 1.5,
+                  m: 0,
+                  mb: 1,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
-                {page.name}
-              </Button>
-            ))}
+                <Box>
+                  <Typography variant="h6">Pages</Typography>
+                  <Typography variant="body2" sx={{ color: "#ccc" }}>
+                    Description
+                  </Typography>
+                </Box>
 
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={() => {
-                window.open("/hasil", "_blank"); 
-              }}
-            >
-              Preview
-            </Button>
+                <IconButton
+                  size="small"
+                  sx={{ color: "white" }}
+                  onClick={addPage}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Box>
 
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={() => {
-                localStorage.removeItem("token");
-                localStorage.removeItem("username");
-                window.location.href = "/login";
-              }}
-            >
-              Logout
-            </Button>
-          </Box>
-        </Drawer>
-
-        <Box sx={{ flexGrow: 1, p: 5 }}>
-          {currentPage && (
-            <>
-              <Typography variant="h4">
-                {pages.find((page) => page.id === currentPage)?.name}
-              </Typography>
-
-              {/* show layout */}
-              {pages
-                .find((page, pageidx) => page.id === currentPage)
-                ?.layouts.map((layout, layoutidx) => (
-                  <Box
-                    ref={(el) => (containerRefs.current[layout.id] = el)}
-                    key={layout.id}
-                    sx={{
-                      border:
-                        selectedLayout === layout.id ? "1px solid green" : "",
-                      borderRadius: "10px",
-                      padding: 1,
-                      marginBottom: 2,
-                      minHeight: "100px",
-                      boxShadow:
-                        selectedLayout === layout.id
-                          ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
-                          : "0px 2px 5px rgba(0, 0, 0, 0.2)",
-                    }}
+              {/* Daftar Tombol Pages */}
+              <List sx={{ width: "100%", p: 0 }}>
+                {pages.map((page) => (
+                  <ListItemButton
+                    key={page.id}
                     onClick={() => {
-                      setSelectedLayout(layout.id);
-                      setSelectedLayoutIndex(layoutidx);
-                      setSelectedGrid(null);
-                      setAtribute(null);
+                      // Fungsi pindah halaman Anda
+                      setCurrentPage(page.id);
+                    }}
+                    sx={{
+                      mb: 1,
+                      borderRadius: 1,
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                      },
                     }}
                   >
-                    <Grid container spacing={2}>
-                      {renderComponents(layout.children, layout.id, layoutidx)}
-                    </Grid>
-                  </Box>
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="button"
+                          sx={{
+                            color: "#1E1E1E",
+                            textTransform: "none",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {page.name}
+                        </Typography>
+                      }
+                    />
+
+                    {/* 2. IconButton untuk menu kebab */}
+                    <IconButton
+                      edge="end" // Prop ini membantu positioning di kanan
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, page)}
+                      sx={{ color: "#1E1E1E" }}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </ListItemButton>
                 ))}
-            </>
-          )}
-        </Box>
+              </List>
+            </Box>
 
-        <Drawer variant="permanent" anchor="right" sx={{ width: 240 }}>
-          <Box sx={{ width: 240, p: 2 }}>
-            <Button
-              variant="contained"
-              color="error"
-              disabled={!currentPage}
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={deletePage}
-            >
-              Hapus Halaman
-            </Button>
+            {/* Garis Pemisah */}
+            <DividingLine />
 
-            <Button
-              variant="contained"
-              color="error"
-              fullWidth
-              sx={{ mt: 2 }}
-              disabled={!selectedLayout}
-              onClick={deleteLayout}
-            >
-              Hapus Layout
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              disabled={!(selectedLayout && selectedGrid)}
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={handleDeleteGrid}
-            >
-              Hapus Grid
-            </Button>
-            {selectedGrid && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  updateComponentSize(
-                    selectedGrid.id,
-                    parseInt(newSize),
-                    parseInt(newHeight)
-                  );
+            {/* Bagian Tengah: Layers */}
+            <Box sx={{ p: 1 }}>
+              {/* Header "Layers" */}
+              <Box
+                sx={{
+                  backgroundColor: "#2C2C2C",
+                  color: "#FFFFFF",
+                  borderRadius: 2,
+                  p: 1.5,
+                  m: 0,
+                  mb: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="h6">Layers</Typography>
+              </Box>
+
+              <Box
+                sx={{
+                  flex: 0,
+                  display: "flex",
+                  justifyContent: "center",
+                  minWidth: 240,
+                }}
+              ></Box>
+
+              {/* Daftar Accordion Layers */}
+              {sectionLayers.map((sectionLayers, index) => (
+                <Accordion
+                  key={index}
+                  disableGutters
+                  elevation={0}
+                  sx={{
+                    "&:before": { display: "none" },
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls={`panel${index}-content`}
+                    id={`panel${index}-header`}
+                    sx={{
+                      padding: "6px 8px",
+                      minHeight: "48px",
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="button"
+                      sx={{
+                        color: "#1E1E1E",
+                        textTransform: "none",
+                        fontWeight: 500,
+                        // 1. Jadikan Typography sebagai flex container
+                        display: "flex",
+                        alignItems: "center", // 2. Sejajarkan item di dalamnya secara vertikal
+                      }}
+                    >
+                      <DragIndicatorIcon
+                        sx={{
+                          mr: 1, // 3. Beri jarak antara ikon dan teks
+                          cursor: "grab", // 4. (Opsional) Ubah kursor untuk menandakan bisa di-drag
+                        }}
+                      />
+                      {sectionLayers.title}
+                    </Typography>
+                  </AccordionSummary>
+
+                  <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
+                    {sectionLayers.content}
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+
+              {/* Garis Pemisah */}
+              <DividingLine />
+            </Box>
+
+            {/* Bagian Bawah: Components & Logout */}
+            <Box sx={{ p: 1 }}>
+              {/* Header "Components" */}
+              <Box
+                sx={{
+                  backgroundColor: "#2C2C2C",
+                  color: "#FFFFFF",
+                  borderRadius: 2,
+                  p: 1.5,
+                  m: 0,
+                  mb: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="h6">Components</Typography>
+                <IconButton size="small" sx={{ color: "white" }}>
+                  <AddIcon />
+                </IconButton>
+              </Box>
+
+              <Box
+                sx={{
+                  flex: 0,
+                  display: "flex",
+                  justifyContent: "center",
+                  minWidth: 240,
                 }}
               >
                 <TextField
-                  label="Ubah Col"
-                  type="number"
-                  fullWidth
-                  value={newSize}
-                  onChange={(e) => setNewSize(e.target.value)}
-                  sx={{ mt: 2, mb: 2 }}
+                  variant="outlined"
+                  placeholder="Search Component"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <SearchRoundedIcon sx={{ color: "#666" }} />
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      borderRadius: 5,
+                      width: 260,
+                      height: 35,
+                      mb: 2,
+                    },
+                  }}
                 />
-                <TextField
-                  label="Ubah Height"
-                  type="number"
-                  fullWidth
-                  value={newHeight}
-                  onChange={(e) => setNewHeight(e.target.value)}
-                  sx={{ mt: 2, mb: 2 }}
-                />
+              </Box>
+
+              {/* Daftar Accordion Components */}
+              {sectionComponents.map((sectionComponents, index) => (
+                <Accordion
+                  key={index}
+                  disableGutters
+                  elevation={0}
+                  sx={{
+                    "&:before": { display: "none" },
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<KeyboardArrowRightIcon />}
+                    aria-controls={`panel${index}-content`}
+                    id={`panel${index}-header`}
+                    sx={{
+                      padding: "6px 8px",
+                      minHeight: "48px",
+                      "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
+                        transform: "rotate(90deg)",
+                      },
+
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="button"
+                      sx={{
+                        color: "#1E1E1E",
+                        textTransform: "none",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {sectionComponents.title}
+                    </Typography>
+                  </AccordionSummary>
+
+                  <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
+                    {sectionComponents.content}
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+
+              {/* Tombol Logout & Garis Pemisah Terakhir */}
+              {/* <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                sx={{ mt: 2 }}
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  localStorage.removeItem("username");
+                  window.location.href = "/login";
+                }}
+              >
+                Logout
+              </Button> */}
+              {/* Garis Pemisah */}
+              <DividingLine />
+            </Box>
+          </Box>
+
+          {/* Main Content */}
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 3,
+              backgroundColor: "#FFFFFF",
+              m: 3,
+              borderRadius: 2,
+              border: "1px solid #D9D9D9",
+              minHeight: "calc(100vh - 120px)", // Minimum height dengan pengurangan untuk margin dan navbar
+              maxHeight: "calc(100vh - 120px)", // Maksimum height untuk membuat scrollable
+              overflow: "auto", // Membuat scrollable jika konten melebihi maxHeight
+              position: "sticky",
+              top: 24, // Sesuaikan dengan margin yang diinginkan dari top
+              alignSelf: "flex-start", // Memastikan box tidak mengikuti flex container height
+            }}
+          >
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: "1440px",
+                mx: "auto",
+                minHeight: "100%", // Memastikan konten mengisi minimum height
+              }}
+            >
+              {currentPage && (
+                <>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      color: "#F3F3F3",
+                      backgroundColor: "#2C2C2C",
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 1,
+                      p: 2,
+                      margin: "-24px -24px 16px -24px", // Negative margin untuk mengompensasi padding parent
+                    }}
+                  >
+                    {pages.find((page) => page.id === currentPage)?.name}
+                  </Typography>
+
+                  <Box sx={{ display: "flex", gap: 2, my: 2 }}>
+                    <Button
+                      variant="contained"
+                      onClick={() => addLayout(currentPage)}
+                    >
+                      Tambah Layout
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => addGrid(currentPage)}
+                      disabled={!selectedLayout}
+                    >
+                      Tambah Grid
+                    </Button>
+                  </Box>
+                  {pages
+                    .find((page) => page.id === currentPage)
+                    ?.layouts.map((layout, layoutidx) => (
+                      <Box
+                        ref={(el) => (containerRefs.current[layout.id] = el)}
+                        key={layout.id}
+                        sx={{
+                          border:
+                            selectedLayout === layout.id
+                              ? "1px solid green"
+                              : "",
+                          borderRadius: "10px",
+                          padding: 1,
+                          marginBottom: 2,
+                          minHeight: "100px",
+                          boxShadow:
+                            selectedLayout === layout.id
+                              ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
+                              : "0px 2px 5px rgba(0, 0, 0, 0.2)",
+                        }}
+                        onClick={() => {
+                          setSelectedLayout(layout.id);
+                          setSelectedLayoutIndex(layoutidx);
+                          setSelectedGrid(null);
+                          setAtribute(null);
+                        }}
+                      >
+                        <Grid container spacing={2}>
+                          {renderComponents(
+                            layout.children,
+                            layout.id,
+                            layoutidx
+                          )}
+                        </Grid>
+                      </Box>
+                    ))}
+                </>
+              )}
+            </Box>
+          </Box>
+
+          {/* Right Drawer */}
+          <Drawer
+            variant="permanent"
+            anchor="right"
+            sx={{
+              width: 240,
+              flexShrink: 0,
+              "& .MuiDrawer-paper": {
+                width: 240,
+                boxSizing: "border-box",
+                position: "relative",
+                height: "auto",
+                border: "1px solid #D9D9D9",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 2,
+                m: 3,
+              },
+            }}
+          >
+            {/* Wrapper Box untuk scrolling di dalam Drawer */}
+            <Box sx={{ width: 240, overflow: "auto", height: "100%" }}>
+              <Box sx={{ p: 1 }}>
                 <Button
-                  type="submit"
+                  variant="contained"
+                  color="error"
+                  disabled={!currentPage}
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  onClick={deletePage}
+                >
+                  Hapus Halaman
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  disabled={!selectedLayout}
+                  onClick={deleteLayout}
+                >
+                  Hapus Layout
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  disabled={!(selectedLayout && selectedGrid)}
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  onClick={handleDeleteGrid}
+                >
+                  Hapus Grid
+                </Button>
+                {selectedGrid && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      updateComponentSize(
+                        selectedGrid.id,
+                        parseInt(newSize),
+                        parseInt(newHeight)
+                      );
+                    }}
+                  >
+                    <TextField
+                      label="Ubah Col"
+                      type="number"
+                      fullWidth
+                      value={newSize}
+                      onChange={(e) => setNewSize(e.target.value)}
+                      sx={{ mt: 2, mb: 2 }}
+                    />
+                    <TextField
+                      label="Ubah Height"
+                      type="number"
+                      fullWidth
+                      value={newHeight}
+                      onChange={(e) => setNewHeight(e.target.value)}
+                      sx={{ mt: 2, mb: 2 }}
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                    >
+                      Save
+                    </Button>
+                  </form>
+                )}
+                {atribut && (
+                  <>
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="body1">
+                        <strong>ID:</strong> {atribut?.id}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Type:</strong> {atribut?.type}
+                      </Typography>
+                      {atribut.type === "Input" ? (
+                        <>
+                          <TextField
+                            label="Name"
+                            name="name"
+                            value={formData?.name || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            sx={{ mt: 2 }}
+                          />
+                          <TextField
+                            label="Label"
+                            name="label"
+                            value={formData?.label || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            sx={{ mt: 2 }}
+                          />
+                          <TextField
+                            label="Placeholder"
+                            name="placeholder"
+                            value={formData?.placeholder || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            sx={{ mt: 2 }}
+                          />
+                          <TextField
+                            label="Tipe"
+                            name="tipe"
+                            value={formData?.tipe || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            sx={{ mt: 2 }}
+                          />
+                          <TextField
+                            label="Value"
+                            name="value"
+                            value={formData?.value || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            sx={{ mt: 2 }}
+                          />
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleSubmit}
+                            sx={{ mt: 2 }}
+                          >
+                            Simpan
+                          </Button>
+                        </>
+                      ) : atribut.type === "Navbar" ? (
+                        <>
+                          <Box>
+                            <TextField
+                              label="Label"
+                              variant="outlined"
+                              value={newMenuItem.label}
+                              onChange={(e) =>
+                                setNewMenuItem((prev) => ({
+                                  ...prev,
+                                  label: e.target.value,
+                                }))
+                              }
+                              sx={{ mt: 2 }}
+                            />
+                            <TextField
+                              label="Path"
+                              variant="outlined"
+                              value={newMenuItem.path}
+                              onChange={(e) =>
+                                setNewMenuItem((prev) => ({
+                                  ...prev,
+                                  path: e.target.value,
+                                }))
+                              }
+                              sx={{ mt: 2 }}
+                            />
+                            <Button
+                              variant="contained"
+                              onClick={handleAddMenuItem}
+                              sx={{ mt: 2 }}
+                            >
+                              Add Menu Item
+                            </Button>
+                          </Box>
+                          <Box>
+                            {atribut.menuItems?.map((item, index) => (
+                              <ListItem
+                                key={index}
+                                secondaryAction={
+                                  <IconButton
+                                    edge="end"
+                                    aria-label="delete"
+                                    onClick={() => handleDeleteMenuItem(index)}
+                                  >
+                                    <DeleteIcon />
+                                  </IconButton>
+                                }
+                              >
+                                <ListItemText
+                                  primary={item.label}
+                                  secondary={item.path}
+                                />
+                              </ListItem>
+                            ))}
+                          </Box>
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                    </Box>
+                  </>
+                )}
+                <Button
                   variant="contained"
                   color="primary"
-                  fullWidth
+                  onClick={() => saveOrder(selectedLayoutIndex)}
+                  sx={{ mt: 2 }}
                 >
-                  Save
+                  Save Order
                 </Button>
-              </form>
-            )}
-            {atribut && (
-              <>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body1">
-                    <strong>ID:</strong> {atribut?.id}
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Type:</strong> {atribut?.type}
-                  </Typography>
-                  {/* Editable Fields */}
-                  {atribut.type === "Input" ? (
-                    <>
-                      <TextField
-                        label="Name"
-                        name="name"
-                        value={formData?.name || ""}
-                        onChange={handleInputChange}
-                        fullWidth
-                        sx={{ mt: 2 }}
-                      />
-                      <TextField
-                        label="Label"
-                        name="label"
-                        value={formData?.label || ""}
-                        onChange={handleInputChange}
-                        fullWidth
-                        sx={{ mt: 2 }}
-                      />
-                      <TextField
-                        label="Placeholder"
-                        name="placeholder"
-                        value={formData?.placeholder || ""}
-                        onChange={handleInputChange}
-                        fullWidth
-                        sx={{ mt: 2 }}
-                      />
-                      <TextField
-                        label="Tipe"
-                        name="tipe"
-                        value={formData?.tipe || ""}
-                        onChange={handleInputChange}
-                        fullWidth
-                        sx={{ mt: 2 }}
-                      />
-                      <TextField
-                        label="Value"
-                        name="value"
-                        value={formData?.value || ""}
-                        onChange={handleInputChange}
-                        fullWidth
-                        sx={{ mt: 2 }}
-                      />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSubmit}
-                        sx={{ mt: 2 }}
-                      >
-                        Simpan
-                      </Button>
-                    </>
-                  ) : atribut.type === "Navbar" ? (
-                    <>
-                      {/* Form untuk menambah menu item */}
-                      <Box>
-                        <TextField
-                          label="Label"
-                          variant="outlined"
-                          value={newMenuItem.label}
-                          onChange={(e) =>
-                            setNewMenuItem((prev) => ({
-                              ...prev,
-                              label: e.target.value,
-                            }))
-                          }
-                          sx={{ mt: 2 }}
-                        />
-                        <TextField
-                          label="Path"
-                          variant="outlined"
-                          value={newMenuItem.path}
-                          onChange={(e) =>
-                            setNewMenuItem((prev) => ({
-                              ...prev,
-                              path: e.target.value,
-                            }))
-                          }
-                          sx={{ mt: 2 }}
-                        />
-                        <Button
-                          variant="contained"
-                          onClick={handleAddMenuItem}
-                          sx={{ mt: 2 }}
-                        >
-                          Add Menu Item
-                        </Button>
-                      </Box>
-
-                      {/* List Menu Item */}
-                      <Box>
-                        {atribut.menuItems?.map((item, index) => (
-                          <ListItem
-                            key={index}
-                            secondaryAction={
-                              <IconButton
-                                edge="end"
-                                aria-label="delete"
-                                onClick={() => handleDeleteMenuItem(index)}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            }
-                          >
-                            <ListItemText
-                              primary={item.label}
-                              secondary={item.path}
-                            />
-                          </ListItem>
-                        ))}
-                      </Box>
-                    </>
-                  ) : (
-                    <></>
-                  )}
-                </Box>
-              </>
-            )}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => saveOrder(selectedLayoutIndex)}
-              sx={{ mt: 2 }}
-            >
-              Save Order
-            </Button>
-          </Box>
-        </Drawer>
+              </Box>
+            </Box>
+          </Drawer>
+        </Box>
       </Box>
     </DndContext>
   );

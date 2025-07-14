@@ -31,6 +31,7 @@ const EditorNavbar = ({
         zIndex: (theme) => theme.zIndex.drawer + 1,
         py: 1,
         px: 3,
+        mb: 2,
       }}
     >
       <Toolbar sx={{ padding: "0 !important" }}>

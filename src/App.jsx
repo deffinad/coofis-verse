@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import { Routes, Route } from 'react-router-dom';
-import Layout from './pages/Layout';
+import Layout from './pages/layout';
 import Hasil from './pages/Hasil';
 
 function App() {

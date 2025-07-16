@@ -2,7 +2,6 @@ import React from "react";
 import {
   Box,
   Button,
-  Drawer,
   IconButton,
   List,
   ListItem,
@@ -11,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { SPACING } from "@/shared/AppConst";
 
 const RightMenu = ({
   selectedLayout,
@@ -20,8 +20,7 @@ const RightMenu = ({
   newSize,
   newHeight,
   newMenuItem,
-  onDeleteLayout,
-  onDeleteGrid,
+  onDelete,
   onUpdateComponentSize,
   onInputChange,
   onSubmit,
@@ -32,62 +31,39 @@ const RightMenu = ({
   onDeleteMenuItem,
 }) => {
   return (
-    <Drawer
-      variant="permanent"
-      anchor="right"
+    <Box
       sx={{
-        width: 240,
+        width: 300,
+        backgroundColor: "#FFFFFF",
+        borderRadius: SPACING,
+        border: "1px solid #D9D9D9",
         flexShrink: 0,
-        "& .MuiDrawer-paper": {
-          width: 240,
-          boxSizing: "border-box",
-          position: "relative",
-          height: "auto",
-          border: "1px solid #D9D9D9",
-          backgroundColor: "#FFFFFF",
-          borderRadius: 2,
-        },
+        position: "sticky",
+        top: "24px",
+        height: "80vh",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <Box sx={{ width: 240, overflow: "auto", height: "100%", p: 1 }}>
+      <Box sx={{ p: 1 }}>
         {/* Header */}
         <Box
           sx={{
             backgroundColor: "#2C2C2C",
             color: "#FFFFFF",
-            borderRadius: 2,
+            borderRadius: SPACING,
             p: 1.5,
-            mb: 2,
+            mb: 1,
             display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <Typography variant="h6">Properties</Typography>
+          <Box>
+            <Typography variant="h6">Properties</Typography>
+          </Box>
         </Box>
-
-        {/* Delete Layout Button */}
-        <Button
-          variant="contained"
-          color="error"
-          fullWidth
-          disabled={!selectedLayout}
-          onClick={onDeleteLayout}
-        >
-          Hapus Layout
-        </Button>
-
-        {/* Delete Grid Button */}
-        <Button
-          variant="contained"
-          color="error"
-          disabled={!selectedGrid}
-          fullWidth
-          sx={{ mt: 2 }}
-          onClick={onDeleteGrid}
-        >
-          Hapus Grid
-        </Button>
-
-        {/* Grid Properties Form */}
         {selectedGrid && (
           <form
             onSubmit={(e) => {
@@ -115,14 +91,6 @@ const RightMenu = ({
               onChange={(e) => onHeightChange(e.target.value)}
               sx={{ mt: 2, mb: 2 }}
             />
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-            >
-              Save
-            </Button>
           </form>
         )}
 
@@ -196,18 +164,14 @@ const RightMenu = ({
                     label="Label"
                     variant="outlined"
                     value={newMenuItem.label}
-                    onChange={(e) =>
-                      onMenuItemChange("label", e.target.value)
-                    }
+                    onChange={(e) => onMenuItemChange("label", e.target.value)}
                     sx={{ mt: 2 }}
                   />
                   <TextField
                     label="Path"
                     variant="outlined"
                     value={newMenuItem.path}
-                    onChange={(e) =>
-                      onMenuItemChange("path", e.target.value)
-                    }
+                    onChange={(e) => onMenuItemChange("path", e.target.value)}
                     sx={{ mt: 2 }}
                   />
                   <Button
@@ -245,7 +209,7 @@ const RightMenu = ({
           </Box>
         )}
       </Box>
-    </Drawer>
+    </Box>
   );
 };
 

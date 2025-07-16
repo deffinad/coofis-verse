@@ -22,6 +22,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DividingLine from "../components/DividingLine";
 import MenuPages from "./MenuPages";
 import DraggableComponent from "@/shared/components/DraggableComponent";
+import { SPACING } from "@/shared/AppConst";
 
 const LeftMenu = ({
   // Props untuk Pages
@@ -88,15 +89,16 @@ const LeftMenu = ({
   return (
     <Box
       sx={{
-        maxHeight: "85vh",
-        overflow:"auto",
-        flexShrink: 0,
         width: 300,
-        border: "1px solid #D9D9D9",
         backgroundColor: "#FFFFFF",
-        borderRadius: 2,
-        display: "flex",
+        borderRadius: SPACING,
+        border: "1px solid #D9D9D9",
+        flexShrink: 0,
+        position: "sticky",
+        top: "24px",
         flexDirection: "column",
+        height: "80vh",
+        overflow: "auto",
       }}
     >
       {/* Pages Section */}
@@ -113,7 +115,7 @@ const LeftMenu = ({
           sx={{
             backgroundColor: "#2C2C2C",
             color: "#FFFFFF",
-            borderRadius: 2,
+            borderRadius: SPACING,
             p: 1.5,
             mb: 1,
             display: "flex",
@@ -133,7 +135,7 @@ const LeftMenu = ({
         </Box>
 
         {/* Pages List */}
-        <List sx={{ width: "100%", p: 0, overflow: "auto" }}>
+        <List sx={{ width: "100%", p: 0 }}>
           {pages.map((page) => (
             <ListItemButton
               key={page.id}
@@ -177,7 +179,7 @@ const LeftMenu = ({
           sx={{
             backgroundColor: "#2C2C2C",
             color: "#FFFFFF",
-            borderRadius: 2,
+            borderRadius: SPACING,
             p: 1.5,
             mb: 2,
             display: "flex",
@@ -202,56 +204,47 @@ const LeftMenu = ({
       <DividingLine />
 
       {/* Components Section */}
-      <Box sx={{ p: 1, flex: 1, display: "flex", flexDirection: "column" }}>
+      <Box sx={{ p: 1 }}>
         {/* Components Header */}
-
         <Box
           sx={{
             backgroundColor: "#2C2C2C",
             color: "#FFFFFF",
-            borderRadius: 2,
+            borderRadius: SPACING, // Pastikan variabel SPACING sudah didefinisikan
             p: 1.5,
-            mb: 2,
+            mb: 2, // Memberi jarak ke elemen di bawahnya
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
           }}
         >
           <Typography variant="h6">Components</Typography>
-          <IconButton size="small" sx={{ color: "white" }}>
-            <AddIcon />
-          </IconButton>
         </Box>
 
-        <Box
-          sx={{
-            flex: 0,
-            display: "flex",
-            justifyContent: "center",
-            minWidth: 200,
-          }}
-        >
+        {/* Search Bar - Didesain ulang agar lebih bersih */}
+        <Box sx={{ px: 1, mb: 1 }}>
           <TextField
+            fullWidth
             variant="outlined"
-            placeholder="Search"
+            placeholder="Search components..."
             size="small"
             InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <SearchRoundedIcon sx={{ color: "#666" }} />
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchRoundedIcon sx={{ color: "grey.500" }} />
                 </InputAdornment>
               ),
               sx: {
-                borderRadius: 5,
-                width: 270,
-                height: 40,
+                borderRadius: "30px", // Membuat search bar lebih modern
+                backgroundColor: "#F5F5F5",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  border: "none", // Menghilangkan border
+                },
               },
             }}
           />
         </Box>
 
-        {/* Components Tree */}
-        <Box sx={{ flex: 1, overflow: "auto" }}>
+        {/* Components Tree - Menggunakan gaya dari Layers */}
+        <Box>
           {sectionComponents.map((section, index) => (
             <Accordion
               key={index}
@@ -263,13 +256,11 @@ const LeftMenu = ({
               }}
             >
               <AccordionSummary
-                expandIcon={<KeyboardArrowRightIcon />}
+                // Menggunakan icon yang sama dengan Layers untuk konsistensi
+                expandIcon={<ExpandMoreIcon />}
                 sx={{
                   p: "6px 8px",
                   minHeight: "48px",
-                  "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
-                    transform: "rotate(90deg)",
-                  },
                 }}
               >
                 <Typography
@@ -283,14 +274,13 @@ const LeftMenu = ({
                   {section.title}
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
+              <AccordionDetails sx={{ padding: "0px 8px 8px 8px" }}>
                 {section.title === "Widget" ? (
                   <Box
                     sx={{
                       display: "flex",
                       flexDirection: "column",
                       gap: 1,
-                      width: "100%",
                     }}
                   >
                     {[
@@ -303,24 +293,37 @@ const LeftMenu = ({
                       "StatusDokumenCutiDashboard",
                     ].map((id) => (
                       <DraggableComponent key={id} id={id}>
-                        <Button
-                          variant="outlined"
-                          fullWidth
-                          disabled={!selectedGrid}
+                        {/* Desain item komponen yang baru, tanpa icon */}
+                        <Box
                           sx={{
-                            color: "#1E1E1E",
-                            borderColor: "#1E1E1E",
-                            justifyContent: "flex-start",
-                            textTransform: "none",
+                            p: 1.5,
+                            width: "fit-content",
+                            backgroundColor: "rgba(0, 0, 0, 0.03)",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(0, 0, 0, 0.05)",
+                            textAlign: "left",
+                            cursor: "grab", // Mengindikasikan bisa di-drag
+                            "&:active": {
+                              cursor: "grabbing",
+                            },
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.06)",
+                              borderColor: "rgba(0, 0, 0, 0.1)",
+                            },
                           }}
                         >
-                          {id}
-                        </Button>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 500, color: "#333" }}
+                          >
+                            {id}
+                          </Typography>
+                        </Box>
                       </DraggableComponent>
                     ))}
                   </Box>
                 ) : (
-                  <Typography variant="body2" sx={{ color: "#1E1E1E" }}>
+                  <Typography variant="body2" sx={{ color: "grey.600", px: 1 }}>
                     (Belum ada komponen)
                   </Typography>
                 )}
@@ -328,6 +331,7 @@ const LeftMenu = ({
             </Accordion>
           ))}
         </Box>
+        <DividingLine />
       </Box>
     </Box>
   );

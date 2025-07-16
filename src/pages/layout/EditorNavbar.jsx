@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import { SPACING } from "@/shared/AppConst";
 
 const EditorNavbar = ({
   projectName = "Project A",
@@ -44,7 +45,7 @@ const EditorNavbar = ({
                 color: "#ffffff",
                 width: 40,
                 height: 40,
-                borderRadius: 2,
+                borderRadius: SPACING,
                 "&:hover": {
                   backgroundColor: "#1f1f1f",
                 },
@@ -112,7 +113,7 @@ const EditorNavbar = ({
               sx={{
                 width: 79,
                 height: 40,
-                borderRadius: 2,
+                borderRadius: SPACING,
                 textTransform: "none",
               }}
             >
@@ -123,7 +124,7 @@ const EditorNavbar = ({
               color="inherit"
               onClick={onPreview}
               sx={{
-                borderRadius: 3,
+                borderRadius: SPACING,
                 width: 79,
                 height: 40,
                 backgroundColor: "#E3E3E3",
@@ -138,7 +139,7 @@ const EditorNavbar = ({
               disableElevation
               onClick={onPublish}
               sx={{
-                borderRadius: 3,
+                borderRadius: SPACING,
                 backgroundColor: "#2c2c2c",
                 color: "#ffffff",
                 width: 79,

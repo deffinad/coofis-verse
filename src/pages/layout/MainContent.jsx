@@ -3,6 +3,7 @@ import { Box, Button, Grid, IconButton, Typography } from "@mui/material";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
+import { SPACING } from "@/shared/AppConst";
 
 const MainContent = ({
   pages,
@@ -15,13 +16,15 @@ const MainContent = ({
   onGridClick,
   onAddLayoutOrGrid,
   onSaveOrder,
+  onDelete,
 }) => {
   // Fungsi untuk render components (dipindahkan dari Layout.jsx)
   const renderComponents = (layouts, layoutId, layoutidx) => {
     return layouts.map((layout) => (
       <Grid
         item
-        xs={parseInt(layout.properties?.size) || 12}
+        // Ubah dari parseInt(layout.properties?.size) ke size langsung
+        size={layout.properties?.size || 12} // Default size 12
         key={layout.id}
         data-swapy-slot={layout.id}
       >
@@ -45,7 +48,8 @@ const MainContent = ({
                 return (
                   <Grid
                     item
-                    xs={parseInt(child.properties.size) || 12}
+                    // Ubah dari parseInt ke size langsung
+                    size={child.properties.size || 12} // Default size 12
                     key={child.id}
                     data-swapy-slot={child.id}
                   >
@@ -80,7 +84,6 @@ const MainContent = ({
         minWidth: "1140px",
         maxWidth: "1140px",
         mx: "auto",
-        position:"sticky",
       }}
     >
       {/* Header di atas kanvas */}
@@ -92,7 +95,7 @@ const MainContent = ({
           backgroundColor: "#2C2C2C",
           color: "#FFFFFF",
           p: "18px",
-          borderRadius: 2,
+          borderRadius: SPACING,
           mb: 2,
         }}
       >
@@ -107,11 +110,25 @@ const MainContent = ({
             sx={{
               backgroundColor: "#E3E3E3",
               color: "#2c2c2c",
-              borderRadius: 3,
+              borderRadius: SPACING,
               textTransform: "none",
             }}
           >
-            {selectedLayout ? "Add Grid" : "Add Layout"}
+            {selectedLayout ? "Add Layout" : "Add Layout"}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!selectedLayout}
+            onClick={onDelete}
+            sx={{
+              backgroundColor: "#dc143c",
+              color: "#ffffff",
+              borderRadius: SPACING,
+              textTransform: "none",
+            }}
+          >
+            {selectedGrid ? "Delete Layout" : "Delete Layout"}
           </Button>
           <IconButton
             color="inherit"
@@ -128,9 +145,10 @@ const MainContent = ({
         sx={{
           p: 3,
           backgroundColor: "#FFFFFF",
-          borderRadius: 2,
+          borderRadius: SPACING,
           border: "1px solid #D9D9D9",
-          height: "auto",
+          minHeight: "100vh",
+          height: "fit-content",
         }}
       >
         <Grid container spacing={2}>
@@ -141,19 +159,14 @@ const MainContent = ({
                 <Grid item key={layout.id} xs={12} sx={{ width: "100%" }}>
                   <Box
                     sx={{
-                      backgroundColor: "#E3E3E3",
                       border:
-                        selectedLayout === layout.id
-                          ? "1px solid green"
-                          : "1px solid transparent",
-                      padding: 1,
-                      marginBottom: 2,
-                      minHeight: "300px",
-                      boxShadow:
-                        selectedLayout === layout.id
-                          ? "0px 4px 10px rgba(0, 128, 0, 0.5)"
-                          : "0px 2px 5px rgba(0, 0, 0, 0.2)",
+                        selectedLayout === layout.id && !selectedGrid
+                          ? "1px solid blue"
+                          : "1px dashed black",
+                      padding: 2,
                       cursor: "pointer",
+                      borderRadius: SPACING,
+                      height: "fit-content",
                     }}
                     onClick={() => onLayoutClick(layout.id, layoutidx)}
                   >
@@ -161,6 +174,7 @@ const MainContent = ({
                       container
                       spacing={1}
                       ref={(el) => (containerRefs.current[layout.id] = el)}
+                      sx={{ height: "fit-content" }}
                     >
                       {renderComponents(layout.children, layout.id, layoutidx)}
                     </Grid>

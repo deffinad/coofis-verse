@@ -3,6 +3,7 @@ import { Box, Button, Grid, IconButton, Typography } from "@mui/material";
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
 import { SPACING } from "@/shared/AppConst";
+import { useDroppable } from "@dnd-kit/core";
 
 const MainContent = ({
   pages,
@@ -17,7 +18,12 @@ const MainContent = ({
   onSaveOrder,
   onDelete,
 }) => {
-  // Fungsi untuk render components (dipindahkan dari Layout.jsx)
+  const { setNodeRef: setMainContentDroppableRef, isOver: isMainContentOver } =
+    useDroppable({
+      id: "main-content-canvas", // ID unik untuk kanvas utama
+    });
+
+  // Fungsi untuk render components
   const renderComponents = (layouts, layoutId, layoutidx) => {
     return layouts.map((layout) => (
       <Grid
@@ -61,7 +67,9 @@ const MainContent = ({
                       {child.children?.length > 0 ? (
                         renderComponents(child.children, layoutId, layoutidx)
                       ) : (
-                        <p style={{ color: "gray" }}>Empty Layout</p>
+                        <p style={{ color: "gray" }}>
+                          This layout is currently empty
+                        </p>
                       )}
                     </DroppableGrid>
                   </Grid>
@@ -100,9 +108,21 @@ const MainContent = ({
       >
         <Typography variant="h6">
           {pages.find((page) => page.id === currentPage)?.name ||
-            "Pilih atau buat halaman baru"}
+            "Select or create a new page"}
         </Typography>
         <Box sx={{ display: "flex", gap: SPACING }}>
+          <Button
+            variant="contained"
+            onClick={onAddLayoutOrGrid}
+            sx={{
+              backgroundColor: "#E3E3E3",
+              color: "#2c2c2c",
+              borderRadius: SPACING,
+              textTransform: "none",
+            }}
+          >
+            Add New Layout
+          </Button>
           <Button
             variant="contained"
             color="error"
@@ -116,19 +136,7 @@ const MainContent = ({
               display: selectedLayout ? "block" : "none",
             }}
           >
-            {selectedGrid ? "Delete Layout" : "Delete Layout"}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={onAddLayoutOrGrid}
-            sx={{
-              backgroundColor: "#E3E3E3",
-              color: "#2c2c2c",
-              borderRadius: SPACING,
-              textTransform: "none",
-            }}
-          >
-            {selectedLayout ? "Add Layout" : "Add Layout"}
+            Delete Selected Layout
           </Button>
         </Box>
       </Box>
@@ -136,13 +144,15 @@ const MainContent = ({
       {/* Kanvas Utama */}
       <Box
         component="main"
+        ref={setMainContentDroppableRef}
         sx={{
           p: 3,
           backgroundColor: "#FFFFFF",
           borderRadius: SPACING,
-          border: "1px solid #D9D9D9",
+          border: isMainContentOver ? "2px dashed green" : "1px solid #D9D9D9", // ✅ Visual feedback saat hover
           minHeight: "100vh",
           height: "fit-content",
+          transition: "border 0.2s ease",
         }}
       >
         <Grid container spacing={2}>
@@ -177,6 +187,21 @@ const MainContent = ({
                   </Box>
                 </Grid>
               ))}
+          {!currentPage ||
+            (pages.find((p) => p.id === currentPage)?.layouts.length === 0 && (
+              <Box
+                sx={{
+                  p: 4,
+                  textAlign: "center",
+                  color: "grey.500",
+                  width: "100%",
+                }}
+              >
+                <Typography variant="h6">
+                  Drag a layout template or component here to start building!
+                </Typography>
+              </Box>
+            ))}
         </Grid>
       </Box>
     </Box>

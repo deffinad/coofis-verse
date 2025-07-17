@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Box,
-  Button,
   IconButton,
   List,
   ListItem,
@@ -13,22 +12,15 @@ import {
 import { SPACING } from "@/shared/AppConst";
 
 const RightMenu = ({
-  selectedLayout,
   selectedGrid,
   atribut,
   formData,
   newSize,
   newHeight,
-  newMenuItem,
-  onDelete,
   onUpdateComponentSize,
   onInputChange,
-  onSubmit,
   onSizeChange,
   onHeightChange,
-  onMenuItemChange,
-  onAddMenuItem,
-  onDeleteMenuItem,
 }) => {
   const renderPropertyField = (key, valueFromProps, onChange, path = "") => {
     const fullPath = path ? `${path}.${key}` : key;
@@ -140,6 +132,8 @@ const RightMenu = ({
     return null;
   };
 
+  const isError = newSize && (parseInt(newSize) < 1 || parseInt(newSize) > 12);
+
   // Helper function to get nested value from an object
   const getNestedValue = (obj, pathArr) => {
     return pathArr.reduce((acc, part) => acc && acc[part], obj);
@@ -157,10 +151,24 @@ const RightMenu = ({
         flexShrink: 0,
         position: "sticky",
         top: "24px",
-        height: "80vh",
+        height: "calc(100vh - 64px)",
         overflowY: "auto",
         display: "flex",
         flexDirection: "column",
+
+        "&::-webkit-scrollbar": {
+          width: "8px",
+        },
+        "&::-webkit-scrollbar-track": {
+          backgroundColor: "#f5f5f5",
+        },
+        "&::-webkit-scrollbar-thumb": {
+          backgroundColor: "#bdbdbd",
+          borderRadius: "10px",
+          "&:hover": {
+            backgroundColor: "#8d8d8d",
+          },
+        },
       }}
     >
       <Box sx={{ p: 1 }}>
@@ -193,15 +201,22 @@ const RightMenu = ({
             }}
           >
             <TextField
-              label="Ubah Col"
+              label="Set Col (1-12)"
               type="number"
               fullWidth
               value={newSize || ""}
               onChange={(e) => onSizeChange(e.target.value)}
+              // Tambahkan properti error dan helperText
+              error={!!isError}
+              // Berikan batasan pada input element
+              inputProps={{
+                min: 1,
+                max: 12,
+              }}
               sx={{ mt: SPACING, mb: SPACING }}
             />
             <TextField
-              label="Ubah Height"
+              label="Set Height"
               type="number"
               fullWidth
               value={newHeight || ""}
@@ -235,7 +250,7 @@ const RightMenu = ({
               </Box>
             ) : atribut ? (
               <Typography sx={{ mt: SPACING }}>
-                Tidak ada properti yang dapat diedit untuk komponen ini.
+                No editable properties.
               </Typography>
             ) : null}
           </form>

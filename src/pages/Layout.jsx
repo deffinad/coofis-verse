@@ -13,33 +13,17 @@ import {
   KeyboardSensor,
 } from "@dnd-kit/core";
 import { createSwapy } from "swapy";
-// [MODIFIED] Import arrayMove for reordering
 import { arrayMove } from "@dnd-kit/sortable";
 
 // Material-UI (MUI) Components
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Grid,
-  Typography,
-  Button,
-} from "@mui/material";
-
-// Material-UI (MUI) Icons
-import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
-// Remote Micro-frontend Components
-import { Components } from "remoteApp/Components";
+import { Box, Button } from "@mui/material";
 
 // Local Application Components
-import DroppableGrid from "@/shared/components/DroppableGrid";
 import EditorNavbar from "./layout/EditorNavbar";
 import LeftMenu from "./layout/LeftMenu";
 import MainContent from "./layout/MainContent";
 import RightMenu from "./layout/RightMenu";
+import AlertPopup from "./components/AlertPopup";
 
 // JSON Data Imports
 import { DataCuti } from "../json/DocsCuti";
@@ -47,6 +31,9 @@ import { DataKuota } from "../json/DocsKuota";
 import { DateData } from "../json/DateData";
 import { KuotaCuti1 } from "../json/DocsKuotaCuti1";
 import { KuotaCuti2 } from "../json/DocsKuotaCuti2";
+import { SPACING } from "@/shared/AppConst";
+
+import { LayoutTemplates } from "..//json/LayoutTemplates";
 
 const debounce = (func, delay) => {
   let timeoutId;
@@ -79,6 +66,53 @@ const Layout = () => {
   const [selectedPageForMenu, setSelectedPageForMenu] = useState(null);
   const [temp, setTemp] = useState(); // State untuk Swapy
 
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "info", // 'success', 'error', 'warning', 'info'
+  });
+
+  const generateRandomId = () => {
+    return Math.random().toString(36).substr(2, 8);
+  };
+
+  const handleApplyLayoutTemplate = (templateLayout) => {
+    if (!currentPage) {
+      showNotification(
+        "Please select a page first to apply a template.",
+        "warning"
+      );
+      return;
+    }
+    const pageIndex = pages.findIndex((p) => p.id === currentPage);
+    if (pageIndex === -1) return;
+    // Generate new unique IDs for the template layouts and their children
+    const generateUniqueIds = (items) => {
+      return items.map((item) => {
+        const newItem = {
+          ...item,
+          id: `${item.name
+            .toLowerCase()
+            .replace(/\s/g, "-")}-${generateRandomId()}`,
+        };
+        if (newItem.children && newItem.children.length > 0) {
+          newItem.children = generateUniqueIds(newItem.children);
+        }
+        return newItem;
+      });
+    };
+    const newLayoutsToAdd = generateUniqueIds(templateLayout);
+    setPages((prevPages) => {
+      const updatedPages = [...prevPages];
+      updatedPages[pageIndex] = {
+        ...updatedPages[pageIndex],
+        layouts: [...updatedPages[pageIndex].layouts, ...newLayoutsToAdd],
+      };
+      return updatedPages;
+    });
+    showNotification("Layout template applied successfully!", "success");
+  };
+
   // --- 2. Refs ---
   const containerRefs = useRef({});
 
@@ -93,7 +127,6 @@ const Layout = () => {
   );
 
   // --- 4. Side Effects (useEffect) ---
-  // Efek untuk memuat data dari localStorage saat komponen pertama kali dimuat
   useEffect(() => {
     const savedPages = localStorage.getItem("savedPages");
     const currentpages = localStorage.getItem("curentPages");
@@ -107,7 +140,6 @@ const Layout = () => {
     }
   }, []);
 
-  // Efek untuk menyimpan data ke localStorage setiap kali ada perubahan
   const throttledSave = useCallback(
     debounce((pages, currentPage) => {
       localStorage.setItem("savedPages", JSON.stringify(pages));
@@ -120,7 +152,6 @@ const Layout = () => {
     throttledSave(pages, currentPage);
   }, [pages, currentPage, throttledSave]);
 
-  // Efek untuk menginisialisasi atau menghancurkan Swapy.js saat halaman berubah
   useEffect(() => {
     if (!currentPage) return;
     const activePage = pages.find((p) => p.id === currentPage);
@@ -147,7 +178,6 @@ const Layout = () => {
     };
   }, [pages, currentPage]);
 
-  // Efek untuk memperbarui form di menu kanan saat grid atau atributnya dipilih
   useEffect(() => {
     if (atribut) {
       setFormData(atribut.properties || {});
@@ -167,11 +197,6 @@ const Layout = () => {
   }, [currentPage]);
 
   // --- 5. Helper Functions & Event Handlers ---
-
-  // Fungsi utilitas
-  const generateRandomId = () => {
-    return Math.random().toString(36).substr(2, 8);
-  };
 
   // Handler untuk Pages
   const addPage = () => {
@@ -196,7 +221,7 @@ const Layout = () => {
   // Handler untuk Layouts (Container)
   const addLayout = () => {
     if (!currentPage) {
-      alert("Pilih halaman terlebih dahulu.");
+      showNotification("Please select a page first.", "warning");
       return;
     }
     const pageIndex = pages.findIndex((p) => p.id === currentPage);
@@ -240,7 +265,7 @@ const Layout = () => {
   // Handler untuk Grids (Layout di dalam Container)
   const addGrid = () => {
     if (!selectedLayout) {
-      alert("Pilih layout terlebih dahulu.");
+      showNotification("Pilih layout terlebih dahulu.", "warning");
       return;
     }
     const newGrid = {
@@ -267,6 +292,17 @@ const Layout = () => {
         p.id === currentPage ? { ...p, layouts: addToLayout(p.layouts) } : p
       )
     );
+  };
+
+  const showNotification = (message, severity = "info") => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const handleCloseNotification = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setNotification((prev) => ({ ...prev, open: false }));
   };
 
   const handleDeleteGrid = () => {
@@ -311,7 +347,7 @@ const Layout = () => {
     } else if (selectedLayout) {
       deleteLayout();
     } else {
-      alert("Pilih sebuah layout atau grid untuk dihapus.");
+      showNotification("Please select a layout or grid to delete.", "warning");
     }
   };
 
@@ -421,15 +457,35 @@ const Layout = () => {
   const debouncedUpdateComponentSize = useCallback(
     debounce((id, size, height) => {
       updateComponentSize(id, size, height);
-    }, 300), // Debounce 300ms untuk mengurangi update yang terlalu sering
+    }, 1200), // Debounce 300ms untuk mengurangi update yang terlalu sering
     [updateComponentSize]
   );
 
   const handleRealtimeSizeChange = useCallback(
     (newSizeValue) => {
       if (!selectedGrid) return;
-      setNewSize(newSizeValue); // Update UI langsung
-      debouncedUpdateComponentSize(selectedGrid.id, newSizeValue, newHeight); // Update state dengan debounce
+
+      if (newSizeValue === "") {
+        setNewSize("");
+        debouncedUpdateComponentSize(selectedGrid.id, "", newHeight);
+        return;
+      }
+
+      const numValue = parseInt(newSizeValue, 10);
+      if (isNaN(numValue)) {
+        return;
+      }
+
+      if (numValue > 12) {
+        setNewSize(12);
+        debouncedUpdateComponentSize(selectedGrid.id, 12, newHeight);
+      } else if (numValue < 1) {
+        setNewSize("");
+        debouncedUpdateComponentSize(selectedGrid.id, "", newHeight);
+      } else {
+        setNewSize(numValue);
+        debouncedUpdateComponentSize(selectedGrid.id, numValue, newHeight);
+      }
     },
     [selectedGrid, newHeight, debouncedUpdateComponentSize]
   );
@@ -437,7 +493,7 @@ const Layout = () => {
   const handleRealtimeHeightChange = useCallback(
     (newHeightValue) => {
       if (!selectedGrid) return;
-      setNewHeight(newHeightValue); // Update UI langsung
+      setNewHeight(newHeightValue);
       debouncedUpdateComponentSize(selectedGrid.id, newSize, newHeightValue); // Update state dengan debounce
     },
     [selectedGrid, newSize, debouncedUpdateComponentSize]
@@ -509,35 +565,30 @@ const Layout = () => {
 
   const handleSubmit = () => {
     if (!selectedGrid || !atribut) return;
-    alert("Properti disimpan!"); // Notifikasi saja
+    showNotification("Properties have been saved.", "success");
   };
 
   // Handler untuk Menu Item pada Navbar
   const handleAddMenuItem = () => {
     if (!newMenuItem.label || !newMenuItem.path) {
-      alert("Label dan Path harus diisi.");
+      showNotification("Both label and path must be filled.", "warning");
       return;
     }
 
-    // Dapatkan menuItems saat ini dari atribut.properties
     const currentMenuItems = atribut.properties?.menuItems || [];
     const updatedMenuItems = [...currentMenuItems, newMenuItem];
 
-    // Gunakan handlePropertyChange untuk update
     handlePropertyChange("menuItems", updatedMenuItems);
 
-    // Reset form
     setNewMenuItem({ label: "", path: "" });
   };
 
   const handleDeleteMenuItem = (indexToDelete) => {
-    // Dapatkan menuItems saat ini dari atribut.properties
     const currentMenuItems = atribut.properties?.menuItems || [];
     const updatedMenuItems = currentMenuItems.filter(
       (_, i) => i !== indexToDelete
     );
 
-    // Gunakan handlePropertyChange untuk update
     handlePropertyChange("menuItems", updatedMenuItems);
   };
 
@@ -579,13 +630,32 @@ const Layout = () => {
     const { over, active } = event;
     if (!over) return;
 
-    const gridId = over.id;
-    const componentType = active.id;
+    const draggedItemId = active.id;
+    const dropTargetId = over.id;
+
+    // ✅ Cek apakah item yang di-drag adalah template layout
+    const isLayoutTemplate = LayoutTemplates.some(
+      (template) => template.id === draggedItemId
+    );
+
+    if (isLayoutTemplate) {
+      // Jika item yang di-drag adalah template layout
+      const templateToApply = LayoutTemplates.find(
+        (template) => template.id === draggedItemId
+      );
+      if (templateToApply) {
+        handleApplyLayoutTemplate(templateToApply.layout);
+      }
+      return; // Hentikan proses karena template sudah ditangani
+    }
+
+    // Logika yang sudah ada untuk menambahkan komponen ke grid
+    const componentType = draggedItemId;
 
     let gridHasChild = false;
     const checkGrid = (layouts) => {
       for (const layout of layouts) {
-        if (layout.id === gridId && layout.children.length > 0) {
+        if (layout.id === dropTargetId && layout.children.length > 0) {
           gridHasChild = true;
           return;
         }
@@ -597,7 +667,10 @@ const Layout = () => {
       ?.layouts.forEach((l) => checkGrid([l]));
 
     if (gridHasChild) {
-      alert("Grid sudah memiliki komponen. Hanya satu komponen per grid.");
+      showNotification(
+        "This grid already contains a component. Only one component is allowed per grid.",
+        "warning"
+      );
       return;
     }
 
@@ -645,7 +718,7 @@ const Layout = () => {
 
     const addComponentRecursive = (layouts) => {
       return layouts.map((layout) => {
-        if (layout.id === gridId) {
+        if (layout.id === dropTargetId) {
           return { ...layout, children: [newComponent] };
         }
         if (layout.children?.length > 0) {
@@ -666,7 +739,6 @@ const Layout = () => {
     );
   };
 
-  // [NEW] Handler for reordering layers in LeftMenu
   const handleLayerDragEnd = useCallback(
     (event) => {
       const { active, over } = event;
@@ -728,7 +800,10 @@ const Layout = () => {
 
   const saveOrder = (layoutIndex) => {
     if (layoutIndex === undefined || !temp) {
-      alert("Pilih layout dan ubah urutan terlebih dahulu.");
+      showNotification(
+        "Please select a layout and reorder items before saving.",
+        "warning"
+      );
       return;
     }
 
@@ -754,20 +829,19 @@ const Layout = () => {
         return { ...p, layouts: updateOrder(p.layouts) };
       })
     );
-    alert("Urutan disimpan!");
+    showNotification("Order has been saved successfully.", "success");
     setTemp(null);
   };
 
   // Handler untuk Global Actions (Navbar Editor)
   const handleSave = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
-    alert("Project saved!");
+    showNotification("Project saved!", "success");
   };
   const handlePreview = () => window.open("/hasil", "_blank");
-  const handlePublish = () => alert("Project published!");
+  const handlePublish = () => showNotification("Project published!", "info");
 
   // --- 6. Render Functions ---
-  // The old RenderLayerTree is removed as its logic is now in LeftMenu.jsx
 
   const sectionComponents = [
     { title: "Page" },
@@ -815,6 +889,7 @@ const Layout = () => {
             selectedGrid={selectedGrid}
             sectionComponents={sectionComponents}
             onLayerReorder={handleLayerDragEnd}
+            onApplyLayoutTemplate={handleApplyLayoutTemplate}
           />
           {/* Main Content */}
           <MainContent
@@ -860,11 +935,13 @@ const Layout = () => {
             sx={{
               backgroundColor: "white",
               color: "#1E1E1E",
-              borderColor: "#1E1E1E",
+              borderColor: "#2C2C2C",
               justifyContent: "flex-start",
               textTransform: "none",
-              width: "280px",
-              boxShadow: 3,
+              width: "100%",
+              borderRadius: SPACING,
+              p: SPACING,
+              mb: SPACING - 0.5,
               cursor: "grabbing",
             }}
           >
@@ -872,6 +949,12 @@ const Layout = () => {
           </Button>
         ) : null}
       </DragOverlay>
+      <AlertPopup
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={handleCloseNotification}
+      />
     </DndContext>
   );
 };

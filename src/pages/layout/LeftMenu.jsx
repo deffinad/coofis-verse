@@ -4,7 +4,6 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
-  Button,
   IconButton,
   List,
   ListItemButton,
@@ -17,7 +16,6 @@ import AddIcon from "@mui/icons-material/Add";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DividingLine from "../components/DividingLine";
 import MenuPages from "./MenuPages";
@@ -39,6 +37,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { restrictToParentElement } from "@dnd-kit/modifiers";
+
+import { LayoutTemplates } from "../../json/LayoutTemplates";
 
 function SortableLayer({ layer }) {
   const isStructural = layer.hasOwnProperty("children");
@@ -65,7 +66,7 @@ function SortableLayer({ layer }) {
 
   React.useEffect(() => {
     if (isDragging) {
-      setExpanded(false); 
+      setExpanded(false);
     }
   }, [isDragging]);
 
@@ -151,54 +152,6 @@ function SortableLayerList({ layers }) {
   );
 }
 
-function StaticLayer({ layer }) {
-  const isExpandable = layer.children && layer.children.length > 0;
-
-  return (
-    <Accordion
-      disableGutters
-      elevation={0}
-      sx={{
-        "&:before": { display: "none" },
-        backgroundColor: "transparent",
-        ml: 1,
-      }}
-    >
-      <AccordionSummary
-        expandIcon={
-          isExpandable ? <ExpandMoreIcon /> : <Box sx={{ width: 24 }} />
-        }
-        sx={{ p: "6px 8px", minHeight: "48px" }}
-      >
-        <Typography
-          variant="button"
-          sx={{
-            color: "#1E1E1E",
-            textTransform: "none",
-            fontWeight: 500,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          {/* Icon drag dibuat non-fungsional dan abu-abu untuk menandakan tidak aktif */}
-          <DragIndicatorIcon
-            sx={{ mr: 1, cursor: "not-allowed", color: "grey.400" }}
-          />
-          {layer.name}
-        </Typography>
-      </AccordionSummary>
-      {/* Jika child ini punya child lagi (untuk masa depan), render secara statis juga */}
-      {isExpandable && (
-        <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
-          {layer.children.map((child) => (
-            <StaticLayer key={child.id} layer={child} />
-          ))}
-        </AccordionDetails>
-      )}
-    </Accordion>
-  );
-}
-
 const LeftMenu = ({
   pages,
   currentPage,
@@ -209,7 +162,6 @@ const LeftMenu = ({
   selectedPageForMenu,
   onDeletePage,
   onMenuOpen,
-  selectedGrid,
   sectionComponents,
   onLayerReorder,
 }) => {
@@ -229,10 +181,24 @@ const LeftMenu = ({
         border: "1px solid #D9D9D9",
         flexShrink: 0,
         position: "sticky",
-        top: "24px",
+        top: "40px",
         flexDirection: "column",
-        height: "80vh",
-        overflow: "auto",
+        height: "calc(100vh - 64px)",
+        overflowY: "auto",
+        overflowX: "hidden",
+        "&::-webkit-scrollbar": {
+          width: "8px",
+        },
+        "&::-webkit-scrollbar-track": {
+          backgroundColor: "#f5f5f5",
+        },
+        "&::-webkit-scrollbar-thumb": {
+          backgroundColor: "#bdbdbd",
+          borderRadius: "10px",
+          "&:hover": {
+            backgroundColor: "#8d8d8d",
+          },
+        },
       }}
     >
       {/* Pages Section */}
@@ -322,21 +288,21 @@ const LeftMenu = ({
           <Typography variant="h6">Layers</Typography>
         </Box>
 
-        {/* [MODIFIED] Layers Tree is now wrapped in a DndContext */}
+        {/* Layers Tree is now wrapped in a DndContext */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={onLayerReorder}
+          modifiers={[restrictToParentElement]}
         >
           {currentPage &&
           pages.find((p) => p.id === currentPage)?.layouts.length > 0 ? (
-            // Panggilan awal ke SortableLayerList untuk memulai proses rekursif
             <SortableLayerList
               layers={pages.find((p) => p.id === currentPage).layouts}
             />
           ) : (
             <Typography variant="body2" sx={{ color: "gray", ml: SPACING }}>
-              (No layouts on this page)
+              No layouts on this page.
             </Typography>
           )}
         </DndContext>
@@ -344,7 +310,6 @@ const LeftMenu = ({
 
       {/* Components Section */}
       <Box sx={{ p: 1 }}>
-        {/* ... (rest of the component remains unchanged) ... */}
         {/* Components Header */}
         <Box
           sx={{
@@ -359,7 +324,7 @@ const LeftMenu = ({
           <Typography variant="h6">Components</Typography>
         </Box>
 
-        {/* Search Bar - Didesain ulang agar lebih bersih */}
+        {/* Search Bar */}
         <Box sx={{ px: 1, mb: SPACING }}>
           <TextField
             fullWidth
@@ -373,30 +338,36 @@ const LeftMenu = ({
                 </InputAdornment>
               ),
               sx: {
-                borderRadius: "30px", // Membuat search bar lebih modern
+                borderRadius: "30px",
                 backgroundColor: "#F5F5F5",
                 "& .MuiOutlinedInput-notchedOutline": {
-                  border: "none", // Menghilangkan border
+                  border: "none",
                 },
               },
             }}
           />
         </Box>
 
-        {/* Components Tree - Menggunakan gaya dari Layers */}
+        {/* Components Tree */}
         <Box>
           {sectionComponents.map((section, index) => (
             <Accordion
               key={index}
               disableGutters
               elevation={0}
+              square
               sx={{
                 "&:before": { display: "none" },
                 backgroundColor: "transparent",
+                border: "none",
+                boxShadow: "none",
+                "&.Mui-expanded": {
+                  margin: 0,
+                },
+                p: 0,
               }}
             >
               <AccordionSummary
-                // Menggunakan icon yang sama dengan Layers untuk konsistensi
                 expandIcon={<ExpandMoreIcon />}
                 sx={{
                   p: "6px 8px",
@@ -414,13 +385,12 @@ const LeftMenu = ({
                   {section.title}
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ padding: "0px 8px 8px 8px" }}>
+              <AccordionDetails sx={{ p: 0, mb: SPACING - 0.5 }}>
                 {section.title === "Widget" ? (
                   <Box
                     sx={{
                       display: "flex",
                       flexDirection: "column",
-                      gap: 1,
                     }}
                   >
                     {[
@@ -433,38 +403,82 @@ const LeftMenu = ({
                       "StatusDokumenCutiDashboard",
                     ].map((id) => (
                       <DraggableComponent key={id} id={id}>
-                        {/* Desain item komponen yang baru, tanpa icon */}
-                        <Box
+                        <ListItemButton
                           sx={{
-                            p: 1.5,
-                            width: "fit-content",
-                            backgroundColor: "rgba(0, 0, 0, 0.03)",
-                            borderRadius: "8px",
-                            border: "1px solid rgba(0, 0, 0, 0.05)",
-                            textAlign: "left",
-                            cursor: "grab", // Mengindikasikan bisa di-drag
-                            "&:active": {
-                              cursor: "grabbing",
-                            },
+                            borderRadius: SPACING,
+                            p: SPACING,
+                            mb: SPACING - 0.5,
+                            cursor: "grab",
                             "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.06)",
-                              borderColor: "rgba(0, 0, 0, 0.1)",
+                              backgroundColor: "rgba(0, 0, 0, 0.04)",
+                            },
+                            "&:active": {
+                              backgroundColor: "rgba(0, 0, 0, 0.08)",
                             },
                           }}
                         >
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 500, color: "#333" }}
-                          >
-                            {id}
-                          </Typography>
-                        </Box>
+                          <ListItemText
+                            primary={
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: "#1E1E1E",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {id}
+                              </Typography>
+                            }
+                          />
+                        </ListItemButton>
                       </DraggableComponent>
                     ))}
                   </Box>
+                ) : section.title === "Layout" ? (
+                  <Box sx={{ p: SPACING }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "grey.700", mb: 1 }}
+                    >
+                      Drag and drop these layout templates onto your page.
+                    </Typography>
+                    {LayoutTemplates.map(
+                      (
+                        template // ✅ Render Layout Templates
+                      ) => (
+                        <DraggableComponent key={template.id} id={template.id}>
+                          <ListItemButton
+                            sx={{
+                              borderRadius: SPACING,
+                              p: SPACING,
+                              mb: SPACING - 0.5,
+                              cursor: "grab",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.04)",
+                              },
+                              "&:active": {
+                                backgroundColor: "rgba(0, 0, 0, 0.08)",
+                              },
+                            }}
+                          >
+                            <ListItemText
+                              primary={
+                                <Typography
+                                  variant="body2"
+                                  sx={{ color: "#1E1E1E", fontWeight: 500 }}
+                                >
+                                  {template.name}
+                                </Typography>
+                              }
+                            />
+                          </ListItemButton>
+                        </DraggableComponent>
+                      )
+                    )}
+                  </Box>
                 ) : (
                   <Typography variant="body2" sx={{ color: "grey.600", px: 1 }}>
-                    (Belum ada komponen)
+                    No components available.
                   </Typography>
                 )}
               </AccordionDetails>

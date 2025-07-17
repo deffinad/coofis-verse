@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Button, Grid, IconButton, Typography } from "@mui/material";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
 import { SPACING } from "@/shared/AppConst";
@@ -24,7 +23,7 @@ const MainContent = ({
       <Grid
         item
         // Ubah dari parseInt(layout.properties?.size) ke size langsung
-        size={layout.properties?.size || 12} // Default size 12
+        size={layout.properties?.size || 12}
         key={layout.id}
         data-swapy-slot={layout.id}
       >
@@ -96,14 +95,29 @@ const MainContent = ({
           color: "#FFFFFF",
           p: "18px",
           borderRadius: SPACING,
-          mb: 2,
+          mb: SPACING,
         }}
       >
         <Typography variant="h6">
           {pages.find((page) => page.id === currentPage)?.name ||
             "Pilih atau buat halaman baru"}
         </Typography>
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: SPACING }}>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!selectedLayout}
+            onClick={onDelete}
+            sx={{
+              backgroundColor: "#dc143c",
+              color: "#ffffff",
+              borderRadius: SPACING,
+              textTransform: "none",
+              display: selectedLayout ? "block" : "none",
+            }}
+          >
+            {selectedGrid ? "Delete Layout" : "Delete Layout"}
+          </Button>
           <Button
             variant="contained"
             onClick={onAddLayoutOrGrid}
@@ -116,26 +130,6 @@ const MainContent = ({
           >
             {selectedLayout ? "Add Layout" : "Add Layout"}
           </Button>
-          <Button
-            variant="contained"
-            color="error"
-            disabled={!selectedLayout}
-            onClick={onDelete}
-            sx={{
-              backgroundColor: "#dc143c",
-              color: "#ffffff",
-              borderRadius: SPACING,
-              textTransform: "none",
-            }}
-          >
-            {selectedGrid ? "Delete Layout" : "Delete Layout"}
-          </Button>
-          <IconButton
-            color="inherit"
-            onClick={() => onSaveOrder(selectedLayoutIndex)}
-          >
-            <SaveOutlinedIcon sx={{ width: "35px", height: "35px" }} />
-          </IconButton>
         </Box>
       </Box>
 
@@ -163,10 +157,12 @@ const MainContent = ({
                         selectedLayout === layout.id && !selectedGrid
                           ? "1px solid blue"
                           : "1px dashed black",
-                      padding: 2,
+                      padding: SPACING,
                       cursor: "pointer",
                       borderRadius: SPACING,
                       height: "fit-content",
+                      minHeight:
+                        layout.children?.length === 0 ? "80vh" : "auto",
                     }}
                     onClick={() => onLayoutClick(layout.id, layoutidx)}
                   >

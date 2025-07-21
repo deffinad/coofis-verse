@@ -144,18 +144,16 @@ const RightMenu = ({
   return (
     <Box
       sx={{
-        width: 300,
-        backgroundColor: "#FFFFFF",
+        width: 280,
+        backgroundColor: "#F9FDFE",
         borderRadius: SPACING,
         border: "1px solid #D9D9D9",
         flexShrink: 0,
         position: "sticky",
-        top: "24px",
-        height: "calc(100vh - 64px)",
+        top: "110px",
+        height: "calc(100vh - 134px)",
         overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-
+        overflowX: "hidden",
         "&::-webkit-scrollbar": {
           width: "8px",
         },

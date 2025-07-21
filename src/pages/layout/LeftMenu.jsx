@@ -175,15 +175,14 @@ const LeftMenu = ({
   return (
     <Box
       sx={{
-        width: 300,
-        backgroundColor: "#FFFFFF",
+        width: 280,
+        backgroundColor: "#F9FDFE",
         borderRadius: SPACING,
         border: "1px solid #D9D9D9",
         flexShrink: 0,
         position: "sticky",
-        top: "40px",
-        flexDirection: "column",
-        height: "calc(100vh - 64px)",
+        top: "110px",
+        height: "calc(100vh - 134px)",
         overflowY: "auto",
         overflowX: "hidden",
         "&::-webkit-scrollbar": {
@@ -385,7 +384,7 @@ const LeftMenu = ({
                   {section.title}
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, mb: SPACING - 0.5 }}>
+              <AccordionDetails sx={{ p: 0, mb: SPACING - 0.5, ml: SPACING }}>
                 {section.title === "Widget" ? (
                   <Box
                     sx={{
@@ -395,6 +394,7 @@ const LeftMenu = ({
                   >
                     {[
                       "Ratings",
+                      "CustomCard",
                       "Navbar",
                       "ArsipCuti",
                       "KuotaCutiSaatIni",

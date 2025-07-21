@@ -2,6 +2,7 @@
 /* eslint-disable no-undef */
 // React Core Libraries
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Third-Party Libraries
 import {
@@ -45,6 +46,7 @@ const debounce = (func, delay) => {
 
 // --- Komponen Utama ---
 const Layout = () => {
+  const navigate = useNavigate();
   // --- 1. State Management ---
   // State untuk data inti (halaman, layout, grid)
   const [pages, setPages] = useState([]);
@@ -685,6 +687,15 @@ const Layout = () => {
         name: "Ratings",
         properties: { score: 5 },
       },
+      CustomCard: {
+        id: `component${generateRandomId()}`,
+        name: "CustomCard",
+        properties: {
+          mainTitle: "Card Title",
+          description: "Card description text",
+          buttonText: "Learn More",
+        },
+      },
       ArsipCuti: {
         id: `component${generateRandomId()}`,
         name: "ArsipCuti",
@@ -838,7 +849,12 @@ const Layout = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
     showNotification("Project saved!", "success");
   };
-  const handlePreview = () => window.open("/hasil", "_blank");
+  const handlePreview = () => {
+    localStorage.setItem("savedPages", JSON.stringify(pages));
+    localStorage.setItem("curentPages", JSON.stringify(currentPage));
+    navigate("/preview");
+  };
+
   const handlePublish = () => showNotification("Project published!", "info");
 
   // --- 6. Render Functions ---
@@ -863,7 +879,7 @@ const Layout = () => {
         sx={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#F5F5F5",
+          backgroundColor: "#EFEFEF",
         }}
       >
         <EditorNavbar
@@ -874,59 +890,59 @@ const Layout = () => {
             pages.find((p) => p.id === currentPage)?.name || "Untitled Project"
           }
         />
-        <Box sx={{ display: "flex", flexGrow: 1, p: 3, gap: 3 }}>
-          {/* Left Menu */}
-          <LeftMenu
-            pages={pages}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-            onAddPage={addPage}
-            menuAnchorEl={menuAnchorEl}
-            onMenuClose={handleMenuClose}
-            selectedPageForMenu={selectedPageForMenu}
-            onDeletePage={deletePage}
-            onMenuOpen={handleMenuOpen}
-            selectedGrid={selectedGrid}
-            sectionComponents={sectionComponents}
-            onLayerReorder={handleLayerDragEnd}
-            onApplyLayoutTemplate={handleApplyLayoutTemplate}
-          />
-          {/* Main Content */}
-          <MainContent
-            pages={pages}
-            currentPage={currentPage}
-            selectedLayout={selectedLayout}
-            selectedGrid={selectedGrid}
-            selectedLayoutIndex={selectedLayoutIndex}
-            containerRefs={containerRefs}
-            onLayoutClick={handleLayoutClick}
-            onGridClick={handleGridClick}
-            onAddLayoutOrGrid={addLayoutOrGrid}
-            onSaveOrder={saveOrder}
-            onDelete={handleDelete}
-          />
-          {/* Right Menu */}
-          <RightMenu
-            selectedLayout={selectedLayout}
-            selectedGrid={selectedGrid}
-            atribut={atribut}
-            formData={formData}
-            newSize={newSize}
-            newHeight={newHeight}
-            newMenuItem={newMenuItem}
-            onDelete={handleDelete}
-            onUpdateComponentSize={updateComponentSize}
-            onInputChange={handlePropertyChange}
-            onSubmit={handleSubmit}
-            onSizeChange={handleRealtimeSizeChange}
-            onHeightChange={handleRealtimeHeightChange}
-            onMenuItemChange={(field, value) =>
-              setNewMenuItem((p) => ({ ...p, [field]: value }))
-            }
-            onAddMenuItem={handleAddMenuItem}
-            onDeleteMenuItem={handleDeleteMenuItem}
-          />
-        </Box>
+          <Box sx={{ display: "flex", flexGrow: 1, p: 3, gap: 3 }}>
+            {/* Left Menu */}
+            <LeftMenu
+              pages={pages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onAddPage={addPage}
+              menuAnchorEl={menuAnchorEl}
+              onMenuClose={handleMenuClose}
+              selectedPageForMenu={selectedPageForMenu}
+              onDeletePage={deletePage}
+              onMenuOpen={handleMenuOpen}
+              selectedGrid={selectedGrid}
+              sectionComponents={sectionComponents}
+              onLayerReorder={handleLayerDragEnd}
+              onApplyLayoutTemplate={handleApplyLayoutTemplate}
+            />
+            {/* Main Content */}
+            <MainContent
+              pages={pages}
+              currentPage={currentPage}
+              selectedLayout={selectedLayout}
+              selectedGrid={selectedGrid}
+              selectedLayoutIndex={selectedLayoutIndex}
+              containerRefs={containerRefs}
+              onLayoutClick={handleLayoutClick}
+              onGridClick={handleGridClick}
+              onAddLayoutOrGrid={addLayoutOrGrid}
+              onSaveOrder={saveOrder}
+              onDelete={handleDelete}
+            />
+            {/* Right Menu */}
+            <RightMenu
+              selectedLayout={selectedLayout}
+              selectedGrid={selectedGrid}
+              atribut={atribut}
+              formData={formData}
+              newSize={newSize}
+              newHeight={newHeight}
+              newMenuItem={newMenuItem}
+              onDelete={handleDelete}
+              onUpdateComponentSize={updateComponentSize}
+              onInputChange={handlePropertyChange}
+              onSubmit={handleSubmit}
+              onSizeChange={handleRealtimeSizeChange}
+              onHeightChange={handleRealtimeHeightChange}
+              onMenuItemChange={(field, value) =>
+                setNewMenuItem((p) => ({ ...p, [field]: value }))
+              }
+              onAddMenuItem={handleAddMenuItem}
+              onDeleteMenuItem={handleDeleteMenuItem}
+            />
+          </Box>
       </Box>
       <DragOverlay>
         {activeId ? (

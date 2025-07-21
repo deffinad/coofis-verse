@@ -78,7 +78,17 @@ const MainContent = ({
               return null;
             })
           ) : (
-            <p style={{ color: "gray" }}>Empty Layout</p>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="body2" sx={{ color: "gray" }}>
+                Empty Layout
+              </Typography>
+            </Box>
           )}
         </DroppableGrid>
       </Grid>
@@ -104,6 +114,9 @@ const MainContent = ({
           p: "18px",
           borderRadius: SPACING,
           mb: SPACING,
+          // position: "sticky",
+          // top: "50px",
+          // zIndex: 1, 
         }}
       >
         <Typography variant="h6">
@@ -147,7 +160,7 @@ const MainContent = ({
         ref={setMainContentDroppableRef}
         sx={{
           p: 3,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "#F9FDFE",
           borderRadius: SPACING,
           border: isMainContentOver ? "2px dashed green" : "1px solid #D9D9D9", // ✅ Visual feedback saat hover
           minHeight: "100vh",

@@ -25,7 +25,7 @@ const EditorNavbar = ({
       position="static"
       elevation={0}
       sx={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#F9FDFE",
         borderBottom: "1px solid #e0e0e0",
         color: "#333",
         height: "84px",

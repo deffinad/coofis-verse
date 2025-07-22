@@ -24,7 +24,7 @@ import EditorNavbar from "./layout/EditorNavbar";
 import LeftMenu from "./layout/LeftMenu";
 import MainContent from "./layout/MainContent";
 import RightMenu from "./layout/RightMenu";
-import AlertPopup from "./components/AlertPopup";
+import AlertPopup from "../shared/components/AlertPopup";
 
 // JSON Data Imports
 import { DataCuti } from "../json/DocsCuti";
@@ -66,7 +66,7 @@ const Layout = () => {
   const [activeId, setActiveId] = useState(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedPageForMenu, setSelectedPageForMenu] = useState(null);
-  const [temp, setTemp] = useState(); // State untuk Swapy
+  const [temp, setTemp] = useState();
 
   const [notification, setNotification] = useState({
     open: false,
@@ -88,7 +88,6 @@ const Layout = () => {
     }
     const pageIndex = pages.findIndex((p) => p.id === currentPage);
     if (pageIndex === -1) return;
-    // Generate new unique IDs for the template layouts and their children
     const generateUniqueIds = (items) => {
       return items.map((item) => {
         const newItem = {
@@ -377,9 +376,7 @@ const Layout = () => {
             return layout;
           });
         };
-        // Update layout/grid yang spesifik
         const newLayouts = updateRecursive(p.layouts);
-        // Kemudian, sesuaikan tinggi di seluruh struktur
         return { ...p, layouts: adjustHeightsInRows(newLayouts) };
       });
       return updatedPages;
@@ -400,23 +397,18 @@ const Layout = () => {
       const layout = updatedLayouts[i];
       const layoutSize = parseInt(layout.properties?.size || 12);
 
-      // Jika layout ini adalah komponen, lewati (kita hanya peduli dengan layout/grid struktural)
       if (!layout.children) {
-        // Rekursif untuk children dari komponen jika ada (meskipun tidak diharapkan di sini)
         if (layout.children && layout.children.length > 0) {
           layout.children = adjustHeightsInRows(layout.children);
         }
         continue;
       }
 
-      // Cek apakah menambahkan layout ini akan melebihi 12 kolom
       if (currentTotalSize + layoutSize <= 12) {
         currentRow.push(layout);
         currentTotalSize += layoutSize;
       } else {
-        // Baris penuh atau layout ini memulai baris baru
         if (currentRow.length > 1) {
-          // Hanya proses jika ada lebih dari satu item di baris (sejajar)
           const minHeight = Math.min(
             ...currentRow.map((item) => parseInt(item.properties?.height || 0))
           );
@@ -429,18 +421,15 @@ const Layout = () => {
           });
         }
 
-        // Mulai baris baru dengan layout saat ini
         currentRow = [layout];
         currentTotalSize = layoutSize;
       }
 
-      // Rekursif untuk children dari layout saat ini
       if (layout.children && layout.children.length > 0) {
         layout.children = adjustHeightsInRows(layout.children);
       }
     }
 
-    // Proses baris terakhir jika ada
     if (currentRow.length > 1) {
       const minHeight = Math.min(
         ...currentRow.map((item) => parseInt(item.properties?.height || 0))
@@ -459,7 +448,7 @@ const Layout = () => {
   const debouncedUpdateComponentSize = useCallback(
     debounce((id, size, height) => {
       updateComponentSize(id, size, height);
-    }, 1200), // Debounce 300ms untuk mengurangi update yang terlalu sering
+    }, 1200),
     [updateComponentSize]
   );
 
@@ -635,23 +624,20 @@ const Layout = () => {
     const draggedItemId = active.id;
     const dropTargetId = over.id;
 
-    // ✅ Cek apakah item yang di-drag adalah template layout
     const isLayoutTemplate = LayoutTemplates.some(
       (template) => template.id === draggedItemId
     );
 
     if (isLayoutTemplate) {
-      // Jika item yang di-drag adalah template layout
       const templateToApply = LayoutTemplates.find(
         (template) => template.id === draggedItemId
       );
       if (templateToApply) {
         handleApplyLayoutTemplate(templateToApply.layout);
       }
-      return; // Hentikan proses karena template sudah ditangani
+      return; 
     }
 
-    // Logika yang sudah ada untuk menambahkan komponen ke grid
     const componentType = draggedItemId;
 
     let gridHasChild = false;
@@ -680,7 +666,13 @@ const Layout = () => {
       Navbar: {
         id: `component${generateRandomId()}`,
         name: "Navbar",
-        properties: { menuItems: [{ label: "Home", path: "/" }], height: 65 },
+        properties: {
+          title:"My Website",
+          height: 65, 
+          backgroundColor: "#ffffff", 
+          textColor: "#333333", 
+          activeTextColor: "#007bff",  
+        },
       },
       Ratings: {
         id: `component${generateRandomId()}`,
@@ -890,59 +882,59 @@ const Layout = () => {
             pages.find((p) => p.id === currentPage)?.name || "Untitled Project"
           }
         />
-          <Box sx={{ display: "flex", flexGrow: 1, p: 3, gap: 3 }}>
-            {/* Left Menu */}
-            <LeftMenu
-              pages={pages}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              onAddPage={addPage}
-              menuAnchorEl={menuAnchorEl}
-              onMenuClose={handleMenuClose}
-              selectedPageForMenu={selectedPageForMenu}
-              onDeletePage={deletePage}
-              onMenuOpen={handleMenuOpen}
-              selectedGrid={selectedGrid}
-              sectionComponents={sectionComponents}
-              onLayerReorder={handleLayerDragEnd}
-              onApplyLayoutTemplate={handleApplyLayoutTemplate}
-            />
-            {/* Main Content */}
-            <MainContent
-              pages={pages}
-              currentPage={currentPage}
-              selectedLayout={selectedLayout}
-              selectedGrid={selectedGrid}
-              selectedLayoutIndex={selectedLayoutIndex}
-              containerRefs={containerRefs}
-              onLayoutClick={handleLayoutClick}
-              onGridClick={handleGridClick}
-              onAddLayoutOrGrid={addLayoutOrGrid}
-              onSaveOrder={saveOrder}
-              onDelete={handleDelete}
-            />
-            {/* Right Menu */}
-            <RightMenu
-              selectedLayout={selectedLayout}
-              selectedGrid={selectedGrid}
-              atribut={atribut}
-              formData={formData}
-              newSize={newSize}
-              newHeight={newHeight}
-              newMenuItem={newMenuItem}
-              onDelete={handleDelete}
-              onUpdateComponentSize={updateComponentSize}
-              onInputChange={handlePropertyChange}
-              onSubmit={handleSubmit}
-              onSizeChange={handleRealtimeSizeChange}
-              onHeightChange={handleRealtimeHeightChange}
-              onMenuItemChange={(field, value) =>
-                setNewMenuItem((p) => ({ ...p, [field]: value }))
-              }
-              onAddMenuItem={handleAddMenuItem}
-              onDeleteMenuItem={handleDeleteMenuItem}
-            />
-          </Box>
+        <Box sx={{ display: "flex", flexGrow: 1, p: 3, gap: 3 }}>
+          {/* Left Menu */}
+          <LeftMenu
+            pages={pages}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onAddPage={addPage}
+            menuAnchorEl={menuAnchorEl}
+            onMenuClose={handleMenuClose}
+            selectedPageForMenu={selectedPageForMenu}
+            onDeletePage={deletePage}
+            onMenuOpen={handleMenuOpen}
+            selectedGrid={selectedGrid}
+            sectionComponents={sectionComponents}
+            onLayerReorder={handleLayerDragEnd}
+            onApplyLayoutTemplate={handleApplyLayoutTemplate}
+          />
+          {/* Main Content */}
+          <MainContent
+            pages={pages}
+            currentPage={currentPage}
+            selectedLayout={selectedLayout}
+            selectedGrid={selectedGrid}
+            selectedLayoutIndex={selectedLayoutIndex}
+            containerRefs={containerRefs}
+            onLayoutClick={handleLayoutClick}
+            onGridClick={handleGridClick}
+            onAddLayoutOrGrid={addLayoutOrGrid}
+            onSaveOrder={saveOrder}
+            onDelete={handleDelete}
+          />
+          {/* Right Menu */}
+          <RightMenu
+            selectedLayout={selectedLayout}
+            selectedGrid={selectedGrid}
+            atribut={atribut}
+            formData={formData}
+            newSize={newSize}
+            newHeight={newHeight}
+            newMenuItem={newMenuItem}
+            onDelete={handleDelete}
+            onUpdateComponentSize={updateComponentSize}
+            onInputChange={handlePropertyChange}
+            onSubmit={handleSubmit}
+            onSizeChange={handleRealtimeSizeChange}
+            onHeightChange={handleRealtimeHeightChange}
+            onMenuItemChange={(field, value) =>
+              setNewMenuItem((p) => ({ ...p, [field]: value }))
+            }
+            onAddMenuItem={handleAddMenuItem}
+            onDeleteMenuItem={handleDeleteMenuItem}
+          />
+        </Box>
       </Box>
       <DragOverlay>
         {activeId ? (

@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Grid, IconButton, Typography } from "@mui/material";
+import { Box, Button, Grid, Typography } from "@mui/material";
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
 import { SPACING } from "@/shared/AppConst";
@@ -10,17 +10,15 @@ const MainContent = ({
   currentPage,
   selectedLayout,
   selectedGrid,
-  selectedLayoutIndex,
   containerRefs,
   onLayoutClick,
   onGridClick,
   onAddLayoutOrGrid,
-  onSaveOrder,
   onDelete,
 }) => {
   const { setNodeRef: setMainContentDroppableRef, isOver: isMainContentOver } =
     useDroppable({
-      id: "main-content-canvas", // ID unik untuk kanvas utama
+      id: "main-content-canvas",
     });
 
   // Fungsi untuk render components
@@ -28,7 +26,6 @@ const MainContent = ({
     return layouts.map((layout) => (
       <Grid
         item
-        // Ubah dari parseInt(layout.properties?.size) ke size langsung
         size={layout.properties?.size || 12}
         key={layout.id}
         data-swapy-slot={layout.id}
@@ -41,20 +38,16 @@ const MainContent = ({
         >
           {layout.children?.length > 0 ? (
             layout.children.map((child) => {
-              // Jika child adalah component (memiliki name dan properties)
               if (child.name && child.properties) {
                 return React.createElement(Components?.[child.name], {
                   key: child.id,
-                  ...child.properties, // Spread properties sebagai props
+                  ...child.properties,
                 });
-              }
-              // Jika child adalah layout (struktur layout)
-              else if (child.properties && !child.name) {
+              } else if (child.properties && !child.name) {
                 return (
                   <Grid
                     item
-                    // Ubah dari parseInt ke size langsung
-                    size={child.properties.size || 12} // Default size 12
+                    size={child.properties.size || 12}
                     key={child.id}
                     data-swapy-slot={child.id}
                   >
@@ -116,7 +109,7 @@ const MainContent = ({
           mb: SPACING,
           // position: "sticky",
           // top: "50px",
-          // zIndex: 1, 
+          // zIndex: 1,
         }}
       >
         <Typography variant="h6">
@@ -162,7 +155,7 @@ const MainContent = ({
           p: 3,
           backgroundColor: "#F9FDFE",
           borderRadius: SPACING,
-          border: isMainContentOver ? "2px dashed green" : "1px solid #D9D9D9", // ✅ Visual feedback saat hover
+          border: isMainContentOver ? "2px dashed green" : "1px solid #D9D9D9",
           minHeight: "100vh",
           height: "fit-content",
           transition: "border 0.2s ease",

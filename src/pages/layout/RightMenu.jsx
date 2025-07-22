@@ -1,10 +1,6 @@
 import React from "react";
 import {
   Box,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
   TextField,
   Typography,
   Switch,
@@ -22,16 +18,21 @@ const RightMenu = ({
   onSizeChange,
   onHeightChange,
 }) => {
+  // Helper function to get nested value from an object
+  const getNestedValue = (obj, pathArr) => {
+    return pathArr.reduce((acc, part) => acc && acc[part], obj);
+  };
+  // Helper function to convert fullPath string to array
+  const pathArrayFromFullPath = (fullPath) => fullPath.split(".");
+
   const renderPropertyField = (key, valueFromProps, onChange, path = "") => {
     const fullPath = path ? `${path}.${key}` : key;
-
-    // Dapatkan nilai dari formData. Jika tidak ada di formData, gunakan nilai default dari props (valueFromProps)
-    // Ini penting untuk properti bersarang yang mungkin belum ada di formData saat inisialisasi awal
     const currentValue =
       getNestedValue(formData, pathArrayFromFullPath(fullPath)) !== undefined
         ? getNestedValue(formData, pathArrayFromFullPath(fullPath))
         : valueFromProps;
 
+    // --- Penanganan untuk String dan Number ---
     if (
       typeof valueFromProps === "string" ||
       typeof valueFromProps === "number"
@@ -42,13 +43,16 @@ const RightMenu = ({
           label={key.charAt(0).toUpperCase() + key.slice(1)}
           name={fullPath}
           type={typeof valueFromProps === "number" ? "number" : "text"}
-          value={currentValue} // <-- Selalu gunakan currentValue dari formData
+          value={currentValue}
           onChange={(e) => onChange(fullPath, e.target.value)}
           fullWidth
           sx={{ mt: SPACING }}
         />
       );
-    } else if (typeof valueFromProps === "boolean") {
+    }
+
+    // --- Penanganan untuk Boolean ---
+    else if (typeof valueFromProps === "boolean") {
       return (
         <Box
           key={fullPath}
@@ -56,57 +60,33 @@ const RightMenu = ({
         >
           <Typography>{key.charAt(0).toUpperCase() + key.slice(1)}:</Typography>
           <Switch
-            checked={currentValue} // <-- Selalu gunakan currentValue dari formData
+            checked={!!currentValue}
             onChange={(e) => onChange(fullPath, e.target.checked)}
             name={fullPath}
           />
         </Box>
       );
-    } else if (Array.isArray(valueFromProps)) {
-      // Untuk array, kita perlu memastikan formData[key] juga array
-      const currentArray =
-        getNestedValue(formData, pathArrayFromFullPath(fullPath)) || [];
+    }
+
+    else if (Array.isArray(valueFromProps)) {
       return (
-        <Box
+        <TextField
           key={fullPath}
-          sx={{ mt: SPACING, border: "1px dashed #ccc", p: 1 }}
-        >
-          <Typography variant="subtitle1">
-            {key.charAt(0).toUpperCase() + key.slice(1)} (Array):
-          </Typography>
-          <List>
-            {currentArray.map(
-              (
-                item,
-                index // <-- Iterasi currentArray dari formData
-              ) => (
-                <ListItem
-                  key={`${fullPath}-${index}`}
-                  secondaryAction={
-                    <IconButton
-                      edge="end"
-                      // Perhatikan: untuk delete item array, onInputChange perlu tahu index dan aksi 'delete'
-                      onClick={() => onChange(fullPath, index, "delete")}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  }
-                >
-                  {typeof item === "object" && item !== null ? (
-                    <ListItemText primary={Object.values(item).join(" - ")} />
-                  ) : (
-                    <ListItemText primary={item.toString()} />
-                  )}
-                </ListItem>
-              )
-            )}
-          </List>
-        </Box>
+          label={`${key.charAt(0).toUpperCase() + key.slice(1)} (JSON Array)`}
+          name={fullPath}
+          multiline
+          rows={5}
+          value={JSON.stringify(currentValue, null, 2)}
+          onChange={(e) => onChange(fullPath, e.target.value, "json")}
+          fullWidth
+          sx={{ mt: SPACING }}
+          helperText="Edit array dalam format JSON."
+        />
       );
-    } else if (typeof valueFromProps === "object" && valueFromProps !== null) {
-      // Untuk objek bersarang, kita perlu memastikan formData[key] juga objek
-      const currentObject =
-        getNestedValue(formData, pathArrayFromFullPath(fullPath)) || {};
+    }
+
+    // --- Penanganan untuk Object (rekursif) ---
+    else if (typeof valueFromProps === "object" && valueFromProps !== null) {
       return (
         <Box
           key={fullPath}
@@ -116,11 +96,10 @@ const RightMenu = ({
             {key.charAt(0).toUpperCase() + key.slice(1)} (Object):
           </Typography>
           {Object.entries(valueFromProps).map(([subKey, subValue]) =>
-            // Rekursif, tapi pastikan subValue yang diteruskan adalah dari currentObject
             renderPropertyField(
               subKey,
-              currentObject[subKey] !== undefined
-                ? currentObject[subKey]
+              currentValue?.[subKey] !== undefined
+                ? currentValue[subKey]
                 : subValue,
               onChange,
               fullPath
@@ -133,13 +112,6 @@ const RightMenu = ({
   };
 
   const isError = newSize && (parseInt(newSize) < 1 || parseInt(newSize) > 12);
-
-  // Helper function to get nested value from an object
-  const getNestedValue = (obj, pathArr) => {
-    return pathArr.reduce((acc, part) => acc && acc[part], obj);
-  };
-  // Helper function to convert fullPath string to array
-  const pathArrayFromFullPath = (fullPath) => fullPath.split(".");
 
   return (
     <Box
@@ -204,9 +176,7 @@ const RightMenu = ({
               fullWidth
               value={newSize || ""}
               onChange={(e) => onSizeChange(e.target.value)}
-              // Tambahkan properti error dan helperText
               error={!!isError}
-              // Berikan batasan pada input element
               inputProps={{
                 min: 1,
                 max: 12,
@@ -222,9 +192,7 @@ const RightMenu = ({
               sx={{}}
             />
             {/* Input Component Properties */}
-            {atribut &&
-            atribut.properties &&
-            Object.keys(atribut.properties).length > 0 ? (
+            {atribut && atribut.properties && (
               <Box sx={{ mt: SPACING }}>
                 <Box
                   sx={{
@@ -233,37 +201,16 @@ const RightMenu = ({
                     borderRadius: SPACING,
                     p: 1.5,
                     mb: SPACING,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
                   }}
                 >
-                  <Box>
-                    <Typography variant="h7">Component Properties</Typography>
-                  </Box>
+                  <Typography variant="h6">Component Properties</Typography>
                 </Box>
                 {Object.entries(atribut.properties).map(([key, value]) =>
                   renderPropertyField(key, value, onInputChange)
                 )}
               </Box>
-            ) : atribut ? (
-              <Typography sx={{ mt: SPACING }}>
-                No editable properties.
-              </Typography>
-            ) : null}
+            )}
           </form>
-        )}
-
-        {/* Component Properties */}
-        {atribut && (
-          <Box sx={{ mt: SPACING }}>
-            <Typography variant="body1">
-              <strong>ID:</strong> {atribut.id}
-            </Typography>
-            <Typography variant="body1">
-              <strong>Type:</strong> {atribut.name}
-            </Typography>
-          </Box>
         )}
       </Box>
     </Box>

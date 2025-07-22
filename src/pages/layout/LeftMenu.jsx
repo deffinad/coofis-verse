@@ -17,7 +17,7 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import DividingLine from "../components/DividingLine";
+import DividingLine from "../../shared/components/DividingLine";
 import MenuPages from "./MenuPages";
 import DraggableComponent from "@/shared/components/DraggableComponent";
 import { SPACING } from "@/shared/AppConst";
@@ -73,7 +73,6 @@ function SortableLayer({ layer }) {
   // Handler untuk toggle expanded state secara manual (klik expand icon)
   const handleAccordionChange = (event, isExpanded) => {
     if (isStructural) {
-      // Hanya izinkan expand/collapse jika item struktural
       setExpanded(isExpanded);
     }
   };
@@ -84,8 +83,8 @@ function SortableLayer({ layer }) {
       style={style}
       disableGutters
       elevation={0}
-      expanded={expanded} // Kontrol expanded state dengan state lokal
-      onChange={handleAccordionChange} // Tambahkan handler perubahan
+      expanded={expanded}
+      onChange={handleAccordionChange}
       sx={{
         "&:before": { display: "none" },
         backgroundColor: "transparent",
@@ -117,7 +116,6 @@ function SortableLayer({ layer }) {
               {...attributes}
               {...listeners}
               style={{ display: "flex", alignItems: "center", cursor: "grab" }}
-              // Hentikan propagasi event klik agar tidak toggle accordion saat drag handle diklik
               onClick={(e) => e.stopPropagation()}
             >
               <DragIndicatorIcon sx={{ mr: 1 }} />
@@ -130,7 +128,6 @@ function SortableLayer({ layer }) {
           {layer.name}
         </Typography>
       </AccordionSummary>
-      {/* Lakukan rekursi HANYA jika item ini struktural dan punya anak */}
       {isStructural && layer.children.length > 0 && (
         <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
           <SortableLayerList layers={layer.children} />
@@ -287,7 +284,6 @@ const LeftMenu = ({
           <Typography variant="h6">Layers</Typography>
         </Box>
 
-        {/* Layers Tree is now wrapped in a DndContext */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -444,7 +440,7 @@ const LeftMenu = ({
                     </Typography>
                     {LayoutTemplates.map(
                       (
-                        template // ✅ Render Layout Templates
+                        template
                       ) => (
                         <DraggableComponent key={template.id} id={template.id}>
                           <ListItemButton

@@ -32,7 +32,7 @@ import { DataKuota } from "../json/DocsKuota";
 import { DateData } from "../json/DateData";
 import { KuotaCuti1 } from "../json/DocsKuotaCuti1";
 import { KuotaCuti2 } from "../json/DocsKuotaCuti2";
-import { SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/AppConst";
 
 import { LayoutTemplates } from "..//json/LayoutTemplates";
 
@@ -86,8 +86,10 @@ const Layout = () => {
       );
       return;
     }
+
     const pageIndex = pages.findIndex((p) => p.id === currentPage);
     if (pageIndex === -1) return;
+
     const generateUniqueIds = (items) => {
       return items.map((item) => {
         const newItem = {
@@ -102,15 +104,24 @@ const Layout = () => {
         return newItem;
       });
     };
+
     const newLayoutsToAdd = generateUniqueIds(templateLayout);
+
     setPages((prevPages) => {
       const updatedPages = [...prevPages];
       updatedPages[pageIndex] = {
         ...updatedPages[pageIndex],
-        layouts: [...updatedPages[pageIndex].layouts, ...newLayoutsToAdd],
+        // Ubah dari append menjadi replace - hapus layout lama, gunakan template baru
+        layouts: [...newLayoutsToAdd], // Menggantikan seluruh layout dengan template baru
       };
       return updatedPages;
     });
+
+    // Reset selected states karena layout lama sudah dihapus
+    setSelectedLayout(null);
+    setSelectedGrid(null);
+    setSelectedLayoutIndex(null);
+
     showNotification("Layout template applied successfully!", "success");
   };
 
@@ -635,7 +646,7 @@ const Layout = () => {
       if (templateToApply) {
         handleApplyLayoutTemplate(templateToApply.layout);
       }
-      return; 
+      return;
     }
 
     const componentType = draggedItemId;
@@ -667,11 +678,11 @@ const Layout = () => {
         id: `component${generateRandomId()}`,
         name: "Navbar",
         properties: {
-          title:"My Website",
-          height: 65, 
-          backgroundColor: "#ffffff", 
-          textColor: "#333333", 
-          activeTextColor: "#007bff",  
+          title: "My Website",
+          height: 65,
+          backgroundColor: "#ffffff",
+          textColor: "#333333",
+          activeTextColor: "#007bff",
         },
       },
       Ratings: {
@@ -871,7 +882,7 @@ const Layout = () => {
         sx={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#EFEFEF",
+          backgroundColor: COLOR.very_light_gray,
         }}
       >
         <EditorNavbar
@@ -881,8 +892,17 @@ const Layout = () => {
           projectName={
             pages.find((p) => p.id === currentPage)?.name || "Untitled Project"
           }
+          sx={{}}
         />
-        <Box sx={{ display: "flex", flexGrow: 1, p: 3, gap: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexGrow: 1,
+            p: SPACING,
+            gap: SPACING + 1,
+            justifyContent: "center",
+          }}
+        >
           {/* Left Menu */}
           <LeftMenu
             pages={pages}
@@ -941,7 +961,7 @@ const Layout = () => {
           <Button
             variant="outlined"
             sx={{
-              backgroundColor: "white",
+              backgroundColor: COLOR.white,
               color: "#1E1E1E",
               borderColor: "#2C2C2C",
               justifyContent: "flex-start",

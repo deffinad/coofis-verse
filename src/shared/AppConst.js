@@ -1,6 +1,23 @@
 export const SPACING = 2
 
+export const COLOR = {
+    //white
+    white: "#FFFFFF",
+    white_ice: '#F8FEFF',
+    white_winter: '#F9FDFE',
+    //gray
+    light_gray: '#E3E3E3',
+    very_light_gray: '#EFEFEF',
+    dark_gray: '#2C2C2C',
+    medium_dark_gray: '#757575',
+    //green
+    green_malachite: '#04E762',
+    //blue
+    honolulu_blue: '#007CBE',
+    //red
+    red_rojo: '#DD1C1A',
 
+}
 
 export const FONTS = {
     LIGHT: '300',

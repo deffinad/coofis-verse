@@ -1,11 +1,6 @@
-import React from "react";
-import {
-  Box,
-  TextField,
-  Typography,
-  Switch,
-} from "@mui/material";
-import { SPACING } from "@/shared/AppConst";
+import React, { useState, useEffect, useRef } from "react";
+import { Box, TextField, Typography, Switch } from "@mui/material";
+import { COLOR, SPACING } from "@/shared/AppConst";
 
 const RightMenu = ({
   selectedGrid,
@@ -18,6 +13,46 @@ const RightMenu = ({
   onSizeChange,
   onHeightChange,
 }) => {
+  const [menuHeight, setMenuHeight] = useState("calc(100vh - 150px)");
+  const menuRef = useRef(null);
+
+  // Hook untuk menghitung tinggi dinamis berdasarkan scroll position
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (menuRef.current) {
+        const rect = menuRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const topOffset = rect.top;
+        const bottomPadding = 20; // Padding dari bawah viewport
+
+        // Hitung tinggi yang tersedia dari posisi current menu sampai bawah viewport
+        const availableHeight = viewportHeight - topOffset - bottomPadding;
+
+        // Set minimum height untuk memastikan menu tidak terlalu kecil
+        const minHeight = 300;
+        const finalHeight = Math.max(availableHeight, minHeight);
+
+        setMenuHeight(`${finalHeight}px`);
+      }
+    };
+
+    // Jalankan kalkulasi saat pertama kali render
+    calculateHeight();
+
+    // Event listener untuk scroll dan resize
+    const handleScroll = () => calculateHeight();
+    const handleResize = () => calculateHeight();
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   // Helper function to get nested value from an object
   const getNestedValue = (obj, pathArr) => {
     return pathArr.reduce((acc, part) => acc && acc[part], obj);
@@ -66,9 +101,7 @@ const RightMenu = ({
           />
         </Box>
       );
-    }
-
-    else if (Array.isArray(valueFromProps)) {
+    } else if (Array.isArray(valueFromProps)) {
       return (
         <TextField
           key={fullPath}
@@ -115,17 +148,19 @@ const RightMenu = ({
 
   return (
     <Box
+      ref={menuRef}
       sx={{
-        width: 280,
-        backgroundColor: "#F9FDFE",
+        width: 300,
+        backgroundColor: COLOR.white_winter,
         borderRadius: SPACING,
-        border: "1px solid #D9D9D9",
+        border: `1px solid ${COLOR.light_gray}`,
         flexShrink: 0,
         position: "sticky",
-        top: "110px",
-        height: "calc(100vh - 134px)",
+        top: "105px",
+        height: menuHeight,
         overflowY: "auto",
         overflowX: "hidden",
+        transition: "height 0.1s ease-out",
         "&::-webkit-scrollbar": {
           width: "8px",
         },
@@ -145,8 +180,8 @@ const RightMenu = ({
         {/* Header */}
         <Box
           sx={{
-            backgroundColor: "#2C2C2C",
-            color: "#FFFFFF",
+            backgroundColor: COLOR.dark_gray,
+            color: COLOR.white_ice,
             borderRadius: SPACING,
             p: 1.5,
             mb: SPACING,
@@ -196,8 +231,8 @@ const RightMenu = ({
               <Box sx={{ mt: SPACING }}>
                 <Box
                   sx={{
-                    backgroundColor: "#2C2C2C",
-                    color: "#FFFFFF",
+                    backgroundColor: COLOR.dark_gray,
+                    color: COLOR.white_ice,
                     borderRadius: SPACING,
                     p: 1.5,
                     mb: SPACING,

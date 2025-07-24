@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -20,7 +20,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DividingLine from "../../shared/components/DividingLine";
 import MenuPages from "./MenuPages";
 import DraggableComponent from "@/shared/components/DraggableComponent";
-import { SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/AppConst";
 
 import {
   DndContext,
@@ -168,20 +168,61 @@ const LeftMenu = ({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+  const [menuHeight, setMenuHeight] = useState("calc(100vh - 150px)");
+  const menuRef = useRef(null);
+
+  // Hook untuk menghitung tinggi dinamis berdasarkan scroll position
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (menuRef.current) {
+        const rect = menuRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const topOffset = rect.top;
+        const bottomPadding = 20; // Padding dari bawah viewport
+
+        // Hitung tinggi yang tersedia dari posisi current menu sampai bawah viewport
+        const availableHeight = viewportHeight - topOffset - bottomPadding;
+
+        // Set minimum height untuk memastikan menu tidak terlalu kecil
+        const minHeight = 300;
+        const finalHeight = Math.max(availableHeight, minHeight);
+
+        setMenuHeight(`${finalHeight}px`);
+      }
+    };
+
+    // Jalankan kalkulasi saat pertama kali render
+    calculateHeight();
+
+    // Event listener untuk scroll dan resize
+    const handleScroll = () => calculateHeight();
+    const handleResize = () => calculateHeight();
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
     <Box
+      ref={menuRef}
       sx={{
-        width: 280,
-        backgroundColor: "#F9FDFE",
+        width: 300,
+        backgroundColor: COLOR.white_winter,
         borderRadius: SPACING,
         border: "1px solid #D9D9D9",
         flexShrink: 0,
         position: "sticky",
-        top: "110px",
-        height: "calc(100vh - 134px)",
+        top: "105px",
+        height: menuHeight,
         overflowY: "auto",
         overflowX: "hidden",
+        transition: "height 0.1s ease-out",
         "&::-webkit-scrollbar": {
           width: "8px",
         },
@@ -209,8 +250,8 @@ const LeftMenu = ({
         {/* Pages Header */}
         <Box
           sx={{
-            backgroundColor: "#2C2C2C",
-            color: "#FFFFFF",
+            backgroundColor: COLOR.dark_gray,
+            color: COLOR.white_ice,
             borderRadius: SPACING,
             p: SPACING,
             mb: SPACING - 0.5,
@@ -225,7 +266,7 @@ const LeftMenu = ({
               Description
             </Typography>
           </Box>
-          <IconButton size="small" sx={{ color: "white" }} onClick={onAddPage}>
+          <IconButton size="small" sx={{ color: COLOR.white }} onClick={onAddPage}>
             <AddIcon />
           </IconButton>
         </Box>
@@ -273,8 +314,8 @@ const LeftMenu = ({
         {/* Layers Header */}
         <Box
           sx={{
-            backgroundColor: "#2C2C2C",
-            color: "#FFFFFF",
+            backgroundColor: COLOR.dark_gray,
+            color: COLOR.white_ice,
             borderRadius: SPACING,
             p: SPACING,
             mb: SPACING - 0.5,
@@ -308,8 +349,8 @@ const LeftMenu = ({
         {/* Components Header */}
         <Box
           sx={{
-            backgroundColor: "#2C2C2C",
-            color: "#FFFFFF",
+            backgroundColor: COLOR.dark_gray,
+            color: COLOR.white_ice,
             borderRadius: SPACING,
             p: SPACING,
             mb: SPACING - 0.5,
@@ -372,7 +413,7 @@ const LeftMenu = ({
                 <Typography
                   variant="button"
                   sx={{
-                    color: "#1E1E1E",
+                    color: COLOR.dark_gray,
                     textTransform: "none",
                     fontWeight: 500,
                   }}
@@ -434,46 +475,45 @@ const LeftMenu = ({
                   <Box sx={{ p: SPACING }}>
                     <Typography
                       variant="body2"
-                      sx={{ color: "grey.700", mb: 1 }}
+                      sx={{ color: COLOR.medium_dark_gray, mb: 1 }}
                     >
                       Drag and drop these layout templates onto your page.
                     </Typography>
-                    {LayoutTemplates.map(
-                      (
-                        template
-                      ) => (
-                        <DraggableComponent key={template.id} id={template.id}>
-                          <ListItemButton
-                            sx={{
-                              borderRadius: SPACING,
-                              p: SPACING,
-                              mb: SPACING - 0.5,
-                              cursor: "grab",
-                              "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.04)",
-                              },
-                              "&:active": {
-                                backgroundColor: "rgba(0, 0, 0, 0.08)",
-                              },
-                            }}
-                          >
-                            <ListItemText
-                              primary={
-                                <Typography
-                                  variant="body2"
-                                  sx={{ color: "#1E1E1E", fontWeight: 500 }}
-                                >
-                                  {template.name}
-                                </Typography>
-                              }
-                            />
-                          </ListItemButton>
-                        </DraggableComponent>
-                      )
-                    )}
+                    {LayoutTemplates.map((template) => (
+                      <DraggableComponent key={template.id} id={template.id}>
+                        <ListItemButton
+                          sx={{
+                            borderRadius: SPACING,
+                            p: SPACING,
+                            mb: SPACING - 0.5,
+                            cursor: "grab",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.04)",
+                            },
+                            "&:active": {
+                              backgroundColor: "rgba(0, 0, 0, 0.08)",
+                            },
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Typography
+                                variant="body2"
+                                sx={{ color: COLOR.dark_gray, fontWeight: 500 }}
+                              >
+                                {template.name}
+                              </Typography>
+                            }
+                          />
+                        </ListItemButton>
+                      </DraggableComponent>
+                    ))}
                   </Box>
                 ) : (
-                  <Typography variant="body2" sx={{ color: "grey.600", px: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: COLOR.medium_dark_gray, px: 1 }}
+                  >
                     No components available.
                   </Typography>
                 )}

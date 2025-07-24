@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import { SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/AppConst";
 
 const EditorNavbar = ({
   projectName = "Project A",
@@ -22,10 +22,10 @@ const EditorNavbar = ({
 }) => {
   return (
     <AppBar
-      position="static"
+      position="sticky"
       elevation={0}
       sx={{
-        backgroundColor: "#F9FDFE",
+        backgroundColor: COLOR.white_winter,
         borderBottom: "1px solid #e0e0e0",
         color: "#333",
         height: "84px",
@@ -41,8 +41,8 @@ const EditorNavbar = ({
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <IconButton
               sx={{
-                backgroundColor: "#2c2c2c",
-                color: "#ffffff",
+                backgroundColor: COLOR.dark_gray,
+                color: COLOR.white_ice,
                 width: 40,
                 height: 40,
                 borderRadius: SPACING,
@@ -67,7 +67,7 @@ const EditorNavbar = ({
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "#666", fontSize: "0.75rem" }}
+                sx={{ color: COLOR.medium_dark_gray, fontSize: "0.75rem" }}
               >
                 {lastEdited}
               </Typography>
@@ -91,7 +91,7 @@ const EditorNavbar = ({
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <SearchRoundedIcon sx={{ color: "#666" }} />
+                  <SearchRoundedIcon sx={{ color: COLOR.medium_dark_gray }} />
                 </InputAdornment>
               ),
               sx: {
@@ -120,15 +120,16 @@ const EditorNavbar = ({
               Save
             </Button>
             <Button
-              variant="outlined"
-              color="inherit"
+              variant="contained"
+              disableElevation
               onClick={onPreview}
               sx={{
                 borderRadius: SPACING,
                 width: 79,
                 height: 40,
-                backgroundColor: "#E3E3E3",
-                borderColor: "#E3E3E3",
+                color: COLOR.dark_gray,
+                backgroundColor: COLOR.light_gray,
+                borderColor: COLOR.light_gray,
                 textTransform: "none",
               }}
             >
@@ -140,14 +141,11 @@ const EditorNavbar = ({
               onClick={onPublish}
               sx={{
                 borderRadius: SPACING,
-                backgroundColor: "#2c2c2c",
-                color: "#ffffff",
+                backgroundColor: COLOR.dark_gray,
+                color: COLOR.white_ice,
                 width: 79,
                 height: 40,
                 textTransform: "none",
-                "&:hover": {
-                  backgroundColor: "#1f1f1f",
-                },
               }}
             >
               Publish

@@ -4,7 +4,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Box } from "@mui/material";
 import { useDroppable } from "@dnd-kit/core";
-import { SPACING } from "../AppConst";
+import { COLOR, SPACING } from "../AppConst";
 
 const DroppableGrid = ({ id, children, onClick, selectedGrid, style }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -23,9 +23,9 @@ const DroppableGrid = ({ id, children, onClick, selectedGrid, style }) => {
       data-swapy-item={id}
       sx={{
         border: isOver
-          ? "2px dashed green" 
+          ? `2px dashed ${COLOR.honolulu_blue}` 
           : selectedGrid?.id === id
-          ? "2px solid #1976d2" 
+          ? `2px solid ${COLOR.green_malachite}` 
           : "1px dashed grey",
         borderRadius: SPACING,
         minHeight: "50px",

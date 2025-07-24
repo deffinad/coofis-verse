@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Button, Grid, Typography } from "@mui/material";
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
-import { SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/AppConst";
 import { useDroppable } from "@dnd-kit/core";
 
 const MainContent = ({
@@ -34,7 +34,13 @@ const MainContent = ({
           id={layout.id}
           onClick={() => onGridClick(layout, layoutId, layoutidx)}
           selectedGrid={selectedGrid}
-          style={{ minHeight: layout.properties?.height || "auto" }}
+          style={{
+            minHeight: layout.properties?.height || "auto",
+            display: layout.children?.length === 0 ? "flex" : "block",
+            justifyContent:
+              layout.children?.length === 0 ? "center" : "flex-start",
+            alignItems: layout.children?.length === 0 ? "center" : "flex-start",
+          }}
         >
           {layout.children?.length > 0 ? (
             layout.children.map((child) => {
@@ -60,9 +66,9 @@ const MainContent = ({
                       {child.children?.length > 0 ? (
                         renderComponents(child.children, layoutId, layoutidx)
                       ) : (
-                        <p style={{ color: "gray" }}>
-                          This layout is currently empty
-                        </p>
+                        <Typography variant="body2" sx={{ color: "gray" }}>
+                          Empty Layout
+                        </Typography>
                       )}
                     </DroppableGrid>
                   </Grid>
@@ -93,7 +99,6 @@ const MainContent = ({
       sx={{
         minWidth: "1140px",
         maxWidth: "1140px",
-        mx: "auto",
       }}
     >
       {/* Header di atas kanvas */}
@@ -102,14 +107,14 @@ const MainContent = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: "#2C2C2C",
-          color: "#FFFFFF",
+          backgroundColor: COLOR.dark_gray,
+          color: COLOR.white_ice,
           p: "18px",
           borderRadius: SPACING,
           mb: SPACING,
-          // position: "sticky",
-          // top: "50px",
-          // zIndex: 1,
+          position: "sticky",
+          top: "105px",
+          zIndex: 1,
         }}
       >
         <Typography variant="h6">
@@ -121,8 +126,8 @@ const MainContent = ({
             variant="contained"
             onClick={onAddLayoutOrGrid}
             sx={{
-              backgroundColor: "#E3E3E3",
-              color: "#2c2c2c",
+              backgroundColor: COLOR.light_gray,
+              color: COLOR.dark_gray,
               borderRadius: SPACING,
               textTransform: "none",
             }}
@@ -135,8 +140,8 @@ const MainContent = ({
             disabled={!selectedLayout}
             onClick={onDelete}
             sx={{
-              backgroundColor: "#dc143c",
-              color: "#ffffff",
+              backgroundColor: COLOR.red_rojo,
+              color: COLOR.white_ice,
               borderRadius: SPACING,
               textTransform: "none",
               display: selectedLayout ? "block" : "none",
@@ -153,9 +158,11 @@ const MainContent = ({
         ref={setMainContentDroppableRef}
         sx={{
           p: 3,
-          backgroundColor: "#F9FDFE",
+          backgroundColor: COLOR.white_winter,
           borderRadius: SPACING,
-          border: isMainContentOver ? "2px dashed green" : "1px solid #D9D9D9",
+          border: isMainContentOver
+            ? `2px dashed ${COLOR.honolulu_blue}`
+            : `1px solid ${COLOR.light_gray}`,
           minHeight: "100vh",
           height: "fit-content",
           transition: "border 0.2s ease",
@@ -171,7 +178,7 @@ const MainContent = ({
                     sx={{
                       border:
                         selectedLayout === layout.id && !selectedGrid
-                          ? "1px solid blue"
+                          ? `2px solid ${COLOR.green_malachite}`
                           : "1px dashed black",
                       padding: SPACING,
                       cursor: "pointer",

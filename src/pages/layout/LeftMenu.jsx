@@ -43,6 +43,8 @@ import { LayoutTemplates } from "../../json/LayoutTemplates";
 
 function SortableLayer({ layer }) {
   const isStructural = layer.hasOwnProperty("children");
+  const hasChildren =
+    isStructural && layer.children && layer.children.length > 0;
 
   const {
     attributes,
@@ -72,9 +74,10 @@ function SortableLayer({ layer }) {
 
   // Handler untuk toggle expanded state secara manual (klik expand icon)
   const handleAccordionChange = (event, isExpanded) => {
-    if (isStructural) {
-      setExpanded(isExpanded);
+    if (isExpanded && !hasChildren) {
+      return;
     }
+    setExpanded(isExpanded);
   };
 
   return (
@@ -96,9 +99,15 @@ function SortableLayer({ layer }) {
     >
       <AccordionSummary
         expandIcon={
-          isStructural ? <ExpandMoreIcon /> : <Box sx={{ width: 24 }} />
+          hasChildren ? <ExpandMoreIcon /> : <Box sx={{ width: 24 }} />
         }
-        sx={{ p: "6px 8px", minHeight: "48px" }}
+        sx={{
+          p: "2px 5px",
+          minHeight: "48px",
+          mb: 0.5,
+          borderRadius: 1,
+          
+        }}
       >
         <Typography
           variant="button"
@@ -128,7 +137,7 @@ function SortableLayer({ layer }) {
           {layer.name}
         </Typography>
       </AccordionSummary>
-      {isStructural && layer.children.length > 0 && (
+      {hasChildren && (
         <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
           <SortableLayerList layers={layer.children} />
         </AccordionDetails>
@@ -178,7 +187,7 @@ const LeftMenu = ({
         const rect = menuRef.current.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
         const topOffset = rect.top;
-        const bottomPadding = 20; // Padding dari bawah viewport
+        const bottomPadding = 20;
 
         // Hitung tinggi yang tersedia dari posisi current menu sampai bawah viewport
         const availableHeight = viewportHeight - topOffset - bottomPadding;
@@ -266,7 +275,11 @@ const LeftMenu = ({
               Description
             </Typography>
           </Box>
-          <IconButton size="small" sx={{ color: COLOR.white }} onClick={onAddPage}>
+          <IconButton
+            size="small"
+            sx={{ color: COLOR.white }}
+            onClick={onAddPage}
+          >
             <AddIcon />
           </IconButton>
         </Box>
@@ -278,7 +291,7 @@ const LeftMenu = ({
               key={page.id}
               selected={currentPage === page.id}
               onClick={() => onPageChange(page.id)}
-              sx={{ mb: SPACING - 1.5, borderRadius: 1 }}
+              sx={{ mb: 0.5, borderRadius: 1 }}
             >
               <ListItemText
                 primary={
@@ -375,7 +388,7 @@ const LeftMenu = ({
               ),
               sx: {
                 borderRadius: "30px",
-                backgroundColor: "#F5F5F5",
+                backgroundColor: COLOR.light_gray,
                 "& .MuiOutlinedInput-notchedOutline": {
                   border: "none",
                 },
@@ -385,7 +398,7 @@ const LeftMenu = ({
         </Box>
 
         {/* Components Tree */}
-        <Box>
+        <Box sx={{ p: 1 }}>
           {sectionComponents.map((section, index) => (
             <Accordion
               key={index}
@@ -406,8 +419,11 @@ const LeftMenu = ({
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 sx={{
-                  p: "6px 8px",
+                  p: "2px 5px",
                   minHeight: "48px",
+                  mb: 0.5,
+                  borderRadius: 1,
+                
                 }}
               >
                 <Typography
@@ -421,7 +437,7 @@ const LeftMenu = ({
                   {section.title}
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, mb: SPACING - 0.5, ml: SPACING }}>
+              <AccordionDetails sx={{ p: "2px 2px", ml: SPACING }}>
                 {section.title === "Widget" ? (
                   <Box
                     sx={{
@@ -430,7 +446,6 @@ const LeftMenu = ({
                     }}
                   >
                     {[
-                      "Ratings",
                       "CustomCard",
                       "Navbar",
                       "ArsipCuti",
@@ -443,7 +458,7 @@ const LeftMenu = ({
                         <ListItemButton
                           sx={{
                             borderRadius: SPACING,
-                            p: SPACING,
+                            p: "15px 5px",
                             mb: SPACING - 0.5,
                             cursor: "grab",
                             "&:hover": {
@@ -472,7 +487,7 @@ const LeftMenu = ({
                     ))}
                   </Box>
                 ) : section.title === "Layout" ? (
-                  <Box sx={{ p: SPACING }}>
+                  <Box sx={{ p: "15px 5px" }}>
                     <Typography
                       variant="body2"
                       sx={{ color: COLOR.medium_dark_gray, mb: 1 }}
@@ -484,7 +499,7 @@ const LeftMenu = ({
                         <ListItemButton
                           sx={{
                             borderRadius: SPACING,
-                            p: SPACING,
+                            p: "15px 5px",
                             mb: SPACING - 0.5,
                             cursor: "grab",
                             "&:hover": {
@@ -512,7 +527,10 @@ const LeftMenu = ({
                 ) : (
                   <Typography
                     variant="body2"
-                    sx={{ color: COLOR.medium_dark_gray, px: 1 }}
+                    sx={{
+                      color: COLOR.medium_dark_gray,
+                      p: SPACING,
+                    }}
                   >
                     No components available.
                   </Typography>

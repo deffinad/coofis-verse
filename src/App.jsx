@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import { Routes, Route } from "react-router-dom";
-import Layout from "./pages/layout";
-import Preview from './pages/preview/Preview';
+import Layout from "./pages/layout/Index";
+import Preview from "./pages/layout/Preview";
 
 function App() {
   return (

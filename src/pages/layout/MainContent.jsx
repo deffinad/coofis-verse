@@ -4,6 +4,7 @@ import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
 import { COLOR, SPACING } from "@/shared/AppConst";
 import { useDroppable } from "@dnd-kit/core";
+import { LayoutTemplates } from "../../json/LayoutTemplates";
 
 const MainContent = ({
   pages,
@@ -15,18 +16,25 @@ const MainContent = ({
   onGridClick,
   onAddLayoutOrGrid,
   onDelete,
+  activeId,
 }) => {
   const { setNodeRef: setMainContentDroppableRef, isOver: isMainContentOver } =
     useDroppable({
       id: "main-content-canvas",
     });
 
-  // Fungsi untuk render components
+  const isLayoutTemplateDragging =
+    activeId && LayoutTemplates.some((template) => template.id === activeId);
+
   const renderComponents = (layouts, layoutId, layoutidx) => {
     return layouts.map((layout) => (
       <Grid
         item
-        size={layout.properties?.size || 12}
+        size={
+          typeof layout.properties?.size === "object"
+            ? layout.properties.size.desktop || 12
+            : layout.properties?.size || 12
+        }
         key={layout.id}
         data-swapy-slot={layout.id}
       >
@@ -34,6 +42,7 @@ const MainContent = ({
           id={layout.id}
           onClick={() => onGridClick(layout, layoutId, layoutidx)}
           selectedGrid={selectedGrid}
+          disabled={isLayoutTemplateDragging}
           style={{
             minHeight: layout.properties?.height || "auto",
             display: layout.children?.length === 0 ? "flex" : "block",
@@ -53,7 +62,11 @@ const MainContent = ({
                 return (
                   <Grid
                     item
-                    size={child.properties.size || 12}
+                    size={
+                      typeof child.properties.size === "object"
+                        ? child.properties.size.desktop || 12
+                        : child.properties.size || 12
+                    }
                     key={child.id}
                     data-swapy-slot={child.id}
                   >
@@ -62,6 +75,7 @@ const MainContent = ({
                       onClick={() => onGridClick(child, layoutId, layoutidx)}
                       selectedGrid={selectedGrid}
                       style={{ minHeight: child.properties.height || "auto" }}
+                      disabled={isLayoutTemplateDragging}
                     >
                       {child.children?.length > 0 ? (
                         renderComponents(child.children, layoutId, layoutidx)
@@ -160,9 +174,10 @@ const MainContent = ({
           p: 3,
           backgroundColor: COLOR.white_winter,
           borderRadius: SPACING,
-          border: isMainContentOver
-            ? `2px dashed ${COLOR.honolulu_blue}`
-            : `1px solid ${COLOR.light_gray}`,
+          border:
+            isMainContentOver && isLayoutTemplateDragging
+              ? `2px dashed ${COLOR.honolulu_blue}`
+              : `1px solid ${COLOR.light_gray}`,
           minHeight: "100vh",
           height: "fit-content",
           transition: "border 0.2s ease",

@@ -9,7 +9,6 @@ import {
   IconButton,
   InputAdornment,
 } from "@mui/material";
-import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { COLOR, SPACING } from "@/shared/AppConst";
 
@@ -39,20 +38,6 @@ const EditorNavbar = ({
         {/* Bagian Kiri */}
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <IconButton
-              sx={{
-                backgroundColor: COLOR.dark_gray,
-                color: COLOR.white_ice,
-                width: 40,
-                height: 40,
-                borderRadius: SPACING,
-                "&:hover": {
-                  backgroundColor: "#1f1f1f",
-                },
-              }}
-            >
-              <ArrowBackIosNewRoundedIcon sx={{ fontSize: "1rem" }} />
-            </IconButton>
             <Box>
               <Typography
                 variant="h6"

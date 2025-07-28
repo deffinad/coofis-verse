@@ -8,7 +8,6 @@ const RightMenu = ({
   formData,
   newSize,
   newHeight,
-  onUpdateComponentSize,
   onInputChange,
   onSizeChange,
   onHeightChange,
@@ -23,12 +22,10 @@ const RightMenu = ({
         const rect = menuRef.current.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
         const topOffset = rect.top;
-        const bottomPadding = 20; // Padding dari bawah viewport
+        const bottomPadding = 20;
 
-        // Hitung tinggi yang tersedia dari posisi current menu sampai bawah viewport
         const availableHeight = viewportHeight - topOffset - bottomPadding;
 
-        // Set minimum height untuk memastikan menu tidak terlalu kecil
         const minHeight = 300;
         const finalHeight = Math.max(availableHeight, minHeight);
 
@@ -36,7 +33,6 @@ const RightMenu = ({
       }
     };
 
-    // Jalankan kalkulasi saat pertama kali render
     calculateHeight();
 
     // Event listener untuk scroll dan resize
@@ -144,8 +140,6 @@ const RightMenu = ({
     return null;
   };
 
-  const isError = newSize && (parseInt(newSize) < 1 || parseInt(newSize) > 12);
-
   return (
     <Box
       ref={menuRef}
@@ -195,36 +189,55 @@ const RightMenu = ({
           </Box>
         </Box>
         {selectedGrid && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onUpdateComponentSize(
-                selectedGrid.id,
-                parseInt(newSize),
-                parseInt(newHeight)
-              );
-            }}
-          >
+          <Box>
+            <Typography
+              variant="subtitle1"
+              sx={{ mt: 1, mb: 1, color: COLOR.dark_gray }}
+            >
+              Responsive Columns
+            </Typography>
             <TextField
-              label="Set Col (1-12)"
+              label="Desktop Cols (1-12)"
               type="number"
               fullWidth
-              value={newSize || ""}
-              onChange={(e) => onSizeChange(e.target.value)}
-              error={!!isError}
-              inputProps={{
-                min: 1,
-                max: 12,
-              }}
-              sx={{ mt: SPACING, mb: SPACING }}
+              value={newSize?.desktop || ""}
+              onChange={(e) => onSizeChange("desktop", e.target.value)}
+              inputProps={{ min: 1, max: 12 }}
+              sx={{ mb: SPACING }}
             />
             <TextField
-              label="Set Height"
+              label="Tablet Cols (1-12)"
+              type="number"
+              fullWidth
+              value={newSize?.tablet || ""}
+              onChange={(e) => onSizeChange("tablet", e.target.value)}
+              inputProps={{ min: 1, max: 12 }}
+              sx={{ mb: SPACING }}
+            />
+            <TextField
+              label="Mobile Cols (1-12)"
+              type="number"
+              fullWidth
+              value={newSize?.mobile || ""}
+              onChange={(e) => onSizeChange("mobile", e.target.value)}
+              inputProps={{ min: 1, max: 12 }}
+              sx={{ mb: SPACING }}
+            />
+
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, color: COLOR.dark_gray }}
+            >
+              Sizing
+            </Typography>
+            <TextField
+              label="Min Height (px)"
               type="number"
               fullWidth
               value={newHeight || ""}
               onChange={(e) => onHeightChange(e.target.value)}
               sx={{}}
+              inputProps={{ min: 0 }}
             />
             {/* Input Component Properties */}
             {atribut && atribut.properties && (
@@ -245,7 +258,7 @@ const RightMenu = ({
                 )}
               </Box>
             )}
-          </form>
+          </Box>
         )}
       </Box>
     </Box>

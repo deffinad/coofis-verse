@@ -20,21 +20,21 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { Box, Button } from "@mui/material";
 
 // Local Application Components
-import EditorNavbar from "./layout/EditorNavbar";
-import LeftMenu from "./layout/LeftMenu";
-import MainContent from "./layout/MainContent";
-import RightMenu from "./layout/RightMenu";
-import AlertPopup from "../shared/components/AlertPopup";
+import EditorNavbar from "./EditorNavbar";
+import LeftMenu from "./LeftMenu";
+import MainContent from "./MainContent";
+import RightMenu from "./RightMenu";
+import AlertPopup from "../../shared/components/AlertPopup";
 
 // JSON Data Imports
-import { DataCuti } from "../json/DocsCuti";
-import { DataKuota } from "../json/DocsKuota";
-import { DateData } from "../json/DateData";
-import { KuotaCuti1 } from "../json/DocsKuotaCuti1";
-import { KuotaCuti2 } from "../json/DocsKuotaCuti2";
+import { DataCuti } from "../../json/DocsCuti";
+import { DataKuota } from "../../json/DocsKuota";
+import { DateData } from "../../json/DateData";
+import { KuotaCuti1 } from "../../json/DocsKuotaCuti1";
+import { KuotaCuti2 } from "../../json/DocsKuotaCuti2";
 import { COLOR, SPACING } from "@/shared/AppConst";
 
-import { LayoutTemplates } from "..//json/LayoutTemplates";
+import { LayoutTemplates } from "../../json/LayoutTemplates";
 
 const debounce = (func, delay) => {
   let timeoutId;
@@ -58,7 +58,13 @@ const Layout = () => {
 
   // State untuk form dan properti di menu kanan
   const [formData, setFormData] = useState({});
-  const [newSize, setNewSize] = useState();
+  // START MODIFICATION: Ubah state ukuran menjadi objek untuk responsivitas
+  const [newSize, setNewSize] = useState({
+    desktop: 12,
+    tablet: 12,
+    mobile: 12,
+  });
+  // END MODIFICATION
   const [newHeight, setNewHeight] = useState();
   const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
 
@@ -98,6 +104,21 @@ const Layout = () => {
             .toLowerCase()
             .replace(/\s/g, "-")}-${generateRandomId()}`,
         };
+        // START MODIFICATION: Pastikan template baru juga punya struktur size yang benar
+        if (newItem.properties && !newItem.properties.size) {
+          newItem.properties.size = { desktop: 12, tablet: 12, mobile: 12 };
+        } else if (
+          newItem.properties &&
+          typeof newItem.properties.size === "number"
+        ) {
+          // Konversi format lama jika ada
+          newItem.properties.size = {
+            desktop: newItem.properties.size,
+            tablet: 12,
+            mobile: 12,
+          };
+        }
+        // END MODIFICATION
         if (newItem.children && newItem.children.length > 0) {
           newItem.children = generateUniqueIds(newItem.children);
         }
@@ -197,7 +218,16 @@ const Layout = () => {
       setFormData({});
     }
     if (selectedGrid?.properties) {
-      setNewSize(selectedGrid.properties.size);
+      // START MODIFICATION: Update state `newSize` dengan struktur objek
+      // Juga tambahkan fallback untuk data lama yang mungkin belum memiliki format objek
+      const currentSize = selectedGrid.properties.size;
+      if (typeof currentSize === "object" && currentSize !== null) {
+        setNewSize(currentSize);
+      } else {
+        // Fallback untuk data lama, anggap nilai lama sebagai desktop
+        setNewSize({ desktop: currentSize || 12, tablet: 12, mobile: 12 });
+      }
+      // END MODIFICATION
       setNewHeight(parseInt(selectedGrid.properties.height) || 0);
     }
   }, [atribut?.id, selectedGrid?.id]);
@@ -242,7 +272,10 @@ const Layout = () => {
     const newLayout = {
       id: generateRandomId(),
       name: "Container",
-      properties: { size: 12, height: "100%" },
+      properties: {
+        size: { desktop: 12, tablet: 12, mobile: 12 },
+        height: "100%",
+      }, // MODIFIED
       children: [],
     };
     const updatedPages = [...pages];
@@ -283,7 +316,12 @@ const Layout = () => {
     const newGrid = {
       id: generateRandomId(),
       name: "Layout",
-      properties: { size: 12, height: "140px" },
+      // START MODIFICATION: Inisialisasi 'size' sebagai objek untuk layout responsif
+      properties: {
+        size: { desktop: 12, tablet: 12, mobile: 12 },
+        height: "140px",
+      },
+      // END MODIFICATION
       children: [],
     };
 
@@ -364,7 +402,8 @@ const Layout = () => {
   };
 
   // Handler untuk Properti Komponen (di menu kanan)
-  const updateComponentSize = (componentId, size, height) => {
+  // START MODIFICATION: Ganti `updateComponentSize` menjadi `updateComponentProperties` untuk lebih general
+  const updateComponentProperties = (componentId, newProperties) => {
     setPages((prevPages) => {
       const updatedPages = prevPages.map((p) => {
         if (p.id !== currentPage) return p;
@@ -376,8 +415,7 @@ const Layout = () => {
                 ...layout,
                 properties: {
                   ...layout.properties,
-                  size: parseInt(size) || 12,
-                  height: `${height}px`,
+                  ...newProperties, // Gabungkan properti baru
                 },
               };
             }
@@ -387,118 +425,155 @@ const Layout = () => {
             return layout;
           });
         };
+
         const newLayouts = updateRecursive(p.layouts);
-        return { ...p, layouts: adjustHeightsInRows(newLayouts) };
+        // Hapus fungsi adjustHeightsInRows jika tidak lagi relevan atau sesuaikan
+        return { ...p, layouts: newLayouts };
       });
       return updatedPages;
     });
   };
 
-  // Fungsi untuk menyesuaikan tinggi layout/grid dalam baris yang sama
-  const adjustHeightsInRows = (currentLayouts) => {
-    if (!currentLayouts || currentLayouts.length === 0) {
-      return currentLayouts;
-    }
-
-    let updatedLayouts = [...currentLayouts];
-    let currentRow = [];
-    let currentTotalSize = 0;
-
-    for (let i = 0; i < updatedLayouts.length; i++) {
-      const layout = updatedLayouts[i];
-      const layoutSize = parseInt(layout.properties?.size || 12);
-
-      if (!layout.children) {
-        if (layout.children && layout.children.length > 0) {
-          layout.children = adjustHeightsInRows(layout.children);
-        }
-        continue;
-      }
-
-      if (currentTotalSize + layoutSize <= 12) {
-        currentRow.push(layout);
-        currentTotalSize += layoutSize;
-      } else {
-        if (currentRow.length > 1) {
-          const minHeight = Math.min(
-            ...currentRow.map((item) => parseInt(item.properties?.height || 0))
-          );
-
-          currentRow.forEach((item) => {
-            item.properties = {
-              ...item.properties,
-              height: `${minHeight}px`,
-            };
-          });
-        }
-
-        currentRow = [layout];
-        currentTotalSize = layoutSize;
-      }
-
-      if (layout.children && layout.children.length > 0) {
-        layout.children = adjustHeightsInRows(layout.children);
-      }
-    }
-
-    if (currentRow.length > 1) {
-      const minHeight = Math.min(
-        ...currentRow.map((item) => parseInt(item.properties?.height || 0))
-      );
-      currentRow.forEach((item) => {
-        item.properties = {
-          ...item.properties,
-          height: `${minHeight}px`,
-        };
-      });
-    }
-
-    return updatedLayouts;
-  };
-
-  const debouncedUpdateComponentSize = useCallback(
-    debounce((id, size, height) => {
-      updateComponentSize(id, size, height);
+  const debouncedUpdateComponentProperties = useCallback(
+    debounce((id, props) => {
+      updateComponentProperties(id, props);
     }, 1200),
-    [updateComponentSize]
+    [currentPage] // Tambahkan dependensi yang relevan
   );
 
+  // Helper function to find a component and its parent in the nested structure
+  const findComponentAndParent = (layouts, componentId, parent = null) => {
+    for (const layout of layouts) {
+      if (layout.id === componentId) {
+        return { component: layout, parent: parent };
+      }
+      if (layout.children && layout.children.length > 0) {
+        const found = findComponentAndParent(
+          layout.children,
+          componentId,
+          layout
+        );
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // New function to update height for all siblings in a row
+  const updateSiblingHeights = (targetGridId, newHeightValue) => {
+    setPages((prevPages) => {
+      const updatedPages = prevPages.map((p) => {
+        if (p.id !== currentPage) return p;
+
+        const updateRecursive = (layouts) => {
+          // Find the target grid and its parent
+          const found = findComponentAndParent(layouts, targetGridId);
+
+          if (found && found.parent) {
+
+            const parentLayout = found.parent;
+            const updatedChildren = parentLayout.children.map((child) => {
+              if (child.name === "Layout" || child.name === "Container") {
+                return {
+                  ...child,
+                  properties: {
+                    ...child.properties,
+                    height: `${newHeightValue}px`,
+                  },
+                };
+              }
+              return child;
+            });
+
+            // Now, update the parent layout with its new children
+            return layouts.map((layout) => {
+              if (layout.id === parentLayout.id) {
+                return { ...layout, children: updatedChildren };
+              }
+              // Recursively check if the parentLayout is nested deeper
+              if (layout.children && layout.children.length > 0) {
+                return {
+                  ...layout,
+                  children: updateRecursive(layout.children),
+                };
+              }
+              return layout;
+            });
+          } else if (found && !found.parent) {
+            return layouts.map((layout) => {
+              if (layout.id === targetGridId) {
+                return {
+                  ...layout,
+                  properties: {
+                    ...layout.properties,
+                    height: `${newHeightValue}px`,
+                  },
+                };
+              }
+              return layout;
+            });
+          }
+          // If not found or no parent, continue recursive search
+          if (layouts && layouts.length > 0) {
+            return layouts.map((layout) => {
+              if (layout.children && layout.children.length > 0) {
+                return {
+                  ...layout,
+                  children: updateRecursive(layout.children),
+                };
+              }
+              return layout;
+            });
+          }
+          return layouts;
+        };
+
+        const newLayouts = updateRecursive(p.layouts);
+        return { ...p, layouts: newLayouts };
+      });
+      return updatedPages;
+    });
+  };
+
   const handleRealtimeSizeChange = useCallback(
-    (newSizeValue) => {
+    (device, value) => {
       if (!selectedGrid) return;
 
-      if (newSizeValue === "") {
-        setNewSize("");
-        debouncedUpdateComponentSize(selectedGrid.id, "", newHeight);
-        return;
+      const numValue = value === "" ? "" : parseInt(value, 10);
+
+      // Validasi input: antara 1 dan 12
+      let finalValue = numValue;
+      if (numValue !== "" && (isNaN(numValue) || numValue < 1)) {
+        finalValue = 1;
+      } else if (numValue > 12) {
+        finalValue = 12;
       }
 
-      const numValue = parseInt(newSizeValue, 10);
-      if (isNaN(numValue)) {
-        return;
-      }
-
-      if (numValue > 12) {
-        setNewSize(12);
-        debouncedUpdateComponentSize(selectedGrid.id, 12, newHeight);
-      } else if (numValue < 1) {
-        setNewSize("");
-        debouncedUpdateComponentSize(selectedGrid.id, "", newHeight);
-      } else {
-        setNewSize(numValue);
-        debouncedUpdateComponentSize(selectedGrid.id, numValue, newHeight);
-      }
+      const updatedSize = { ...newSize, [device]: finalValue };
+      setNewSize(updatedSize);
+      debouncedUpdateComponentProperties(selectedGrid.id, {
+        size: updatedSize,
+      });
     },
-    [selectedGrid, newHeight, debouncedUpdateComponentSize]
+    [selectedGrid, newSize, debouncedUpdateComponentProperties]
+  );
+  const debouncedUpdateSiblingHeights = useCallback(
+    debounce((id, height) => {
+      updateSiblingHeights(id, height);
+    }, 800),
+    [currentPage] 
   );
 
   const handleRealtimeHeightChange = useCallback(
     (newHeightValue) => {
       if (!selectedGrid) return;
-      setNewHeight(newHeightValue);
-      debouncedUpdateComponentSize(selectedGrid.id, newSize, newHeightValue); // Update state dengan debounce
+      const finalHeight =
+        newHeightValue === "" ? "" : parseInt(newHeightValue, 10);
+      setNewHeight(finalHeight); 
+
+      debouncedUpdateSiblingHeights(selectedGrid.id, finalHeight); 
     },
-    [selectedGrid, newSize, debouncedUpdateComponentSize]
+    [selectedGrid, debouncedUpdateSiblingHeights]
   );
 
   const handlePropertyChange = useCallback(
@@ -558,7 +633,7 @@ const Layout = () => {
             return findAndUpdateGrid([layout])[0]; // Panggil helper untuk mencari dan mengupdate
           });
           // Setelah update properti, sesuaikan tinggi di seluruh struktur
-          return { ...page, layouts: adjustHeightsInRows(updatedLayouts) };
+          return { ...page, layouts: updatedLayouts }; // Hapus adjustHeightsInRows jika tidak diperlukan
         });
       });
     },
@@ -684,11 +759,6 @@ const Layout = () => {
           textColor: "#333333",
           activeTextColor: "#007bff",
         },
-      },
-      Ratings: {
-        id: `component${generateRandomId()}`,
-        name: "Ratings",
-        properties: { score: 5 },
       },
       CustomCard: {
         id: `component${generateRandomId()}`,
@@ -932,21 +1002,22 @@ const Layout = () => {
             onAddLayoutOrGrid={addLayoutOrGrid}
             onSaveOrder={saveOrder}
             onDelete={handleDelete}
+            activeId={activeId}
           />
           {/* Right Menu */}
+          {/* START MODIFICATION: Ubah prop yang dikirim ke RightMenu */}
           <RightMenu
-            selectedLayout={selectedLayout}
             selectedGrid={selectedGrid}
             atribut={atribut}
             formData={formData}
-            newSize={newSize}
+            newSize={newSize} // Kirim objek newSize
             newHeight={newHeight}
             newMenuItem={newMenuItem}
             onDelete={handleDelete}
-            onUpdateComponentSize={updateComponentSize}
+            onUpdateComponentSize={updateComponentProperties} // Ganti nama fungsi
             onInputChange={handlePropertyChange}
             onSubmit={handleSubmit}
-            onSizeChange={handleRealtimeSizeChange}
+            onSizeChange={handleRealtimeSizeChange} // Handler baru
             onHeightChange={handleRealtimeHeightChange}
             onMenuItemChange={(field, value) =>
               setNewMenuItem((p) => ({ ...p, [field]: value }))
@@ -954,6 +1025,7 @@ const Layout = () => {
             onAddMenuItem={handleAddMenuItem}
             onDeleteMenuItem={handleDeleteMenuItem}
           />
+          {/* END MODIFICATION */}
         </Box>
       </Box>
       <DragOverlay>

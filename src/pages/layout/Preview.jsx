@@ -80,12 +80,20 @@ const Preview = () => {
     console.log("Publishing page...");
   };
 
+  const getResponsiveSize = (grid) => {
+    const sizeProp = grid.properties?.size;
+    if (typeof sizeProp === "object" && sizeProp !== null) {
+      return sizeProp[deviceType.toLowerCase()] || sizeProp.desktop || 12;
+    }
+    return sizeProp || 12;
+  };
+
   const renderComponents = (components) => {
     return components.map((grid) => {
       if (!grid.properties || !grid.children) return null;
       const isFinalComponent = grid.children[0]?.name;
       return (
-        <Grid item size={grid.properties.size || 12} key={grid.id}>
+        <Grid item size={getResponsiveSize(grid)} key={grid.id}>
           <Box
             sx={{
               minHeight: grid.properties.height || "auto",
@@ -142,13 +150,14 @@ const Preview = () => {
         overflow: "hidden",
       }}
     >
-      {/* Enhanced Fullwidth Navbar */}
+      {/* Fullwidth Navbar */}
       <Box
         sx={{
           width: "100%",
           backgroundColor: COLOR.dark_gray,
           borderBottom: "1px solid #333",
           zIndex: 1000,
+          
         }}
       >
         <Box
@@ -272,13 +281,13 @@ const Preview = () => {
         </Box>
       </Box>
 
-      {/* Fullwidth Preview Content Area */}
+      {/* Preview Content Area */}
       <Box
         ref={previewAreaRef}
         sx={{
           flex: 1,
           width: "100%",
-          backgroundColor: "#e8e8e8",
+          backgroundColor: COLOR.light_gray,
           overflowY: "auto",
           overflowX: "hidden",
           p: SPACING,
@@ -300,23 +309,22 @@ const Preview = () => {
             justifyContent: "center",
             boxSizing: "border-box",
             minHeight: "100%",
-            p:SPACING,
+            p: SPACING ,
+            mr: SPACING,
           }}
         >
           <Box
             sx={{
               p: SPACING,
               width: deviceType === "Desktop" ? "100%" : previewSize.width,
-              maxWidth: "100%", // Pastikan tidak lebih lebar dari kontainer padding
+              maxWidth: "100%",
               height:
                 deviceType === "Desktop" ? "auto" : `calc(100% / ${scale})`,
               transform: deviceType === "Desktop" ? "none" : `scale(${scale})`,
               transformOrigin: "top center",
               transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               backgroundColor: COLOR.white,
-              // mx: 'auto' tidak lagi diperlukan karena parent sudah flex-center
               border: deviceType === "Desktop" ? "none" : "1px solid #ddd",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
               borderRadius: "8px",
             }}
           >

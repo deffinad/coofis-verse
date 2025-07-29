@@ -25,6 +25,7 @@ import LeftMenu from "./LeftMenu";
 import MainContent from "./MainContent";
 import RightMenu from "./RightMenu";
 import AlertPopup from "../../shared/components/AlertPopup";
+import Preview from "./Preview"; // Import komponen Preview yang sudah dimodifikasi
 
 // JSON Data Imports
 import { DataCuti } from "../../json/DocsCuti";
@@ -56,15 +57,16 @@ const Layout = () => {
   const [selectedGrid, setSelectedGrid] = useState(null);
   const [atribut, setAtribute] = useState(null);
 
+  // State baru untuk mengontrol visibilitas Preview
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   // State untuk form dan properti di menu kanan
   const [formData, setFormData] = useState({});
-  // START MODIFICATION: Ubah state ukuran menjadi objek untuk responsivitas
   const [newSize, setNewSize] = useState({
     desktop: 12,
     tablet: 12,
     mobile: 12,
   });
-  // END MODIFICATION
   const [newHeight, setNewHeight] = useState();
   const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
 
@@ -104,21 +106,18 @@ const Layout = () => {
             .toLowerCase()
             .replace(/\s/g, "-")}-${generateRandomId()}`,
         };
-        // START MODIFICATION: Pastikan template baru juga punya struktur size yang benar
         if (newItem.properties && !newItem.properties.size) {
           newItem.properties.size = { desktop: 12, tablet: 12, mobile: 12 };
         } else if (
           newItem.properties &&
           typeof newItem.properties.size === "number"
         ) {
-          // Konversi format lama jika ada
           newItem.properties.size = {
             desktop: newItem.properties.size,
             tablet: 12,
             mobile: 12,
           };
         }
-        // END MODIFICATION
         if (newItem.children && newItem.children.length > 0) {
           newItem.children = generateUniqueIds(newItem.children);
         }
@@ -132,13 +131,11 @@ const Layout = () => {
       const updatedPages = [...prevPages];
       updatedPages[pageIndex] = {
         ...updatedPages[pageIndex],
-        // Ubah dari append menjadi replace - hapus layout lama, gunakan template baru
-        layouts: [...newLayoutsToAdd], // Menggantikan seluruh layout dengan template baru
+        layouts: [...newLayoutsToAdd],
       };
       return updatedPages;
     });
 
-    // Reset selected states karena layout lama sudah dihapus
     setSelectedLayout(null);
     setSelectedGrid(null);
     setSelectedLayoutIndex(null);
@@ -218,16 +215,12 @@ const Layout = () => {
       setFormData({});
     }
     if (selectedGrid?.properties) {
-      // START MODIFICATION: Update state `newSize` dengan struktur objek
-      // Juga tambahkan fallback untuk data lama yang mungkin belum memiliki format objek
       const currentSize = selectedGrid.properties.size;
       if (typeof currentSize === "object" && currentSize !== null) {
         setNewSize(currentSize);
       } else {
-        // Fallback untuk data lama, anggap nilai lama sebagai desktop
         setNewSize({ desktop: currentSize || 12, tablet: 12, mobile: 12 });
       }
-      // END MODIFICATION
       setNewHeight(parseInt(selectedGrid.properties.height) || 0);
     }
   }, [atribut?.id, selectedGrid?.id]);
@@ -240,7 +233,6 @@ const Layout = () => {
 
   // --- 5. Helper Functions & Event Handlers ---
 
-  // Handler untuk Pages
   const addPage = () => {
     const newPage = {
       id: `pages${pages.length + 1}`,
@@ -260,7 +252,6 @@ const Layout = () => {
     handleMenuClose();
   };
 
-  // Handler untuk Layouts (Container)
   const addLayout = () => {
     if (!currentPage) {
       showNotification("Please select a page first.", "warning");
@@ -275,7 +266,7 @@ const Layout = () => {
       properties: {
         size: { desktop: 12, tablet: 12, mobile: 12 },
         height: "100%",
-      }, // MODIFIED
+      },
       children: [],
     };
     const updatedPages = [...pages];
@@ -307,7 +298,6 @@ const Layout = () => {
     setSelectedLayout(null);
   };
 
-  // Handler untuk Grids (Layout di dalam Container)
   const addGrid = () => {
     if (!selectedLayout) {
       showNotification("Pilih layout terlebih dahulu.", "warning");
@@ -316,12 +306,10 @@ const Layout = () => {
     const newGrid = {
       id: generateRandomId(),
       name: "Layout",
-      // START MODIFICATION: Inisialisasi 'size' sebagai objek untuk layout responsif
       properties: {
         size: { desktop: 12, tablet: 12, mobile: 12 },
         height: "140px",
       },
-      // END MODIFICATION
       children: [],
     };
 
@@ -382,7 +370,6 @@ const Layout = () => {
     setAtribute(null);
   };
 
-  // Handler Aksi Gabungan
   const addLayoutOrGrid = () => {
     if (selectedLayout) {
       addGrid();
@@ -401,8 +388,6 @@ const Layout = () => {
     }
   };
 
-  // Handler untuk Properti Komponen (di menu kanan)
-  // START MODIFICATION: Ganti `updateComponentSize` menjadi `updateComponentProperties` untuk lebih general
   const updateComponentProperties = (componentId, newProperties) => {
     setPages((prevPages) => {
       const updatedPages = prevPages.map((p) => {
@@ -415,7 +400,7 @@ const Layout = () => {
                 ...layout,
                 properties: {
                   ...layout.properties,
-                  ...newProperties, // Gabungkan properti baru
+                  ...newProperties,
                 },
               };
             }
@@ -427,7 +412,6 @@ const Layout = () => {
         };
 
         const newLayouts = updateRecursive(p.layouts);
-        // Hapus fungsi adjustHeightsInRows jika tidak lagi relevan atau sesuaikan
         return { ...p, layouts: newLayouts };
       });
       return updatedPages;
@@ -438,10 +422,9 @@ const Layout = () => {
     debounce((id, props) => {
       updateComponentProperties(id, props);
     }, 1200),
-    [currentPage] // Tambahkan dependensi yang relevan
+    [currentPage]
   );
 
-  // Helper function to find a component and its parent in the nested structure
   const findComponentAndParent = (layouts, componentId, parent = null) => {
     for (const layout of layouts) {
       if (layout.id === componentId) {
@@ -459,18 +442,15 @@ const Layout = () => {
     return null;
   };
 
-  // New function to update height for all siblings in a row
   const updateSiblingHeights = (targetGridId, newHeightValue) => {
     setPages((prevPages) => {
       const updatedPages = prevPages.map((p) => {
         if (p.id !== currentPage) return p;
 
         const updateRecursive = (layouts) => {
-          // Find the target grid and its parent
           const found = findComponentAndParent(layouts, targetGridId);
 
           if (found && found.parent) {
-
             const parentLayout = found.parent;
             const updatedChildren = parentLayout.children.map((child) => {
               if (child.name === "Layout" || child.name === "Container") {
@@ -485,12 +465,10 @@ const Layout = () => {
               return child;
             });
 
-            // Now, update the parent layout with its new children
             return layouts.map((layout) => {
               if (layout.id === parentLayout.id) {
                 return { ...layout, children: updatedChildren };
               }
-              // Recursively check if the parentLayout is nested deeper
               if (layout.children && layout.children.length > 0) {
                 return {
                   ...layout,
@@ -513,7 +491,6 @@ const Layout = () => {
               return layout;
             });
           }
-          // If not found or no parent, continue recursive search
           if (layouts && layouts.length > 0) {
             return layouts.map((layout) => {
               if (layout.children && layout.children.length > 0) {
@@ -541,7 +518,6 @@ const Layout = () => {
 
       const numValue = value === "" ? "" : parseInt(value, 10);
 
-      // Validasi input: antara 1 dan 12
       let finalValue = numValue;
       if (numValue !== "" && (isNaN(numValue) || numValue < 1)) {
         finalValue = 1;
@@ -561,7 +537,7 @@ const Layout = () => {
     debounce((id, height) => {
       updateSiblingHeights(id, height);
     }, 800),
-    [currentPage] 
+    [currentPage]
   );
 
   const handleRealtimeHeightChange = useCallback(
@@ -569,9 +545,9 @@ const Layout = () => {
       if (!selectedGrid) return;
       const finalHeight =
         newHeightValue === "" ? "" : parseInt(newHeightValue, 10);
-      setNewHeight(finalHeight); 
+      setNewHeight(finalHeight);
 
-      debouncedUpdateSiblingHeights(selectedGrid.id, finalHeight); 
+      debouncedUpdateSiblingHeights(selectedGrid.id, finalHeight);
     },
     [selectedGrid, debouncedUpdateSiblingHeights]
   );
@@ -591,25 +567,20 @@ const Layout = () => {
 
       const pathArray = path.split(".");
 
-      // 1. Update formData untuk sinkronisasi dengan form
       setFormData((prev) => updateNested(prev, pathArray, value));
 
-      // 2. Update pages state (sumber kebenaran)
       setPages((prevPages) => {
         return prevPages.map((page) => {
           if (page.id !== currentPage) return page;
 
           const updatedLayouts = page.layouts.map((layout) => {
-            // Cari layout yang berisi selectedGrid
             const findAndUpdateGrid = (currentLayouts) => {
               return currentLayouts.map((l) => {
                 if (l.id === selectedGrid?.id) {
-                  // Ini adalah grid yang dipilih
                   return {
                     ...l,
                     children: l.children.map((child) => {
                       if (child.id === atribut?.id) {
-                        // Ini adalah komponen di dalam grid
                         return {
                           ...child,
                           properties: updateNested(
@@ -623,17 +594,15 @@ const Layout = () => {
                     }),
                   };
                 }
-                // Jika layout memiliki children, cari di dalamnya
                 if (l.children && l.children.length > 0) {
                   return { ...l, children: findAndUpdateGrid(l.children) };
                 }
                 return l;
               });
             };
-            return findAndUpdateGrid([layout])[0]; // Panggil helper untuk mencari dan mengupdate
+            return findAndUpdateGrid([layout])[0];
           });
-          // Setelah update properti, sesuaikan tinggi di seluruh struktur
-          return { ...page, layouts: updatedLayouts }; // Hapus adjustHeightsInRows jika tidak diperlukan
+          return { ...page, layouts: updatedLayouts };
         });
       });
     },
@@ -645,7 +614,6 @@ const Layout = () => {
     showNotification("Properties have been saved.", "success");
   };
 
-  // Handler untuk Menu Item pada Navbar
   const handleAddMenuItem = () => {
     if (!newMenuItem.label || !newMenuItem.path) {
       showNotification("Both label and path must be filled.", "warning");
@@ -669,7 +637,6 @@ const Layout = () => {
     handlePropertyChange("menuItems", updatedMenuItems);
   };
 
-  // Handler untuk Klik UI
   const handleLayoutClick = (layoutId, layoutidx) => {
     if (selectedLayout === layoutId) {
       setSelectedLayout(null);
@@ -691,6 +658,60 @@ const Layout = () => {
     setAtribute(layout.children?.[0] || null);
   };
 
+  const handleLayerSelectFromLeftMenu = (
+    layer,
+    parentLayoutId = null,
+    parentLayoutIndex = null
+  ) => {
+    // Jika layer adalah 'Container' (layout utama)
+    if (layer.name === "Container") {
+      handleLayoutClick(layer.id, parentLayoutIndex); // Gunakan ID layer sebagai layoutId
+    }
+    // Jika layer adalah 'Layout' (grid di dalam container)
+    else if (layer.name === "Layout") {
+      handleGridClick(layer, parentLayoutId, parentLayoutIndex);
+    } else {
+      if (parentLayoutId && parentLayoutIndex !== null) {
+        // Cari objek layout/grid induk berdasarkan ID
+        const activePage = pages.find((p) => p.id === currentPage);
+        if (!activePage) return;
+
+        const findParentGridOrLayout = (items, targetId) => {
+          for (const item of items) {
+            if (item.id === targetId) {
+              return item;
+            }
+            if (item.children && item.children.length > 0) {
+              const found = findParentGridOrLayout(item.children, targetId);
+              if (found) return item;
+            }
+          }
+          return null;
+        };
+
+        const parentGridOrLayout = findParentGridOrLayout(
+          activePage.layouts,
+          layer.id
+        );
+        if (parentGridOrLayout) {
+          handleGridClick(
+            parentGridOrLayout,
+            parentLayoutId,
+            parentLayoutIndex
+          );
+        } else {
+          setSelectedLayout(null);
+          setSelectedGrid(null);
+          setAtribute(null);
+        }
+      } else {
+        setSelectedLayout(null);
+        setSelectedGrid(null);
+        setAtribute(null);
+      }
+    }
+  };
+
   const handleMenuOpen = (event, page) => {
     event.stopPropagation();
     setMenuAnchorEl(event.currentTarget);
@@ -699,7 +720,6 @@ const Layout = () => {
 
   const handleMenuClose = () => setMenuAnchorEl(null);
 
-  // Handler untuk Drag and Drop (DND) dan Swapy
   const handleDragStart = (event) => setActiveId(event.active.id);
 
   const handleDragEnd = (event) => {
@@ -837,24 +857,18 @@ const Layout = () => {
 
         const layouts = prevPages[pageIndex].layouts;
 
-        // Fungsi rekursif untuk mencari dan mengubah urutan array children yang tepat
         const findAndReorder = (items) => {
-          // Cek apakah item yang di-drag ada di level ini
           const oldIndex = items.findIndex((item) => item.id === active.id);
           const newIndex = items.findIndex((item) => item.id === over.id);
 
           if (oldIndex !== -1 && newIndex !== -1) {
-            // Jika ditemukan, ubah urutan array ini dan kembalikan
             return arrayMove(items, oldIndex, newIndex);
           }
 
-          // Jika tidak, cari di dalam children setiap item
           for (const item of items) {
-            // Hanya cari di dalam item yang memiliki properti 'children'
             if (item.children && item.children.length > 0) {
               const reorderedChildren = findAndReorder(item.children);
 
-              // Jika urutan di dalam children berhasil diubah, update parent-nya
               if (reorderedChildren !== item.children) {
                 return items.map((i) =>
                   i.id === item.id ? { ...i, children: reorderedChildren } : i
@@ -863,13 +877,11 @@ const Layout = () => {
             }
           }
 
-          // Kembalikan array asli jika tidak ada perubahan
           return items;
         };
 
         const newLayouts = findAndReorder(layouts);
 
-        // Update state pages secara immutable
         const updatedPages = [...prevPages];
         updatedPages[pageIndex] = {
           ...updatedPages[pageIndex],
@@ -922,10 +934,17 @@ const Layout = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
     showNotification("Project saved!", "success");
   };
+
+  // Ubah handlePreview untuk membuka modal
   const handlePreview = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
     localStorage.setItem("curentPages", JSON.stringify(currentPage));
-    navigate("/preview");
+    setIsPreviewOpen(true); // Buka modal Preview
+  };
+
+  // Fungsi untuk menutup modal Preview
+  const handleClosePreviewModal = () => {
+    setIsPreviewOpen(false);
   };
 
   const handlePublish = () => showNotification("Project published!", "info");
@@ -957,7 +976,7 @@ const Layout = () => {
       >
         <EditorNavbar
           onSave={handleSave}
-          onPreview={handlePreview}
+          onPreview={handlePreview} // Panggil handlePreview yang baru
           onPublish={handlePublish}
           projectName={
             pages.find((p) => p.id === currentPage)?.name || "Untitled Project"
@@ -968,9 +987,13 @@ const Layout = () => {
           sx={{
             display: "flex",
             flexGrow: 1,
-            p: SPACING,
+            pt: 0,
+            pr: SPACING,
+            pb: SPACING,
+            pl: SPACING,
             gap: SPACING + 1,
             justifyContent: "center",
+            // border: "1px solid red",
           }}
         >
           {/* Left Menu */}
@@ -985,9 +1008,11 @@ const Layout = () => {
             onDeletePage={deletePage}
             onMenuOpen={handleMenuOpen}
             selectedGrid={selectedGrid}
+            selectedLayout={selectedLayout}
             sectionComponents={sectionComponents}
             onLayerReorder={handleLayerDragEnd}
             onApplyLayoutTemplate={handleApplyLayoutTemplate}
+            onLayerSelect={handleLayerSelectFromLeftMenu}
           />
           {/* Main Content */}
           <MainContent
@@ -1005,19 +1030,18 @@ const Layout = () => {
             activeId={activeId}
           />
           {/* Right Menu */}
-          {/* START MODIFICATION: Ubah prop yang dikirim ke RightMenu */}
           <RightMenu
             selectedGrid={selectedGrid}
             atribut={atribut}
             formData={formData}
-            newSize={newSize} // Kirim objek newSize
+            newSize={newSize}
             newHeight={newHeight}
             newMenuItem={newMenuItem}
             onDelete={handleDelete}
-            onUpdateComponentSize={updateComponentProperties} // Ganti nama fungsi
+            onUpdateComponentSize={updateComponentProperties}
             onInputChange={handlePropertyChange}
             onSubmit={handleSubmit}
-            onSizeChange={handleRealtimeSizeChange} // Handler baru
+            onSizeChange={handleRealtimeSizeChange}
             onHeightChange={handleRealtimeHeightChange}
             onMenuItemChange={(field, value) =>
               setNewMenuItem((p) => ({ ...p, [field]: value }))
@@ -1025,7 +1049,6 @@ const Layout = () => {
             onAddMenuItem={handleAddMenuItem}
             onDeleteMenuItem={handleDeleteMenuItem}
           />
-          {/* END MODIFICATION */}
         </Box>
       </Box>
       <DragOverlay>
@@ -1054,6 +1077,14 @@ const Layout = () => {
         message={notification.message}
         severity={notification.severity}
         onClose={handleCloseNotification}
+      />
+
+      {/* Render komponen Preview sebagai modal */}
+      <Preview
+        open={isPreviewOpen}
+        onClose={handleClosePreviewModal}
+        pages={pages} // Kirim data pages
+        currentPageId={currentPage} // Kirim ID halaman aktif
       />
     </DndContext>
   );

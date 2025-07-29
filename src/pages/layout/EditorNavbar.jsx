@@ -1,15 +1,5 @@
 import React from "react";
-import {
-  AppBar,
-  Toolbar,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  IconButton,
-  InputAdornment,
-} from "@mui/material";
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import { AppBar, Toolbar, Box, Typography, Button } from "@mui/material";
 import { COLOR, SPACING } from "@/shared/AppConst";
 
 const EditorNavbar = ({
@@ -24,120 +14,103 @@ const EditorNavbar = ({
       position="sticky"
       elevation={0}
       sx={{
-        backgroundColor: COLOR.white_winter,
-        borderBottom: "1px solid #e0e0e0",
+        backgroundColor: COLOR.very_light_gray,
         color: "#333",
-        height: "84px",
+        height: "fit-content",
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        py: 1,
-        px: 3,
-        mb: 2,
+        py: SPACING,
+        // border: "1px solid red",
       }}
     >
-      <Toolbar sx={{ padding: "0 !important" }}>
-        {/* Bagian Kiri */}
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  mb: 0,
-                  lineHeight: 1.2,
-                }}
-              >
-                {projectName}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: COLOR.medium_dark_gray, fontSize: "0.75rem" }}
-              >
-                {lastEdited}
-              </Typography>
+      <Box
+        sx={{
+          width: "100%",
+          // Calculated width: 300 (Left) + 1140 (Main) + 300 (Right) + 2*gap
+          // Assuming gap based on SPACING is ~24px
+          maxWidth: "1788px",
+          margin: "0 auto", // Center the box
+          display: "flex",
+          alignItems: "center",
+          // border: "1px solid red",
+        }}
+      >
+        <Toolbar sx={{ padding: "0 !important", width: "100%" }}>
+          {/* Bagian Kiri */}
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: SPACING }}>
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "1rem",
+                    mb: 0,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {projectName}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: COLOR.medium_dark_gray, fontSize: "0.75rem" }}
+                >
+                  {lastEdited}
+                </Typography>
+              </Box>
             </Box>
           </Box>
-        </Box>
 
-        {/* Bagian Tengah - Search Bar */}
-        <Box
-          sx={{
-            flex: 0,
-            display: "flex",
-            justifyContent: "center",
-            minWidth: 300,
-          }}
-        >
-          <TextField
-            variant="outlined"
-            placeholder="Search"
-            size="small"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <SearchRoundedIcon sx={{ color: COLOR.medium_dark_gray }} />
-                </InputAdornment>
-              ),
-              sx: {
-                borderRadius: 5,
-                width: 300,
-                height: 40,
-              },
-            }}
-          />
-        </Box>
-
-        {/* Bagian Kanan */}
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Button
-              variant="text"
-              color="inherit"
-              onClick={onSave}
-              sx={{
-                width: 79,
-                height: 40,
-                borderRadius: SPACING,
-                textTransform: "none",
-              }}
-            >
-              Save
-            </Button>
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={onPreview}
-              sx={{
-                borderRadius: SPACING,
-                width: 79,
-                height: 40,
-                color: COLOR.dark_gray,
-                backgroundColor: COLOR.light_gray,
-                borderColor: COLOR.light_gray,
-                textTransform: "none",
-              }}
-            >
-              Preview
-            </Button>
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={onPublish}
-              sx={{
-                borderRadius: SPACING,
-                backgroundColor: COLOR.dark_gray,
-                color: COLOR.white_ice,
-                width: 79,
-                height: 40,
-                textTransform: "none",
-              }}
-            >
-              Publish
-            </Button>
+          {/* Bagian Kanan */}
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Button
+                variant="text"
+                color="inherit"
+                onClick={onSave}
+                sx={{
+                  width: 79,
+                  height: 40,
+                  borderRadius: SPACING,
+                  textTransform: "none",
+                }}
+              >
+                Save
+              </Button>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={onPreview}
+                sx={{
+                  borderRadius: SPACING,
+                  width: 79,
+                  height: 40,
+                  color: COLOR.dark_gray,
+                  backgroundColor: COLOR.light_gray,
+                  borderColor: COLOR.light_gray,
+                  textTransform: "none",
+                }}
+              >
+                Preview
+              </Button>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={onPublish}
+                sx={{
+                  borderRadius: SPACING,
+                  backgroundColor: COLOR.dark_gray,
+                  color: COLOR.white_ice,
+                  width: 79,
+                  height: 40,
+                  textTransform: "none",
+                }}
+              >
+                Publish
+              </Button>
+            </Box>
           </Box>
-        </Box>
-      </Toolbar>
+        </Toolbar>
+      </Box>
     </AppBar>
   );
 };

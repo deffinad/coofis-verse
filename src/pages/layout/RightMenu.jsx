@@ -1,11 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Box, TextField, Typography, Switch } from "@mui/material";
 import { COLOR, SPACING } from "@/shared/AppConst";
+
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
 
 const RightMenu = ({
   selectedGrid,
   atribut,
-  formData,
+  formData, 
   newSize,
   newHeight,
   onInputChange,
@@ -14,6 +23,49 @@ const RightMenu = ({
 }) => {
   const [menuHeight, setMenuHeight] = useState("calc(100vh - 150px)");
   const menuRef = useRef(null);
+
+  // State lokal untuk form data yang akan langsung diperbarui
+  const [localFormData, setLocalFormData] = useState({});
+
+  // Ref untuk menyimpan fungsi debounced
+  const debouncedOnInputChangeRef = useRef(null);
+
+  // Inisialisasi localFormData saat atribut atau formData dari props berubah
+  useEffect(() => {
+    setLocalFormData(formData || {});
+  }, [formData, atribut]); // Tambahkan atribut sebagai dependency agar reset saat atribut berubah
+
+  // Buat fungsi debounced hanya sekali, atau perbarui jika onInputChange dari props berubah
+  useEffect(() => {
+    // Buat fungsi debounced yang akan memanggil onInputChange dari props
+    // dan meneruskan nilai dari localFormData saat ini
+    debouncedOnInputChangeRef.current = debounce((path, value) => {
+      onInputChange(path, value);
+    }, 500); // Debounce delay 500ms
+  }, [onInputChange]); // Re-create debounced function jika onInputChange prop berubah
+
+  // Handler perubahan input lokal
+  const handleLocalInputChange = useCallback((path, value) => {
+    // Update state lokal secara instan untuk visual feedback
+    const updateNested = (obj, pathArr, val) => {
+      if (pathArr.length === 1) {
+        return { ...obj, [pathArr[0]]: val };
+      }
+      const [head, ...rest] = pathArr;
+      return {
+        ...obj,
+        [head]: updateNested(obj[head] || {}, rest, val),
+      };
+    };
+
+    const pathArray = path.split(".");
+    setLocalFormData((prev) => updateNested(prev, pathArray, value));
+
+    // Panggil fungsi debounced
+    if (debouncedOnInputChangeRef.current) {
+      debouncedOnInputChangeRef.current(path, value);
+    }
+  }, []); // Tidak ada dependencies karena updateNested dan debouncedOnInputChangeRef.current stabil
 
   // Hook untuk menghitung tinggi dinamis berdasarkan scroll position
   useEffect(() => {
@@ -58,10 +110,11 @@ const RightMenu = ({
 
   const renderPropertyField = (key, valueFromProps, onChange, path = "") => {
     const fullPath = path ? `${path}.${key}` : key;
+    // Ambil nilai dari localFormData untuk visual feedback instan
     const currentValue =
-      getNestedValue(formData, pathArrayFromFullPath(fullPath)) !== undefined
-        ? getNestedValue(formData, pathArrayFromFullPath(fullPath))
-        : valueFromProps;
+      getNestedValue(localFormData, pathArrayFromFullPath(fullPath)) !== undefined
+        ? getNestedValue(localFormData, pathArrayFromFullPath(fullPath))
+        : valueFromProps; // Fallback ke valueFromProps jika belum ada di localFormData
 
     // --- Penanganan untuk String dan Number ---
     if (
@@ -74,8 +127,8 @@ const RightMenu = ({
           label={key.charAt(0).toUpperCase() + key.slice(1)}
           name={fullPath}
           type={typeof valueFromProps === "number" ? "number" : "text"}
-          value={currentValue}
-          onChange={(e) => onChange(fullPath, e.target.value)}
+          value={currentValue} // Gunakan currentValue dari localFormData
+          onChange={(e) => handleLocalInputChange(fullPath, e.target.value)} // Panggil handler lokal
           fullWidth
           sx={{ mt: SPACING }}
         />
@@ -91,13 +144,17 @@ const RightMenu = ({
         >
           <Typography>{key.charAt(0).toUpperCase() + key.slice(1)}:</Typography>
           <Switch
-            checked={!!currentValue}
-            onChange={(e) => onChange(fullPath, e.target.checked)}
+            checked={!!currentValue} // Gunakan currentValue dari localFormData
+            onChange={(e) => handleLocalInputChange(fullPath, e.target.checked)} // Panggil handler lokal
             name={fullPath}
           />
         </Box>
       );
     } else if (Array.isArray(valueFromProps)) {
+      // Untuk array, kita perlu memastikan input JSON valid sebelum update
+      // Ini bisa jadi lebih kompleks dengan debounce, karena user mungkin mengetik JSON yang belum valid
+      // Untuk saat ini, kita akan tetap menggunakan handleLocalInputChange
+      // Anda mungkin ingin menambahkan validasi JSON di handleLocalInputChange atau di debounced function
       return (
         <TextField
           key={fullPath}
@@ -105,8 +162,8 @@ const RightMenu = ({
           name={fullPath}
           multiline
           rows={5}
-          value={JSON.stringify(currentValue, null, 2)}
-          onChange={(e) => onChange(fullPath, e.target.value, "json")}
+          value={JSON.stringify(currentValue, null, 2)} // Gunakan currentValue dari localFormData
+          onChange={(e) => handleLocalInputChange(fullPath, e.target.value)} // Panggil handler lokal
           fullWidth
           sx={{ mt: SPACING }}
           helperText="Edit array dalam format JSON."
@@ -127,10 +184,11 @@ const RightMenu = ({
           {Object.entries(valueFromProps).map(([subKey, subValue]) =>
             renderPropertyField(
               subKey,
-              currentValue?.[subKey] !== undefined
-                ? currentValue[subKey]
+              // Ambil nilai dari localFormData jika ada, jika tidak, gunakan subValue dari props
+              getNestedValue(localFormData, pathArrayFromFullPath(`${fullPath}.${subKey}`)) !== undefined
+                ? getNestedValue(localFormData, pathArrayFromFullPath(`${fullPath}.${subKey}`))
                 : subValue,
-              onChange,
+              handleLocalInputChange, // Panggil handler lokal
               fullPath
             )
           )}
@@ -196,6 +254,8 @@ const RightMenu = ({
             >
               Responsive Columns
             </Typography>
+            {/* Input untuk Responsive Columns dan Sizing tidak perlu debounce di sini
+                karena sudah di-debounce di Index.jsx melalui onSizeChange dan onHeightChange */}
             <TextField
               label="Desktop Cols (1-12)"
               type="number"
@@ -254,7 +314,7 @@ const RightMenu = ({
                   <Typography variant="h6">Component Properties</Typography>
                 </Box>
                 {Object.entries(atribut.properties).map(([key, value]) =>
-                  renderPropertyField(key, value, onInputChange)
+                  renderPropertyField(key, value, handleLocalInputChange) // Panggil handler lokal
                 )}
               </Box>
             )}

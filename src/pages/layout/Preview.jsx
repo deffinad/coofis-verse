@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -10,61 +9,55 @@ import {
   CircularProgress,
   Chip,
   Stack,
+  Dialog,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
-import TabletMacIcon from "@mui/icons-material/TabletMac";
+import TabletMacIcon from "@mui/icons-material/TabletAndroid";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PublishIcon from "@mui/icons-material/Publish";
 import { COLOR, SPACING } from "@/shared/AppConst";
 import { Components } from "remoteApp/Components";
 
-const Preview = () => {
-  const navigate = useNavigate();
-  const [pages, setPages] = useState([]);
-  const [currentPageId, setCurrentPageId] = useState(null);
+const Preview = ({ open, onClose, pages, currentPageId }) => {
+  // const navigate = useNavigate(); // Hapus ini
   const [previewSize, setPreviewSize] = useState({ width: 1280 });
   const [scale, setScale] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [deviceType, setDeviceType] = useState("Desktop");
   const previewAreaRef = useRef(null);
 
+  // Efek untuk memuat data hanya saat modal dibuka
   useEffect(() => {
-    const loadPreviewData = async () => {
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    if (open) {
+      // Hanya muat data jika modal terbuka
+      const loadPreviewData = async () => {
+        setIsLoading(true);
+        // Simulasi loading data
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const savedPages = localStorage.getItem("savedPages");
-      const currentPagesId = localStorage.getItem("curentPages");
+        // Data pages dan currentPageId sekarang datang dari props,
+        // jadi tidak perlu lagi mengambil dari localStorage di sini.
+        // Namun, jika Anda ingin Preview.jsx tetap bisa bekerja mandiri
+        // (misalnya untuk debugging), Anda bisa mempertahankan logika localStorage
+        // dan menjadikannya fallback jika props tidak diberikan.
+        // Untuk tujuan ini, kita asumsikan props selalu diberikan.
 
-      if (savedPages) {
-        try {
-          setPages(JSON.parse(savedPages));
-        } catch (e) {
-          console.error("Failed to parse pages from localStorage", e);
-        }
-      }
-      if (currentPagesId) {
-        try {
-          setCurrentPageId(JSON.parse(currentPagesId));
-        } catch (e) {
-          console.error("Failed to parse currentPageId from localStorage", e);
-        }
-      }
-      setIsLoading(false);
-    };
-
-    loadPreviewData();
-  }, []);
+        setIsLoading(false);
+      };
+      loadPreviewData();
+    }
+  }, [open]);
 
   useLayoutEffect(() => {
-    if (previewAreaRef.current && !isLoading) {
+    if (previewAreaRef.current && !isLoading && open) {
       const previewAreaWidth = previewAreaRef.current.offsetWidth;
       const calculatedScale = previewAreaWidth / previewSize.width;
       setScale(Math.min(calculatedScale, 1));
     }
-  }, [previewSize.width, isLoading]);
-
+  }, [previewSize.width, isLoading, open]);
   const activePage = pages.find((p) => p.id === currentPageId);
 
   const handleResize = (width, type) => {
@@ -73,7 +66,7 @@ const Preview = () => {
   };
 
   const handleClosePreview = () => {
-    navigate("/layout");
+    onClose();
   };
 
   const handlePublish = () => {
@@ -116,7 +109,7 @@ const Preview = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && open) {
     return (
       <Backdrop open={isLoading} sx={{ zIndex: 9999 }}>
         <Box
@@ -136,18 +129,17 @@ const Preview = () => {
   }
 
   return (
-    <Box
+    <Dialog
+      fullScreen
+      open={open}
+      onClose={handleClosePreview}
       sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: COLOR.very_light_gray,
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
+        "& .MuiDialog-paper": {
+          backgroundColor: COLOR.very_light_gray,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        },
       }}
     >
       {/* Fullwidth Navbar */}
@@ -157,7 +149,6 @@ const Preview = () => {
           backgroundColor: COLOR.dark_gray,
           borderBottom: "1px solid #333",
           zIndex: 1000,
-          
         }}
       >
         <Box
@@ -281,9 +272,7 @@ const Preview = () => {
         </Box>
       </Box>
 
-      {/* Preview Content Area */}
-      <Box
-        ref={previewAreaRef}
+      <DialogContent
         sx={{
           flex: 1,
           width: "100%",
@@ -304,12 +293,13 @@ const Preview = () => {
         }}
       >
         <Box
+          ref={previewAreaRef}
           sx={{
             display: "flex",
             justifyContent: "center",
             boxSizing: "border-box",
             minHeight: "100%",
-            p: SPACING ,
+            p: SPACING,
             mr: SPACING,
           }}
         >
@@ -361,20 +351,24 @@ const Preview = () => {
             )}
           </Box>
         </Box>
-      </Box>
+      </DialogContent>
 
-      {/* Floating Action Buttons */}
-      <Box
+      {/* Floating Action Buttons (jika masih diperlukan, bisa di DialogActions) */}
+      <DialogActions
         sx={{
-          position: "fixed",
+          position: "absolute",
           bottom: 24,
           right: 24,
           display: "flex",
           flexDirection: "column",
           gap: SPACING,
           zIndex: 1001,
+          backgroundColor: "transparent",
+          p: 0,
         }}
-      ></Box>
+      >
+        {/* Anda bisa menambahkan tombol lain di sini jika ada */}
+      </DialogActions>
 
       {/* Device Size Indicator */}
       <Box
@@ -394,7 +388,7 @@ const Preview = () => {
       >
         {deviceType}: {previewSize.width}px
       </Box>
-    </Box>
+    </Dialog>
   );
 };
 

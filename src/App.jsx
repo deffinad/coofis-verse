@@ -1,14 +1,20 @@
-/* eslint-disable react/prop-types */
-/* eslint-disable no-unused-vars */
-import { Routes, Route } from "react-router-dom";
-import Layout from "./pages/layout/Index";
-import Preview from "./pages/layout/Preview";
+import { Routes, Route, Navigate } from "react-router-dom";
+import MainLayout from "./pages/MainLayout"; // Layout utama dengan navbar
+import DashboardPage from "./pages/dashboard/Dashboard"; // Halaman Dashboard
+import LayoutPage from "./pages/layout/Index"; // Halaman Layout
 
 function App() {
   return (
     <Routes>
-      <Route path="/layout" element={<Layout />} />
-      <Route path="/preview" element={<Preview />} />
+      {/* Gunakan MainLayout sebagai pembungkus */}
+      <Route path="/" element={<MainLayout />}>
+        {/* Arahkan URL root ke /dashboard */}
+        <Route index element={<Navigate to="/dashboard" replace />} />
+
+        {/* Definisikan halaman yang akan dirender di dalam MainLayout */}
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="layout" element={<LayoutPage />} />
+      </Route>
     </Routes>
   );
 }

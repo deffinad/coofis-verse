@@ -5,6 +5,7 @@ export const COLOR = {
     white: "#FFFFFF",
     white_ice: '#F8FEFF',
     white_winter: '#F9FDFE',
+    white_smoke: '#FAFAFA',
     //gray
     light_gray: '#E3E3E3',
     very_light_gray: '#EFEFEF',

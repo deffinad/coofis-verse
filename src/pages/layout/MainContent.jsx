@@ -171,7 +171,7 @@ const MainContent = ({
         component="main"
         ref={setMainContentDroppableRef}
         sx={{
-          p: 3,
+          p: SPACING,
           backgroundColor: COLOR.white_winter,
           borderRadius: SPACING,
           border:

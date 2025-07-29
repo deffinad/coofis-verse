@@ -41,10 +41,23 @@ import { restrictToParentElement } from "@dnd-kit/modifiers";
 
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 
-function SortableLayer({ layer }) {
+function SortableLayer({
+  layer,
+  selectedLayout,
+  selectedGrid,
+  onLayerSelect,
+  currentLayoutId,
+  currentLayoutIndex,
+}) {
+  // --- TERIMA PROP BARU INI ---
   const isStructural = layer.hasOwnProperty("children");
   const hasChildren =
     isStructural && layer.children && layer.children.length > 0;
+
+  // Tentukan apakah layer ini sedang dipilih
+  const isSelected =
+    selectedLayout === layer.id ||
+    (selectedGrid && selectedGrid.id === layer.id);
 
   const {
     attributes,
@@ -74,10 +87,21 @@ function SortableLayer({ layer }) {
 
   // Handler untuk toggle expanded state secara manual (klik expand icon)
   const handleAccordionChange = (event, isExpanded) => {
+    // Mencegah ekspansi jika tidak ada children
     if (isExpanded && !hasChildren) {
       return;
     }
     setExpanded(isExpanded);
+  };
+
+  // --- FUNGSI BARU UNTUK KLIK SELECTION ---
+  const handleLayerClick = (event) => {
+    event.stopPropagation(); // Mencegah event menyebar ke parent (misal: AccordionSummary default behavior)
+    if (onLayerSelect) {
+      // Panggil fungsi selection yang diteruskan dari Layout
+      // Teruskan layer yang diklik, dan parent layout/grid ID serta index
+      onLayerSelect(layer, currentLayoutId, currentLayoutIndex);
+    }
   };
 
   return (
@@ -95,6 +119,11 @@ function SortableLayer({ layer }) {
         boxShadow: isDragging ? "0px 4px 12px rgba(0,0,0,0.15)" : "none",
         position: "relative",
         zIndex: isDragging ? 1 : "auto",
+        // Styling untuk highlight saat dipilih
+        border: isSelected ? `1px solid ${COLOR.dark_gray}` : "none", // Border hijau saat dipilih
+        backgroundColor: isSelected ? COLOR.light_green_tint : "transparent", // Latar belakang hijau muda saat dipilih
+        borderRadius: SPACING, // Sesuaikan dengan borderRadius AccordionSummary
+        transition: "background-color 0.2s ease, border 0.2s ease", // Efek transisi
       }}
     >
       <AccordionSummary
@@ -106,8 +135,15 @@ function SortableLayer({ layer }) {
           minHeight: "48px",
           mb: 0.5,
           borderRadius: 1,
-          
+          // Styling hover (opsional, jika ingin efek hover tambahan)
+          "&:hover": {
+            backgroundColor: isSelected
+              ? COLOR.light_green_tint
+              : "rgba(0, 0, 0, 0.04)",
+          },
         }}
+        // --- TAMBAHKAN ONCLICK HANDLER DI SINI ---
+        onClick={handleLayerClick}
       >
         <Typography
           variant="button"
@@ -125,7 +161,7 @@ function SortableLayer({ layer }) {
               {...attributes}
               {...listeners}
               style={{ display: "flex", alignItems: "center", cursor: "grab" }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()} // Mencegah klik drag handle memicu selection
             >
               <DragIndicatorIcon sx={{ mr: 1 }} />
             </span>
@@ -139,20 +175,47 @@ function SortableLayer({ layer }) {
       </AccordionSummary>
       {hasChildren && (
         <AccordionDetails sx={{ padding: "8px", ml: 1 }}>
-          <SortableLayerList layers={layer.children} />
+          <SortableLayerList
+            layers={layer.children}
+            selectedLayout={selectedLayout}
+            selectedGrid={selectedGrid}
+            onLayerSelect={onLayerSelect}
+            currentLayoutId={currentLayoutId}
+            currentLayoutIndex={currentLayoutIndex}
+          />
         </AccordionDetails>
       )}
     </Accordion>
   );
 }
 
-function SortableLayerList({ layers }) {
+function SortableLayerList({
+  layers,
+  selectedLayout,
+  selectedGrid,
+  onLayerSelect,
+  parentLayoutId,
+  parentLayoutIndex,
+}) {
   const itemIds = React.useMemo(() => layers.map((l) => l.id), [layers]);
-
   return (
     <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
       {layers.map((layer) => (
-        <SortableLayer key={layer.id} layer={layer} />
+        <SortableLayer
+          key={layer.id}
+          layer={layer}
+          selectedLayout={selectedLayout}
+          selectedGrid={selectedGrid}
+          onLayerSelect={onLayerSelect}
+          currentLayoutId={
+            layer.name === "Container" ? layer.id : parentLayoutId
+          }
+          currentLayoutIndex={
+            layer.name === "Container"
+              ? layers.findIndex((l) => l.id === layer.id)
+              : parentLayoutIndex
+          }
+        />
       ))}
     </SortableContext>
   );
@@ -170,6 +233,9 @@ const LeftMenu = ({
   onMenuOpen,
   sectionComponents,
   onLayerReorder,
+  selectedLayout,
+  selectedGrid,
+  onLayerSelect,
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -348,6 +414,11 @@ const LeftMenu = ({
           pages.find((p) => p.id === currentPage)?.layouts.length > 0 ? (
             <SortableLayerList
               layers={pages.find((p) => p.id === currentPage).layouts}
+              selectedLayout={selectedLayout}
+              selectedGrid={selectedGrid}
+              onLayerSelect={onLayerSelect}
+              parentLayoutId={null}
+              parentLayoutIndex={null}
             />
           ) : (
             <Typography variant="body2" sx={{ color: "gray", ml: SPACING }}>
@@ -423,7 +494,6 @@ const LeftMenu = ({
                   minHeight: "48px",
                   mb: 0.5,
                   borderRadius: 1,
-                
                 }}
               >
                 <Typography

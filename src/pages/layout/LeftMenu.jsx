@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -40,6 +40,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 
 import { LayoutTemplates } from "../../json/LayoutTemplates";
+import { useDynamicMenuHeight } from "@/utils/useDynamicMenuHeight";
+import { WIDGET_COMPONENTS } from "../../shared/editorConstants";
 
 function SortableLayer({
   layer,
@@ -49,12 +51,10 @@ function SortableLayer({
   currentLayoutId,
   currentLayoutIndex,
 }) {
-  // --- TERIMA PROP BARU INI ---
   const isStructural = layer.hasOwnProperty("children");
   const hasChildren =
     isStructural && layer.children && layer.children.length > 0;
 
-  // Tentukan apakah layer ini sedang dipilih
   const isSelected =
     selectedLayout === layer.id ||
     (selectedGrid && selectedGrid.id === layer.id);
@@ -94,12 +94,9 @@ function SortableLayer({
     setExpanded(isExpanded);
   };
 
-  // --- FUNGSI BARU UNTUK KLIK SELECTION ---
   const handleLayerClick = (event) => {
-    event.stopPropagation(); // Mencegah event menyebar ke parent (misal: AccordionSummary default behavior)
+    event.stopPropagation();
     if (onLayerSelect) {
-      // Panggil fungsi selection yang diteruskan dari Layout
-      // Teruskan layer yang diklik, dan parent layout/grid ID serta index
       onLayerSelect(layer, currentLayoutId, currentLayoutIndex);
     }
   };
@@ -119,11 +116,10 @@ function SortableLayer({
         boxShadow: isDragging ? "0px 4px 12px rgba(0,0,0,0.15)" : "none",
         position: "relative",
         zIndex: isDragging ? 1 : "auto",
-        // Styling untuk highlight saat dipilih
-        border: isSelected ? `1px solid ${COLOR.dark_gray}` : "none", // Border hijau saat dipilih
-        backgroundColor: isSelected ? COLOR.light_green_tint : "transparent", // Latar belakang hijau muda saat dipilih
-        borderRadius: SPACING, // Sesuaikan dengan borderRadius AccordionSummary
-        transition: "background-color 0.2s ease, border 0.2s ease", // Efek transisi
+        border: isSelected ? `1px solid ${COLOR.dark_gray}` : "none",
+        backgroundColor: isSelected ? COLOR.light_green_tint : "transparent",
+        borderRadius: SPACING,
+        transition: "background-color 0.2s ease, border 0.2s ease",
       }}
     >
       <AccordionSummary
@@ -135,14 +131,12 @@ function SortableLayer({
           minHeight: "48px",
           mb: 0.5,
           borderRadius: 1,
-          // Styling hover (opsional, jika ingin efek hover tambahan)
           "&:hover": {
             backgroundColor: isSelected
               ? COLOR.light_green_tint
               : "rgba(0, 0, 0, 0.04)",
           },
         }}
-        // --- TAMBAHKAN ONCLICK HANDLER DI SINI ---
         onClick={handleLayerClick}
       >
         <Typography
@@ -161,7 +155,7 @@ function SortableLayer({
               {...attributes}
               {...listeners}
               style={{ display: "flex", alignItems: "center", cursor: "grab" }}
-              onClick={(e) => e.stopPropagation()} // Mencegah klik drag handle memicu selection
+              onClick={(e) => e.stopPropagation()}
             >
               <DragIndicatorIcon sx={{ mr: 1 }} />
             </span>
@@ -221,6 +215,12 @@ function SortableLayerList({
   );
 }
 
+/**
+ * The LeftMenu component provides navigation for pages, a layer tree for the
+ * current page's structure, and a list of draggable components and layouts.
+ * @param {object} props - The props for the component.
+ * (Props are documented via JSDoc in their respective call sites for clarity)
+ */
 const LeftMenu = ({
   pages,
   currentPage,
@@ -237,51 +237,15 @@ const LeftMenu = ({
   selectedGrid,
   onLayerSelect,
 }) => {
+  const menuRef = useRef(null);
+  const menuHeight = useDynamicMenuHeight(menuRef);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  const [menuHeight, setMenuHeight] = useState("calc(100vh - 150px)");
-  const menuRef = useRef(null);
-
-  // Hook untuk menghitung tinggi dinamis berdasarkan scroll position
-  useEffect(() => {
-    const calculateHeight = () => {
-      if (menuRef.current) {
-        const rect = menuRef.current.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const topOffset = rect.top;
-        const bottomPadding = 20;
-
-        // Hitung tinggi yang tersedia dari posisi current menu sampai bawah viewport
-        const availableHeight = viewportHeight - topOffset - bottomPadding;
-
-        // Set minimum height untuk memastikan menu tidak terlalu kecil
-        const minHeight = 300;
-        const finalHeight = Math.max(availableHeight, minHeight);
-
-        setMenuHeight(`${finalHeight}px`);
-      }
-    };
-
-    // Jalankan kalkulasi saat pertama kali render
-    calculateHeight();
-
-    // Event listener untuk scroll dan resize
-    const handleScroll = () => calculateHeight();
-    const handleResize = () => calculateHeight();
-
-    window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
-
-    // Cleanup event listeners
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   return (
     <Box
@@ -509,21 +473,8 @@ const LeftMenu = ({
               </AccordionSummary>
               <AccordionDetails sx={{ p: "2px 2px", ml: SPACING }}>
                 {section.title === "Widget" ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    {[
-                      "CustomCard",
-                      "Navbar",
-                      "ArsipCuti",
-                      "KuotaCutiSaatIni",
-                      "ListDate",
-                      "MonitoringKuota",
-                      "StatusDokumenCutiDashboard",
-                    ].map((id) => (
+                  <Box>
+                    {WIDGET_COMPONENTS.map((id) => (
                       <DraggableComponent key={id} id={id}>
                         <ListItemButton
                           sx={{

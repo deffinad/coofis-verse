@@ -19,19 +19,15 @@ const EditorNavbar = ({
         height: "fit-content",
         zIndex: (theme) => theme.zIndex.drawer + 1,
         py: SPACING,
-        // border: "1px solid red",
       }}
     >
       <Box
         sx={{
           width: "100%",
-          // Calculated width: 300 (Left) + 1140 (Main) + 300 (Right) + 2*gap
-          // Assuming gap based on SPACING is ~24px
           maxWidth: "1788px",
-          margin: "0 auto", // Center the box
+          margin: "0 auto",
           display: "flex",
           alignItems: "center",
-          // border: "1px solid red",
         }}
       >
         <Toolbar sx={{ padding: "0 !important", width: "100%" }}>

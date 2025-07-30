@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-undef */
 // React Core Libraries
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +23,9 @@ import LeftMenu from "./LeftMenu";
 import MainContent from "./MainContent";
 import RightMenu from "./RightMenu";
 import AlertPopup from "../../shared/components/AlertPopup";
-import Preview from "./Preview"; // Import komponen Preview yang sudah dimodifikasi
+import Preview from "./Preview";
+import { debounce } from "../../utils/debounce";
+import { SECTION_COMPONENTS } from "../../shared/editorConstants";
 
 // JSON Data Imports
 import { DataCuti } from "../../json/DocsCuti";
@@ -37,17 +37,8 @@ import { COLOR, SPACING } from "@/shared/AppConst";
 
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 
-const debounce = (func, delay) => {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-};
-
 // --- Komponen Utama ---
 const Layout = () => {
-  const navigate = useNavigate();
   // --- 1. State Management ---
   // State untuk data inti (halaman, layout, grid)
   const [pages, setPages] = useState([]);
@@ -82,10 +73,17 @@ const Layout = () => {
     severity: "info", // 'success', 'error', 'warning', 'info'
   });
 
+  const layoutContainerRef = useRef(null);
+
   const generateRandomId = () => {
     return Math.random().toString(36).substr(2, 8);
   };
 
+  /**
+   * Applies a predefined layout template to the current page.
+   * It generates unique IDs for all nested elements within the template.
+   * @param {Array} templateLayout - The layout structure to apply.
+   */
   const handleApplyLayoutTemplate = (templateLayout) => {
     if (!currentPage) {
       showNotification(
@@ -388,6 +386,12 @@ const Layout = () => {
     }
   };
 
+  /**
+   * Updates the properties of a specific component (layout or grid) within the current page.
+   * This is a core function for the right-side property panel.
+   * @param {string} componentId - The ID of the component to update.
+   * @param {object} newProperties - The new properties to merge with existing ones.
+   */
   const updateComponentProperties = (componentId, newProperties) => {
     setPages((prevPages) => {
       const updatedPages = prevPages.map((p) => {
@@ -418,10 +422,11 @@ const Layout = () => {
     });
   };
 
+  // Debounced version of the property updater to prevent excessive re-renders.
   const debouncedUpdateComponentProperties = useCallback(
     debounce((id, props) => {
       updateComponentProperties(id, props);
-    }, 1200),
+    }, 500),
     [currentPage]
   );
 
@@ -536,7 +541,7 @@ const Layout = () => {
   const debouncedUpdateSiblingHeights = useCallback(
     debounce((id, height) => {
       updateSiblingHeights(id, height);
-    }, 800),
+    }, 500),
     [currentPage]
   );
 
@@ -663,12 +668,9 @@ const Layout = () => {
     parentLayoutId = null,
     parentLayoutIndex = null
   ) => {
-    // Jika layer adalah 'Container' (layout utama)
     if (layer.name === "Container") {
       handleLayoutClick(layer.id, parentLayoutIndex); // Gunakan ID layer sebagai layoutId
-    }
-    // Jika layer adalah 'Layout' (grid di dalam container)
-    else if (layer.name === "Layout") {
+    } else if (layer.name === "Layout") {
       handleGridClick(layer, parentLayoutId, parentLayoutIndex);
     } else {
       if (parentLayoutId && parentLayoutIndex !== null) {
@@ -722,6 +724,12 @@ const Layout = () => {
 
   const handleDragStart = (event) => setActiveId(event.active.id);
 
+  /**
+   * Handles the end of a drag-and-drop operation.
+   * It determines if the dragged item is a new component or a layout template
+   * and updates the page structure accordingly.
+   * @param {object} event - The drag-end event object from dnd-kit.
+   */
   const handleDragEnd = (event) => {
     setActiveId(null);
     const { over, active } = event;
@@ -939,7 +947,7 @@ const Layout = () => {
   const handlePreview = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
     localStorage.setItem("curentPages", JSON.stringify(currentPage));
-    setIsPreviewOpen(true); // Buka modal Preview
+    setIsPreviewOpen(true);
   };
 
   // Fungsi untuk menutup modal Preview
@@ -949,15 +957,6 @@ const Layout = () => {
 
   const handlePublish = () => showNotification("Project published!", "info");
 
-  // --- 6. Render Functions ---
-
-  const sectionComponents = [
-    { title: "Page" },
-    { title: "Layout" },
-    { title: "Menu" },
-    { title: "Form" },
-    { title: "Widget" },
-  ];
 
   console.log("Struktur JSON Pages:", JSON.stringify(pages, null, 2));
 
@@ -968,15 +967,17 @@ const Layout = () => {
       onDragEnd={handleDragEnd}
     >
       <Box
+        ref={layoutContainerRef}
         sx={{
           display: "flex",
           flexDirection: "column",
           backgroundColor: COLOR.very_light_gray,
+          position: "relative",
         }}
       >
         <EditorNavbar
           onSave={handleSave}
-          onPreview={handlePreview} // Panggil handlePreview yang baru
+          onPreview={handlePreview}
           onPublish={handlePublish}
           projectName={
             pages.find((p) => p.id === currentPage)?.name || "Untitled Project"
@@ -993,7 +994,6 @@ const Layout = () => {
             pl: SPACING,
             gap: SPACING + 1,
             justifyContent: "center",
-            // border: "1px solid red",
           }}
         >
           {/* Left Menu */}
@@ -1009,7 +1009,7 @@ const Layout = () => {
             onMenuOpen={handleMenuOpen}
             selectedGrid={selectedGrid}
             selectedLayout={selectedLayout}
-            sectionComponents={sectionComponents}
+            sectionComponents={SECTION_COMPONENTS}
             onLayerReorder={handleLayerDragEnd}
             onApplyLayoutTemplate={handleApplyLayoutTemplate}
             onLayerSelect={handleLayerSelectFromLeftMenu}
@@ -1083,8 +1083,9 @@ const Layout = () => {
       <Preview
         open={isPreviewOpen}
         onClose={handleClosePreviewModal}
-        pages={pages} // Kirim data pages
-        currentPageId={currentPage} // Kirim ID halaman aktif
+        pages={pages}
+        currentPageId={currentPage}
+        container={layoutContainerRef.current}
       />
     </DndContext>
   );

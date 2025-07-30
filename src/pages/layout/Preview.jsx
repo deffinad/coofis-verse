@@ -1,3 +1,4 @@
+// FileName: /Preview.jsx
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   Box,
@@ -21,30 +22,18 @@ import PublishIcon from "@mui/icons-material/Publish";
 import { COLOR, SPACING } from "@/shared/AppConst";
 import { Components } from "remoteApp/Components";
 
-const Preview = ({ open, onClose, pages, currentPageId }) => {
-  // const navigate = useNavigate(); // Hapus ini
+const Preview = ({ open, onClose, pages, currentPageId, container }) => {
   const [previewSize, setPreviewSize] = useState({ width: 1280 });
   const [scale, setScale] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [deviceType, setDeviceType] = useState("Desktop");
   const previewAreaRef = useRef(null);
 
-  // Efek untuk memuat data hanya saat modal dibuka
   useEffect(() => {
     if (open) {
-      // Hanya muat data jika modal terbuka
       const loadPreviewData = async () => {
         setIsLoading(true);
-        // Simulasi loading data
         await new Promise((resolve) => setTimeout(resolve, 800));
-
-        // Data pages dan currentPageId sekarang datang dari props,
-        // jadi tidak perlu lagi mengambil dari localStorage di sini.
-        // Namun, jika Anda ingin Preview.jsx tetap bisa bekerja mandiri
-        // (misalnya untuk debugging), Anda bisa mempertahankan logika localStorage
-        // dan menjadikannya fallback jika props tidak diberikan.
-        // Untuk tujuan ini, kita asumsikan props selalu diberikan.
-
         setIsLoading(false);
       };
       loadPreviewData();
@@ -58,6 +47,7 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
       setScale(Math.min(calculatedScale, 1));
     }
   }, [previewSize.width, isLoading, open]);
+
   const activePage = pages.find((p) => p.id === currentPageId);
 
   const handleResize = (width, type) => {
@@ -109,6 +99,7 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
     });
   };
 
+  // Backdrop untuk loading tetap fullscreen karena ini adalah state awal
   if (isLoading && open) {
     return (
       <Backdrop open={isLoading} sx={{ zIndex: 9999 }}>
@@ -130,15 +121,39 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
 
   return (
     <Dialog
-      fullScreen
       open={open}
       onClose={handleClosePreview}
+      container={container}
       sx={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: (theme) => theme.zIndex.modal + 100,
+        backgroundColor: COLOR.very_light_gray,
+        "& .MuiBackdrop-root": {
+          position: "absolute",
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        },
         "& .MuiDialog-paper": {
           backgroundColor: COLOR.very_light_gray,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          maxWidth: "100%",
+          maxHeight: "100%",
+          margin: 0,
+          borderRadius: 0,
         },
       }}
     >
@@ -146,8 +161,6 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
       <Box
         sx={{
           width: "100%",
-          backgroundColor: COLOR.dark_gray,
-          borderBottom: "1px solid #333",
           zIndex: 1000,
         }}
       >
@@ -156,9 +169,10 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            px: 3,
             py: SPACING,
-            maxWidth: "none",
+            backgroundColor: COLOR.very_light_gray,
+            maxWidth: "1788px",
+            margin: "0 auto",
           }}
         >
           {/* Left Section */}
@@ -167,18 +181,14 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
               onClick={handleClosePreview}
               startIcon={<ArrowBackIcon />}
               sx={{
-                color: COLOR.dark_gray,
-                backgroundColor: COLOR.light_gray,
+                color: COLOR.white_ice,
+                backgroundColor: COLOR.medium_dark_gray,
                 borderRadius: "8px",
                 px: SPACING,
                 py: 1,
                 textTransform: "none",
                 fontSize: "14px",
                 fontWeight: 600,
-                "&:hover": {
-                  backgroundColor: "#555",
-                  transform: "translateY(-1px)",
-                },
                 transition: "all 0.2s ease",
               }}
             >
@@ -201,7 +211,10 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
                   },
                 }}
               />
-              <Typography variant="body2" sx={{ color: "#ccc" }}>
+              <Typography
+                variant="body2"
+                sx={{ color: COLOR.medium_dark_gray }}
+              >
                 {activePage?.name || "Untitled Page"}
               </Typography>
             </Box>
@@ -260,10 +273,6 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
               py: 1,
               textTransform: "none",
               fontWeight: 600,
-              "&:hover": {
-                backgroundColor: "#00A844",
-                transform: "translateY(-1px)",
-              },
               transition: "all 0.2s ease",
             }}
           >
@@ -276,7 +285,7 @@ const Preview = ({ open, onClose, pages, currentPageId }) => {
         sx={{
           flex: 1,
           width: "100%",
-          backgroundColor: COLOR.light_gray,
+          backgroundColor: COLOR.very_light_gray,
           overflowY: "auto",
           overflowX: "hidden",
           p: SPACING,

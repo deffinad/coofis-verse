@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // 1. Import useState
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -6,7 +6,7 @@ import {
   Typography,
   Box,
   Avatar,
-  Menu, 
+  Menu,
   MenuItem,
 } from "@mui/material";
 import {
@@ -51,7 +51,7 @@ const Navbar = () => {
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, backgroundColor: COLOR.very_light_gray }}>
       {/* Top section: Logo dan User Info */}
       <AppBar
         position="static"
@@ -59,7 +59,7 @@ const Navbar = () => {
         elevation={0}
         sx={{
           borderBottom: "1px solid #ddd",
-          backgroundColor: COLOR.white_ice,
+          backgroundColor: COLOR.white_smoke,
           p: 0.5,
         }}
       >
@@ -81,8 +81,7 @@ const Navbar = () => {
                 gap: 0.5,
                 ml: SPACING,
                 cursor: "pointer",
-                p: 1,
-                // border: "1px solid red",
+                p: 0.5,
                 borderRadius: SPACING,
                 "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
               }}
@@ -129,15 +128,15 @@ const Navbar = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Bottom section: Navigasi Dinamis Tanpa Efek Button */}
+      {/* Bottom section */}
       <AppBar
         position="static"
         color="transparent"
         elevation={0}
         sx={{
           backgroundColor: COLOR.white_smoke,
-          borderBottomLeftRadius: "16px",
-          borderBottomRightRadius: "16px",
+          borderBottomLeftRadius: SPACING * 10,
+          borderBottomRightRadius: SPACING * 10,
         }}
       >
         <Toolbar sx={{ minHeight: "56px" }}>
@@ -154,21 +153,18 @@ const Navbar = () => {
                   justifyContent: "center",
                   gap: 1,
                   width: 130,
-                  // border:"1px solid red",
                   height: 35,
                   mr: SPACING,
                   borderRadius: SPACING,
                   textTransform: "none",
-                  color: isActive ? COLOR.light_gray : COLOR.dark_gray,
-                  backgroundColor: isActive
-                    ? COLOR.honolulu_blue
-                    : COLOR.white_ice,
+                  color: isActive ? COLOR.light_gray : COLOR.medium_dark_gray,
+                  backgroundColor: isActive ? COLOR.sky_blue : COLOR.white_ice,
                   textDecoration: "none",
                   cursor: "pointer",
                   "&:hover": {
-                    color: isActive ? COLOR.light_gray : COLOR.dark_gray,
+                    color: isActive ? COLOR.light_gray : COLOR.medium_dark_gray,
                     backgroundColor: isActive
-                      ? COLOR.honolulu_blue
+                      ? COLOR.sky_blue
                       : COLOR.white_ice,
                   },
                 }}
@@ -177,8 +173,8 @@ const Navbar = () => {
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: "inherit", // Mengikuti tebal/tipis dari parent
-                    color: "inherit", // Mengikuti warna dari parent
+                    fontWeight: "inherit",
+                    color: "inherit",
                   }}
                 >
                   {route.title}

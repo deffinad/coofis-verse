@@ -1,24 +1,38 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import { Box } from "@mui/material";
-import Navbar from "../shared/components/Navbar"; // Sesuaikan path ke Navbar.jsx
-import { COLOR, SPACING } from "@/shared/AppConst";
+import Navbar from "../shared/components/Navbar";
+import { COLOR } from "@/shared/AppConst";
 
 const MainLayout = () => {
   return (
+    // LEVEL 1: Main Container
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
-        minHeight: "100vh",
-        backgroundColor: COLOR.very_light_gray,
+        height: "100vh",
       }}
     >
-      {/* Navbar akan selalu tampil */}
-      <Navbar />
+      {/* LEVEL 2A: Navbar Container */}
+      <Box
+        component="header"
+        sx={{
+          height: "auto", // Height is determined by the content
+          flexShrink: 0, // Prevents the navbar container from shrinking
+        }}
+      >
+        <Navbar />
+      </Box>
 
-      {/* Area konten dinamis (Dashboard atau Layout akan muncul di sini) */}
-      <Box component="main" sx={{  }}>
+      {/* LEVEL 2B: Content Container */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          backgroundColor: COLOR.very_light_gray,
+        }}
+      >
         <Outlet />
       </Box>
     </Box>

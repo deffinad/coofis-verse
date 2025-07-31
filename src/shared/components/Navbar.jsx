@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -8,6 +8,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Button,
 } from "@mui/material";
 import {
   Home as HomeIcon,
@@ -16,11 +17,10 @@ import {
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 import { COLOR, SPACING } from "@/shared/AppConst";
-import { routesConfig } from "../../pages/RoutesConfig";
+import { routesConfig as baseRoutes } from "../../pages/RoutesConfig"; // Rename import
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { logoData } from "@/shared/AppData";
 
-// Pemetaan string ikon dari config ke komponen Ikon MUI
 const iconComponents = {
   Dashboard: <HomeIcon />,
   Layout: <LayoutIcon />,
@@ -28,31 +28,185 @@ const iconComponents = {
 
 const Navbar = () => {
   const location = useLocation();
+  const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
+  const [dynamicRoutes, setDynamicRoutes] = useState(baseRoutes);
 
-  // State untuk mengontrol menu
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
+  // State for hover menu management
+  const [hoverMenu, setHoverMenu] = useState({
+    anchorEl: null,
+    openId: null,
+  });
+  const hideMenuTimer = useRef(null);
 
-  // Fungsi untuk membuka menu
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  const isUserMenuOpen = Boolean(userMenuAnchorEl);
+
+  const handleUserMenuClick = (event) =>
+    setUserMenuAnchorEl(event.currentTarget);
+  const handleUserMenuClose = () => setUserMenuAnchorEl(null);
+
+  // Handlers for hover menu
+  const handleMenuMouseEnter = (event, menuId) => {
+    clearTimeout(hideMenuTimer.current);
+    setHoverMenu({
+      anchorEl: event.currentTarget,
+      openId: menuId,
+    });
   };
 
-  // Fungsi untuk menutup menu
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleMenuMouseLeave = () => {
+    setHoverMenu({ anchorEl: null, openId: null });
   };
 
-  // Fungsi spesifik untuk logout
+  const handleMenuItemClick = () => {
+    setHoverMenu({ anchorEl: null, openId: null });
+  };
+
   const handleLogout = () => {
-    // Tambahkan logika logout Anda di sini
     console.log("User logged out");
-    handleClose();
+    handleUserMenuClose();
+  };
+
+  const loadPublishedRoutes = () => {
+    const publishedPages = JSON.parse(
+      localStorage.getItem("publishedPages") || "[]"
+    );
+    const publishedRoutes = publishedPages.map((page) => ({
+      id: `published-${page.id}`,
+      title: page.name,
+      messageId: page.name,
+      type: "item",
+      url: `/dashboard/${page.id}`,
+    }));
+
+    const newRoutes = baseRoutes.map((route) => {
+      if (route.id === "dashboard" && route.type === "group") {
+        const staticChildren = route.children || [];
+        return { ...route, children: [...staticChildren, ...publishedRoutes] };
+      }
+      return route;
+    });
+
+    setDynamicRoutes(newRoutes);
+  };
+
+  useEffect(() => {
+    loadPublishedRoutes();
+    window.addEventListener("storage", loadPublishedRoutes);
+    return () => {
+      window.removeEventListener("storage", loadPublishedRoutes);
+    };
+  }, []);
+
+  const renderNavs = () => {
+    return dynamicRoutes.map((route) => {
+      const isActive =
+        (location.pathname.startsWith(route.url) && route.url !== "/") ||
+        (route.type === "group" && hoverMenu.openId === route.id);
+
+      if (route.type === "group") {
+        const isMenuOpen = hoverMenu.openId === route.id;
+        return (
+          <Box
+            key={route.id}
+            onMouseEnter={(e) => handleMenuMouseEnter(e, route.id)}
+            onMouseLeave={handleMenuMouseLeave}
+            sx={{ mr: SPACING }}
+          >
+            <Box
+              aria-owns={isMenuOpen ? `menu-${route.id}` : undefined}
+              aria-haspopup="true"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
+                width: 130,
+                p: 1,
+                height: 20,
+                borderRadius: SPACING,
+                textTransform: "none",
+                cursor: "pointer",
+                color: COLOR.medium_dark_gray
+              }}
+            >
+              {iconComponents[route.icon] || <DefaultIcon />}
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: "inherit", color: "inherit" }}
+              >
+                {route.title}
+              </Typography>
+            </Box>
+            <Menu
+              id={`menu-${route.id}`}
+              anchorEl={hoverMenu.anchorEl}
+              open={isMenuOpen}
+              onClose={handleMenuMouseLeave}
+              MenuListProps={{
+                "aria-labelledby": `button-${route.id}`,
+                onMouseLeave: handleMenuMouseLeave,
+              }}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "left",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "left",
+              }}
+            >
+              {route.children.map((child) => (
+                <MenuItem
+                  key={child.id}
+                  component={Link}
+                  to={child.url}
+                  onClick={handleMenuItemClick}
+                  selected={location.pathname === child.url}
+                >
+                  {child.title}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+        );
+      }
+
+      // Default rendering for non-group items
+      return (
+        <Box
+          key={route.id}
+          component={Link}
+          to={route.url}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            width: 130,
+            height: 35,
+            mr: SPACING,
+            borderRadius: SPACING,
+            textTransform: "none",
+            color: isActive ? COLOR.light_gray : COLOR.medium_dark_gray,
+            backgroundColor: isActive ? COLOR.sky_blue : COLOR.white_smoke,
+            textDecoration: "none",
+            cursor: "pointer",
+          }}
+        >
+          {iconComponents[route.icon] || <DefaultIcon />}
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: "inherit", color: "inherit" }}
+          >
+            {route.title}
+          </Typography>
+        </Box>
+      );
+    });
   };
 
   return (
     <Box sx={{ flexGrow: 1, backgroundColor: COLOR.very_light_gray }}>
-      {/* Top section: Logo dan User Info */}
       <AppBar
         position="static"
         color="transparent"
@@ -72,9 +226,8 @@ const Navbar = () => {
             />
           </Box>
           <Box>
-            {/* Box yang dapat diklik */}
             <Box
-              onClick={handleClick}
+              onClick={handleUserMenuClick}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -83,11 +236,10 @@ const Navbar = () => {
                 cursor: "pointer",
                 p: 0.5,
                 borderRadius: SPACING,
-                "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
               }}
-              aria-controls={open ? "account-menu" : undefined}
+              aria-controls={isUserMenuOpen ? "account-menu" : undefined}
               aria-haspopup="true"
-              aria-expanded={open ? "true" : undefined}
+              aria-expanded={isUserMenuOpen ? "true" : undefined}
             >
               <Avatar
                 sx={{ bgcolor: COLOR.honolulu_blue, width: 40, height: 40 }}
@@ -107,16 +259,12 @@ const Navbar = () => {
               </Box>
               <ExpandMoreIcon sx={{ color: COLOR.dark_gray }} />
             </Box>
-
-            {/* Komponen Menu */}
             <Menu
               id="account-menu"
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleClose}
-              MenuListProps={{
-                "aria-labelledby": "basic-button",
-              }}
+              anchorEl={userMenuAnchorEl}
+              open={isUserMenuOpen}
+              onClose={handleUserMenuClose}
+              MenuListProps={{ "aria-labelledby": "basic-button" }}
               sx={{ mt: 1 }}
             >
               <MenuItem onClick={handleLogout}>
@@ -127,8 +275,6 @@ const Navbar = () => {
           </Box>
         </Toolbar>
       </AppBar>
-
-      {/* Bottom section */}
       <AppBar
         position="static"
         color="transparent"
@@ -139,50 +285,7 @@ const Navbar = () => {
           borderBottomRightRadius: SPACING * 10,
         }}
       >
-        <Toolbar sx={{ minHeight: "56px" }}>
-          {routesConfig.map((route) => {
-            const isActive = location.pathname === route.url;
-            return (
-              <Box
-                key={route.id}
-                component={Link}
-                to={route.url}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 1,
-                  width: 130,
-                  height: 35,
-                  mr: SPACING,
-                  borderRadius: SPACING,
-                  textTransform: "none",
-                  color: isActive ? COLOR.light_gray : COLOR.medium_dark_gray,
-                  backgroundColor: isActive ? COLOR.sky_blue : COLOR.white_ice,
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  "&:hover": {
-                    color: isActive ? COLOR.light_gray : COLOR.medium_dark_gray,
-                    backgroundColor: isActive
-                      ? COLOR.sky_blue
-                      : COLOR.white_ice,
-                  },
-                }}
-              >
-                {iconComponents[route.icon] || <DefaultIcon />}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: "inherit",
-                    color: "inherit",
-                  }}
-                >
-                  {route.title}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Toolbar>
+        <Toolbar sx={{ minHeight: "56px" }}>{renderNavs()}</Toolbar>
       </AppBar>
     </Box>
   );

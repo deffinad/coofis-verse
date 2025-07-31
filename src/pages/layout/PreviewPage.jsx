@@ -1,18 +1,15 @@
-// FileName: /Preview.jsx
+// pages/preview/PreviewPage.jsx
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
   ButtonGroup,
   Typography,
   Grid,
-  Backdrop,
   CircularProgress,
   Chip,
   Stack,
-  Dialog,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import TabletMacIcon from "@mui/icons-material/TabletAndroid";
@@ -22,45 +19,67 @@ import PublishIcon from "@mui/icons-material/Publish";
 import { COLOR, SPACING } from "@/shared/AppConst";
 import { Components } from "remoteApp/Components";
 
-const Preview = ({ open, onClose, pages, currentPageId, container }) => {
-  const [previewSize, setPreviewSize] = useState({ width: 1280 });
+const PreviewPage = () => {
+  // Changed from Preview to PreviewPage
+  const { pageId } = useParams(); // Get pageId from URL
+  const navigate = useNavigate(); // For back navigation
+
+  const [pages, setPages] = useState([]); // State to hold all pages
+  const [activePage, setActivePage] = useState(null); // State for the current active page
+  const [previewSize, setPreviewSize] = useState({ width: "100%" });
   const [scale, setScale] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [deviceType, setDeviceType] = useState("Desktop");
   const previewAreaRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
-      const loadPreviewData = async () => {
-        setIsLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        setIsLoading(false);
-      };
-      loadPreviewData();
+    // Load all pages from localStorage
+    const savedPages = localStorage.getItem("savedPages");
+    if (savedPages) {
+      try {
+        const parsedPages = JSON.parse(savedPages);
+        setPages(parsedPages);
+        // Find the active page based on pageId from URL
+        const foundPage = parsedPages.find((p) => p.id === pageId);
+        setActivePage(foundPage);
+      } catch (e) {
+        console.error("Failed to parse pages from localStorage", e);
+        setActivePage(null);
+      }
+    } else {
+      setActivePage(null);
     }
-  }, [open]);
+
+    // Simulate loading
+    const loadPreviewData = async () => {
+      setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setIsLoading(false);
+    };
+    loadPreviewData();
+  }, [pageId]); // Re-run when pageId changes
 
   useLayoutEffect(() => {
-    if (previewAreaRef.current && !isLoading && open) {
-      const previewAreaWidth = previewAreaRef.current.offsetWidth;
-      const calculatedScale = previewAreaWidth / previewSize.width;
+    if (previewAreaRef.current?.parentElement && !isLoading) {
+      const availableWidth = previewAreaRef.current.parentElement.offsetWidth;
+      const targetWidth = previewSize.width;
+      const calculatedScale = availableWidth / targetWidth;
       setScale(Math.min(calculatedScale, 1));
     }
-  }, [previewSize.width, isLoading, open]);
-
-  const activePage = pages.find((p) => p.id === currentPageId);
+  }, [previewSize.width, isLoading, activePage]);
 
   const handleResize = (width, type) => {
     setPreviewSize({ width });
     setDeviceType(type);
   };
 
-  const handleClosePreview = () => {
-    onClose();
+  const handleBackToEditor = () => {
+    navigate("/layout"); // Navigate back to the editor page
   };
 
   const handlePublish = () => {
-    console.log("Publishing page...");
+    console.log("Publishing page from preview...");
+    // You might want to dispatch an event or call an API here
   };
 
   const getResponsiveSize = (grid) => {
@@ -77,6 +96,8 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
       const isFinalComponent = grid.children[0]?.name;
       return (
         <Grid item size={getResponsiveSize(grid)} key={grid.id}>
+          {" "}
+          {/* Use xs for responsive grid */}
           <Box
             sx={{
               minHeight: grid.properties.height || "auto",
@@ -99,62 +120,12 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
     });
   };
 
-  // Backdrop untuk loading tetap fullscreen karena ini adalah state awal
-  if (isLoading && open) {
-    return (
-      <Backdrop open={isLoading} sx={{ zIndex: 9999 }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <CircularProgress color="primary" size={60} />
-          <Typography variant="h6" sx={{ mt: SPACING, color: COLOR.white_ice }}>
-            Loading Preview...
-          </Typography>
-        </Box>
-      </Backdrop>
-    );
-  }
-
   return (
-    <Dialog
-      open={open}
-      onClose={handleClosePreview}
-      container={container}
+    <Box
       sx={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: (theme) => theme.zIndex.modal + 100,
+        display: "flex",
+        flexDirection: "column",
         backgroundColor: COLOR.very_light_gray,
-        "& .MuiBackdrop-root": {
-          position: "absolute",
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        },
-        "& .MuiDialog-paper": {
-          backgroundColor: COLOR.very_light_gray,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          maxWidth: "100%",
-          maxHeight: "100%",
-          margin: 0,
-          borderRadius: 0,
-        },
       }}
     >
       {/* Fullwidth Navbar */}
@@ -162,6 +133,7 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
         sx={{
           width: "100%",
           zIndex: 1000,
+          flexShrink: 0, // Prevent shrinking
         }}
       >
         <Box
@@ -173,12 +145,13 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
             backgroundColor: COLOR.very_light_gray,
             maxWidth: "1788px",
             margin: "0 auto",
+            px: SPACING,
           }}
         >
           {/* Left Section */}
           <Box sx={{ display: "flex", alignItems: "center", gap: SPACING }}>
             <Button
-              onClick={handleClosePreview}
+              onClick={handleBackToEditor} // Changed handler name
               startIcon={<ArrowBackIcon />}
               sx={{
                 color: COLOR.white_ice,
@@ -239,7 +212,7 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
             }}
           >
             <Button
-              onClick={() => handleResize(1280, "Desktop")}
+              onClick={() => handleResize("100%", "Desktop")}
               startIcon={<DesktopWindowsIcon />}
               className={deviceType === "Desktop" ? "active" : ""}
             >
@@ -281,50 +254,75 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
         </Box>
       </Box>
 
-      <DialogContent
+      {/* Main Content Area for Preview */}
+      <Box
         sx={{
-          flex: 1,
+          flex: 1, // Takes remaining vertical space
           width: "100%",
+          pb: SPACING,
           backgroundColor: COLOR.very_light_gray,
           overflowY: "auto",
           overflowX: "hidden",
-          p: SPACING,
-          "&::-webkit-scrollbar-track": {
-            backgroundColor: "#f8f8f8",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#c1c1c1",
-            borderRadius: "10px",
-            "&:hover": {
-              backgroundColor: "#a8a8a8",
-            },
-          },
+          position: "relative", // For scoped loading overlay
+          minHeight: "calc(100vh - 120px)", // PERBAIKAN: Pastikan ada tinggi minimum
         }}
       >
+        {isLoading ? (
+          // Scoped Loading Indicator - FIXED
+          <Box
+            sx={{
+              position: "fixed", // PERBAIKAN: Fixed positioning untuk menghindari efek geser
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              pointerEvents: "none",
+            }}
+          >
+            <CircularProgress color="primary" size={60} />
+            <Typography
+              variant="h6"
+              sx={{
+                mt: SPACING,
+                color: COLOR.dark_gray,
+                textAlign: "center",
+              }}
+            >
+              Loading Preview...
+            </Typography>
+          </Box>
+        ) : null}
+
+        {/* Content Area - Selalu ada, visibility diatur berdasarkan loading */}
         <Box
-          ref={previewAreaRef}
           sx={{
-            display: "flex",
-            justifyContent: "center",
-            boxSizing: "border-box",
+            width: "100%", // PERBAIKAN: Full width
             minHeight: "100%",
-            p: SPACING,
-            mr: SPACING,
+            opacity: isLoading ? 0 : 1,
+            visibility: isLoading ? "hidden" : "visible",
+            p: SPACING, // PERBAIKAN: Visibility control
           }}
         >
           <Box
+            ref={previewAreaRef}
             sx={{
-              p: SPACING,
-              width: deviceType === "Desktop" ? "100%" : previewSize.width,
-              maxWidth: "100%",
-              height:
-                deviceType === "Desktop" ? "auto" : `calc(100% / ${scale})`,
+              width: "100%", // PERBAIKAN: Full width content
+              maxWidth: previewSize.width, // PERBAIKAN: Max width berdasarkan device
+              margin: "0 auto", // PERBAIKAN: Center alignment
               transform: deviceType === "Desktop" ? "none" : `scale(${scale})`,
               transformOrigin: "top center",
-              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: isLoading
+                ? "none"
+                : "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               backgroundColor: COLOR.white,
-              border: deviceType === "Desktop" ? "none" : "1px solid #ddd",
+              border: "1px solid #ddd",
               borderRadius: "8px",
+              boxSizing: "border-box",
+              p: SPACING, 
             }}
           >
             {activePage && activePage.layouts.length > 0 ? (
@@ -354,30 +352,13 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
                 <Typography variant="h5" color="text.secondary">
                   {activePage
                     ? "No content on this page."
-                    : "No page selected."}
+                    : "No page selected or found."}
                 </Typography>
               </Box>
             )}
           </Box>
         </Box>
-      </DialogContent>
-
-      {/* Floating Action Buttons (jika masih diperlukan, bisa di DialogActions) */}
-      <DialogActions
-        sx={{
-          position: "absolute",
-          bottom: 24,
-          right: 24,
-          display: "flex",
-          flexDirection: "column",
-          gap: SPACING,
-          zIndex: 1001,
-          backgroundColor: "transparent",
-          p: 0,
-        }}
-      >
-        {/* Anda bisa menambahkan tombol lain di sini jika ada */}
-      </DialogActions>
+      </Box>
 
       {/* Device Size Indicator */}
       <Box
@@ -397,8 +378,8 @@ const Preview = ({ open, onClose, pages, currentPageId, container }) => {
       >
         {deviceType}: {previewSize.width}px
       </Box>
-    </Dialog>
+    </Box>
   );
 };
 
-export default Preview;
+export default PreviewPage;

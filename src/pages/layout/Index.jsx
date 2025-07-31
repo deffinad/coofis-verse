@@ -23,7 +23,6 @@ import LeftMenu from "./LeftMenu";
 import MainContent from "./MainContent";
 import RightMenu from "./RightMenu";
 import AlertPopup from "../../shared/components/AlertPopup";
-import Preview from "./Preview";
 import { debounce } from "../../utils/debounce";
 import { SECTION_COMPONENTS } from "../../shared/editorConstants";
 
@@ -48,9 +47,6 @@ const Layout = () => {
   const [selectedGrid, setSelectedGrid] = useState(null);
   const [atribut, setAtribute] = useState(null);
 
-  // State baru untuk mengontrol visibilitas Preview
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
   // State untuk form dan properti di menu kanan
   const [formData, setFormData] = useState({});
   const [newSize, setNewSize] = useState({
@@ -74,6 +70,8 @@ const Layout = () => {
   });
 
   const layoutContainerRef = useRef(null);
+
+  const navigate = useNavigate();
 
   const generateRandomId = () => {
     return Math.random().toString(36).substr(2, 8);
@@ -946,17 +944,55 @@ const Layout = () => {
   // Ubah handlePreview untuk membuka modal
   const handlePreview = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
-    localStorage.setItem("curentPages", JSON.stringify(currentPage));
-    setIsPreviewOpen(true);
+    localStorage.setItem("curentPages", JSON.stringify(currentPage)); // Still useful for direct access if needed
+    if (currentPage) {
+      navigate(`/preview/${currentPage}`); // Navigate to the new preview page
+    } else {
+      showNotification("Please select a page to preview.", "warning");
+    }
   };
 
-  // Fungsi untuk menutup modal Preview
-  const handleClosePreviewModal = () => {
-    setIsPreviewOpen(false);
+  const handlePublish = () => {
+    if (!currentPage) {
+      showNotification("Please select a page to publish.", "warning");
+      return;
+    }
+
+    const pageToPublish = pages.find((p) => p.id === currentPage);
+    if (!pageToPublish) {
+      showNotification("Could not find the current page data.", "error");
+      return;
+    }
+
+    // Get existing published pages from localStorage
+    const existingPublished = JSON.parse(
+      localStorage.getItem("publishedPages") || "[]"
+    );
+
+    // Check if this page has already been published
+    const pageIndex = existingPublished.findIndex(
+      (p) => p.id === pageToPublish.id
+    );
+
+    if (pageIndex > -1) {
+      // Update existing published page
+      existingPublished[pageIndex] = pageToPublish;
+    } else {
+      // Add new page to the published list
+      existingPublished.push(pageToPublish);
+    }
+
+    // Save back to localStorage
+    localStorage.setItem("publishedPages", JSON.stringify(existingPublished));
+
+    // Dispatch a custom event to notify other components like the Navbar
+    window.dispatchEvent(new Event("storage"));
+
+    showNotification(
+      `Page '${pageToPublish.name}' published successfully!`,
+      "success"
+    );
   };
-
-  const handlePublish = () => showNotification("Project published!", "info");
-
 
   console.log("Struktur JSON Pages:", JSON.stringify(pages, null, 2));
 
@@ -1077,15 +1113,6 @@ const Layout = () => {
         message={notification.message}
         severity={notification.severity}
         onClose={handleCloseNotification}
-      />
-
-      {/* Render komponen Preview sebagai modal */}
-      <Preview
-        open={isPreviewOpen}
-        onClose={handleClosePreviewModal}
-        pages={pages}
-        currentPageId={currentPage}
-        container={layoutContainerRef.current}
       />
     </DndContext>
   );

@@ -1,23 +1,35 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { Box, Button, Grid, Typography } from "@mui/material";
+import { useDroppable } from "@dnd-kit/core";
+
+// --- Local/Shared Imports ---
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
-import { COLOR, SPACING } from "@/shared/AppConst";
-import { useDroppable } from "@dnd-kit/core";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 
-const MainContent = ({
-  pages,
-  currentPage,
-  selectedLayout,
-  selectedGrid,
-  containerRefs,
-  onLayoutClick,
-  onGridClick,
-  onAddLayoutOrGrid,
-  onDelete,
-  activeId,
-}) => {
+import {
+  setSelectedLayout,
+  setSelectedLayoutIndex,
+  setSelectedGrid,
+  setAtribut,
+  clearSelections,
+  addLayout,
+  addGrid,
+  deleteLayout,
+  deleteGrid,
+} from "../../redux/actions/layoutActions";
+import { showAlert } from "../../redux/actions/alertActions";
+
+const MainContent = ({ containerRefs }) => {
+  const dispatch = useDispatch();
+
+  // 1. Ambil state langsung dari Redux
+  const { pages, currentPage, selectedLayout, selectedGrid, activeId } =
+    useSelector((state) => state.layout);
+
+  // 2. Logika Droppable lokal (tidak berubah)
   const { setNodeRef: setMainContentDroppableRef, isOver: isMainContentOver } =
     useDroppable({
       id: "main-content-canvas",
@@ -26,6 +38,55 @@ const MainContent = ({
   const isLayoutTemplateDragging =
     activeId && LayoutTemplates.some((template) => template.id === activeId);
 
+  // 3. Pindahkan semua handler ke sini
+  const handleLayoutClick = useCallback(
+    (layoutId, layoutidx) => {
+      if (selectedLayout === layoutId) {
+        dispatch(clearSelections());
+      } else {
+        dispatch(setSelectedLayout(layoutId));
+        dispatch(setSelectedLayoutIndex(layoutidx));
+        dispatch(setSelectedGrid(null));
+        dispatch(setAtribut(null));
+      }
+    },
+    [dispatch, selectedLayout]
+  );
+
+  const handleGridClick = useCallback(
+    (layout, layoutId, layoutidx) => {
+      // Mencegah klik saat drag-and-drop template
+      if (isLayoutTemplateDragging) return;
+
+      dispatch(setSelectedLayout(layoutId));
+      dispatch(setSelectedLayoutIndex(layoutidx));
+      dispatch(setSelectedGrid(layout));
+      dispatch(setAtribut(layout.children?.[0] || null));
+    },
+    [dispatch, isLayoutTemplateDragging]
+  );
+
+  const handleAddLayoutOrGrid = useCallback(() => {
+    if (selectedLayout) {
+      dispatch(addGrid());
+    } else {
+      dispatch(addLayout());
+    }
+  }, [dispatch, selectedLayout]);
+
+  const handleDelete = useCallback(() => {
+    if (selectedGrid) {
+      dispatch(deleteGrid(selectedGrid.id));
+    } else if (selectedLayout) {
+      dispatch(deleteLayout(selectedLayout));
+    } else {
+      dispatch(
+        showAlert("Please select a layout or grid to delete.", "warning")
+      );
+    }
+  }, [dispatch, selectedLayout, selectedGrid]);
+
+  // Fungsi render (sedikit modifikasi untuk memanggil handler lokal)
   const renderComponents = (layouts, layoutId, layoutidx) => {
     return layouts.map((layout) => (
       <Grid
@@ -40,7 +101,10 @@ const MainContent = ({
       >
         <DroppableGrid
           id={layout.id}
-          onClick={() => onGridClick(layout, layoutId, layoutidx)}
+          onClick={(e) => {
+            // e.stopPropagation(); // Mencegah event bubbling ke parent
+            handleGridClick(layout, layoutId, layoutidx);
+          }}
           selectedGrid={selectedGrid}
           disabled={isLayoutTemplateDragging}
           style={{
@@ -59,49 +123,15 @@ const MainContent = ({
                   ...child.properties,
                 });
               } else if (child.properties && !child.name) {
-                return (
-                  <Grid
-                    item
-                    size={
-                      typeof child.properties.size === "object"
-                        ? child.properties.size.desktop || 12
-                        : child.properties.size || 12
-                    }
-                    key={child.id}
-                    data-swapy-slot={child.id}
-                  >
-                    <DroppableGrid
-                      id={child.id}
-                      onClick={() => onGridClick(child, layoutId, layoutidx)}
-                      selectedGrid={selectedGrid}
-                      style={{ minHeight: child.properties.height || "auto" }}
-                      disabled={isLayoutTemplateDragging}
-                    >
-                      {child.children?.length > 0 ? (
-                        renderComponents(child.children, layoutId, layoutidx)
-                      ) : (
-                        <Typography variant="body2" sx={{ color: "gray" }}>
-                          Empty Layout
-                        </Typography>
-                      )}
-                    </DroppableGrid>
-                  </Grid>
-                );
+                // Ini adalah kasus nested grid, kita render secara rekursif
+                return renderComponents([child], layoutId, layoutidx);
               }
               return null;
             })
           ) : (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Typography variant="body2" sx={{ color: "gray" }}>
-                Empty Layout
-              </Typography>
-            </Box>
+            <Typography variant="body2" sx={{ color: "gray", p: 2 }}>
+              Empty Grid
+            </Typography>
           )}
         </DroppableGrid>
       </Grid>
@@ -138,30 +168,36 @@ const MainContent = ({
         <Box sx={{ display: "flex", gap: SPACING }}>
           <Button
             variant="contained"
-            onClick={onAddLayoutOrGrid}
+            onClick={handleAddLayoutOrGrid}
             sx={{
               backgroundColor: COLOR.light_gray,
               color: COLOR.dark_gray,
               borderRadius: SPACING,
               textTransform: "none",
+              "&:hover": {
+                backgroundColor: "#e0e0e0", // Contoh hover effect
+              },
             }}
           >
-            Add New Layout
+            {selectedLayout ? "Add New Grid" : "Add New Layout"}
           </Button>
           <Button
             variant="contained"
             color="error"
-            disabled={!selectedLayout}
-            onClick={onDelete}
+            disabled={!selectedLayout && !selectedGrid}
+            onClick={handleDelete}
             sx={{
               backgroundColor: COLOR.red_rojo,
               color: COLOR.white_ice,
               borderRadius: SPACING,
               textTransform: "none",
-              display: selectedLayout ? "block" : "none",
+              display: selectedLayout || selectedGrid ? "block" : "none",
+              "&:hover": {
+                backgroundColor: "#d32f2f", // Contoh hover effect
+              },
             }}
           >
-            Delete Selected Layout
+            {selectedGrid ? "Delete Selected Grid" : "Delete Selected Layout"}
           </Button>
         </Box>
       </Box>
@@ -201,8 +237,9 @@ const MainContent = ({
                       height: "fit-content",
                       minHeight:
                         layout.children?.length === 0 ? "80vh" : "auto",
+                      transition: "border 0.3s ease-in-out", // Transisi border
                     }}
-                    onClick={() => onLayoutClick(layout.id, layoutidx)}
+                    onClick={() => handleLayoutClick(layout.id, layoutidx)}
                   >
                     <Grid
                       container

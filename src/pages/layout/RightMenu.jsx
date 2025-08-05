@@ -1,80 +1,126 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { Box, TextField, Typography, Switch } from "@mui/material";
-import { COLOR, SPACING } from "@/shared/AppConst";
-import { useDynamicMenuHeight } from "@/utils/useDynamicMenuHeight";
-import { debounce } from "@/utils/debounce";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { useDynamicMenuHeight } from "@/shared/utils/utility";
+import { debounce } from "@/shared/utils/debounce";
+import {
+  updateComponentProperty,
+  updateSiblingHeights,
+} from "../../redux/actions/layoutActions";
 
-/**
- * The RightMenu component displays a property panel for the selected grid or component.
- * It allows users to modify properties like responsive column sizes, height, and
- * other component-specific attributes.
- * @param {object} props - The props for the component.
- */
-const RightMenu = ({
-  selectedGrid,
-  atribut,
-  formData,
-  newSize,
-  newHeight,
-  onInputChange,
-  onSizeChange,
-  onHeightChange,
-}) => {
+const RightMenu = ({}) => {
+  const dispatch = useDispatch();
+
+  // 1. Ambil data inti dari Redux
+  const { selectedGrid, atribut } = useSelector((state) => state.layout);
+
+  // 2. State dan Ref lokal
   const menuRef = useRef(null);
   const menuHeight = useDynamicMenuHeight(menuRef);
-
+  const [localSize, setLocalSize] = useState({
+    desktop: 12,
+    tablet: 12,
+    mobile: 12,
+  });
+  const [localHeight, setLocalHeight] = useState("");
   const [localFormData, setLocalFormData] = useState({});
-  const debouncedOnInputChangeRef = useRef(null);
 
+  // 3. Sinkronkan state lokal dengan Redux saat selection berubah
   useEffect(() => {
-    setLocalFormData(formData || {});
-  }, [formData, atribut]);
-
-  useEffect(() => {
-    debouncedOnInputChangeRef.current = debounce((path, value) => {
-      onInputChange(path, value);
-    }, 500);
-  }, [onInputChange]);
-
-  // Handler perubahan input lokal
-  const handleLocalInputChange = useCallback((path, value) => {
-    // Update state lokal secara instan untuk visual feedback
-    const updateNested = (obj, pathArr, val) => {
-      if (pathArr.length === 1) {
-        return { ...obj, [pathArr[0]]: val };
-      }
-      const [head, ...rest] = pathArr;
-      return {
-        ...obj,
-        [head]: updateNested(obj[head] || {}, rest, val),
-      };
-    };
-
-    const pathArray = path.split(".");
-    setLocalFormData((prev) => updateNested(prev, pathArray, value));
-
-    // Panggil fungsi debounced
-    if (debouncedOnInputChangeRef.current) {
-      debouncedOnInputChangeRef.current(path, value);
+    if (selectedGrid?.properties) {
+      const { size, height } = selectedGrid.properties;
+      // Normalisasi data 'size' jika hanya number
+      const normalizedSize =
+        typeof size === "object" && size !== null
+          ? size
+          : { desktop: size || 12, tablet: 12, mobile: 12 };
+      setLocalSize(normalizedSize);
+      setLocalHeight(parseInt(height) || "");
+    } else {
+      setLocalSize({ desktop: 12, tablet: 12, mobile: 12 });
+      setLocalHeight("");
     }
-  }, []);
 
-  // Helper function to get nested value from an object
-  const getNestedValue = (obj, pathArr) => {
-    return pathArr.reduce((acc, part) => acc && acc[part], obj);
-  };
-  // Helper function to convert fullPath string to array
-  const pathArrayFromFullPath = (fullPath) => fullPath.split(".");
+    if (atribut?.properties) {
+      setLocalFormData(atribut.properties);
+    } else {
+      setLocalFormData({});
+    }
+  }, [selectedGrid, atribut]);
 
-  const renderPropertyField = (key, valueFromProps, onChange, path = "") => {
+  // 4. Buat handler dengan debounce untuk dispatch action
+  const debouncedUpdate = useCallback(
+    debounce((id, path, value) => {
+      dispatch(updateComponentProperty(id, path, value));
+    }, 500),
+    [dispatch]
+  );
+
+  const debouncedUpdateSiblingsHeight = useCallback(
+    debounce((gridId, height) => {
+      dispatch(updateSiblingHeights(gridId, height));
+    }, 500), // Delay 500ms
+    [dispatch]
+  );
+
+  const handleSizeChange = useCallback(
+    (device, value) => {
+      if (!selectedGrid) return;
+      const numValue = value === "" ? "" : parseInt(value, 10);
+      let finalValue = numValue;
+      if (numValue !== "" && (isNaN(numValue) || numValue < 1)) finalValue = 1;
+      else if (numValue > 12) finalValue = 12;
+
+      const updatedSize = { ...localSize, [device]: finalValue };
+      setLocalSize(updatedSize);
+      debouncedUpdate(selectedGrid.id, "size", updatedSize);
+    },
+    [selectedGrid, localSize, debouncedUpdate]
+  );
+
+  const handleHeightChange = useCallback(
+    (value) => {
+      if (!selectedGrid) return;
+      const finalHeight = value === "" ? "" : parseInt(value, 10);
+
+      // 1. Update state lokal secara instan untuk UI yang responsif
+      setLocalHeight(finalHeight);
+
+      // 2. Panggil fungsi debounced yang baru, bukan dispatch langsung
+      debouncedUpdateSiblingsHeight(selectedGrid.id, finalHeight);
+    },
+    [selectedGrid, debouncedUpdateSiblingsHeight] // <-- Ganti dependensi ke fungsi debounce
+  );
+
+  const handleLocalInputChange = useCallback(
+    (path, value) => {
+      const updateNested = (obj, pathArr, val) => {
+        if (pathArr.length === 1) return { ...obj, [pathArr[0]]: val };
+        const [head, ...rest] = pathArr;
+        return { ...obj, [head]: updateNested(obj[head] || {}, rest, val) };
+      };
+
+      const pathArray = path.split(".");
+      setLocalFormData((prev) => updateNested(prev, pathArray, value));
+
+      if (atribut?.id) {
+        debouncedUpdate(atribut.id, path, value);
+      }
+    },
+    [atribut?.id, debouncedUpdate]
+  );
+
+  // --- Helper dan fungsi render (tidak banyak berubah) ---
+  const getNestedValue = (obj, pathArr) =>
+    pathArr.reduce((acc, part) => acc && acc[part], obj);
+
+  const renderPropertyField = (key, valueFromProps, path = "") => {
     const fullPath = path ? `${path}.${key}` : key;
+    const pathArray = fullPath.split(".");
     const currentValue =
-      getNestedValue(localFormData, pathArrayFromFullPath(fullPath)) !==
-      undefined
-        ? getNestedValue(localFormData, pathArrayFromFullPath(fullPath))
-        : valueFromProps;
+      getNestedValue(localFormData, pathArray) ?? valueFromProps;
 
-    // --- Penanganan untuk String dan Number ---
     if (
       typeof valueFromProps === "string" ||
       typeof valueFromProps === "number"
@@ -214,14 +260,12 @@ const RightMenu = ({
             >
               Responsive Columns
             </Typography>
-            {/* Input untuk Responsive Columns dan Sizing tidak perlu debounce di sini
-                karena sudah di-debounce di Index.jsx melalui onSizeChange dan onHeightChange */}
             <TextField
               label="Desktop Cols (1-12)"
               type="number"
               fullWidth
-              value={newSize?.desktop || ""}
-              onChange={(e) => onSizeChange("desktop", e.target.value)}
+              value={localSize?.desktop || ""}
+              onChange={(e) => handleSizeChange("desktop", e.target.value)}
               inputProps={{ min: 1, max: 12 }}
               sx={{ mb: SPACING }}
             />
@@ -229,8 +273,8 @@ const RightMenu = ({
               label="Tablet Cols (1-12)"
               type="number"
               fullWidth
-              value={newSize?.tablet || ""}
-              onChange={(e) => onSizeChange("tablet", e.target.value)}
+              value={localSize?.tablet || ""}
+              onChange={(e) => handleSizeChange("tablet", e.target.value)}
               inputProps={{ min: 1, max: 12 }}
               sx={{ mb: SPACING }}
             />
@@ -238,8 +282,8 @@ const RightMenu = ({
               label="Mobile Cols (1-12)"
               type="number"
               fullWidth
-              value={newSize?.mobile || ""}
-              onChange={(e) => onSizeChange("mobile", e.target.value)}
+              value={localSize?.mobile || ""}
+              onChange={(e) => handleSizeChange("mobile", e.target.value)}
               inputProps={{ min: 1, max: 12 }}
               sx={{ mb: SPACING }}
             />
@@ -254,13 +298,12 @@ const RightMenu = ({
               label="Min Height (px)"
               type="number"
               fullWidth
-              value={newHeight || ""}
-              onChange={(e) => onHeightChange(e.target.value)}
-              sx={{}}
+              value={localHeight}
+              onChange={(e) => handleHeightChange(e.target.value)}
               inputProps={{ min: 0 }}
             />
             {/* Input Component Properties */}
-            {atribut && atribut.properties && (
+            {atribut && (
               <Box sx={{ mt: SPACING }}>
                 <Box
                   sx={{
@@ -273,8 +316,8 @@ const RightMenu = ({
                 >
                   <Typography variant="h6">Component Properties</Typography>
                 </Box>
-                {Object.entries(atribut.properties).map(([key, value]) =>
-                  renderPropertyField(key, value, handleLocalInputChange)
+                {Object.entries(localFormData).map(([key, value]) =>
+                  renderPropertyField(key, value)
                 )}
               </Box>
             )}

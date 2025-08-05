@@ -16,10 +16,10 @@ import {
   HelpOutline as DefaultIcon,
   Logout as LogoutIcon,
 } from "@mui/icons-material";
-import { COLOR, SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { routesConfig as baseRoutes } from "../../pages/RoutesConfig"; // Rename import
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { logoData } from "@/shared/AppData";
+import { logoData } from "@/shared/constants/AppData";
 
 const iconComponents = {
   Dashboard: <HomeIcon />,
@@ -126,7 +126,7 @@ const Navbar = () => {
                 borderRadius: SPACING,
                 textTransform: "none",
                 cursor: "pointer",
-                color: COLOR.medium_dark_gray
+                color: COLOR.medium_dark_gray,
               }}
             >
               {iconComponents[route.icon] || <DefaultIcon />}

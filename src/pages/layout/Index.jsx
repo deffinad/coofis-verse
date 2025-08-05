@@ -1,8 +1,6 @@
-// React Core Libraries
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
-// Third-Party Libraries
+import { useSelector, useDispatch } from "react-redux";
 import {
   DndContext,
   DragOverlay,
@@ -13,136 +11,82 @@ import {
 } from "@dnd-kit/core";
 import { createSwapy } from "swapy";
 import { arrayMove } from "@dnd-kit/sortable";
-
-// Material-UI (MUI) Components
 import { Box, Button } from "@mui/material";
+import { generateRandomId } from "../../shared/utils/utility";
 
-// Local Application Components
 import EditorNavbar from "./EditorNavbar";
 import LeftMenu from "./LeftMenu";
 import MainContent from "./MainContent";
 import RightMenu from "./RightMenu";
 import AlertPopup from "../../shared/components/AlertPopup";
-import { debounce } from "../../utils/debounce";
-import { SECTION_COMPONENTS } from "../../shared/editorConstants";
+import { debounce } from "../../shared/utils/debounce";
+import { SECTION_COMPONENTS } from "../../shared/constants/AppData";
+import { showAlert, hideAlert } from "../../redux/actions/alertActions";
+import { componentAttributes } from "@/shared/constants/AppData";
 
-// JSON Data Imports
-import { DataCuti } from "../../json/DocsCuti";
-import { DataKuota } from "../../json/DocsKuota";
-import { DateData } from "../../json/DateData";
-import { KuotaCuti1 } from "../../json/DocsKuotaCuti1";
-import { KuotaCuti2 } from "../../json/DocsKuotaCuti2";
-import { COLOR, SPACING } from "@/shared/AppConst";
+// Redux Layout Actions
+import {
+  loadFromStorage,
+  saveToStorage,
+  addPage,
+  deletePage,
+  setCurrentPage,
+  addLayout,
+  deleteLayout,
+  addGrid,
+  deleteGrid,
+  applyLayoutTemplate,
+  setSelectedLayout,
+  setSelectedGrid,
+  setSelectedLayoutIndex,
+  setAtribut,
+  clearSelections,
+  setFormData,
+  setNewSize,
+  setNewHeight,
+  setNewMenuItem,
+  setActiveId,
+  setMenuAnchorEl,
+  setSelectedPageForMenu,
+  setTemp,
+  saveOrder,
+  addComponentToGrid,
+  updateComponentProperty,
+} from "../../redux/actions/layoutActions";
 
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 
-// --- Komponen Utama ---
 const Layout = () => {
-  // --- 1. State Management ---
-  // State untuk data inti (halaman, layout, grid)
-  const [pages, setPages] = useState([]);
-  const [currentPage, setCurrentPage] = useState(null);
-  const [selectedLayout, setSelectedLayout] = useState(null);
-  const [selectedLayoutIndex, setSelectedLayoutIndex] = useState();
-  const [selectedGrid, setSelectedGrid] = useState(null);
-  const [atribut, setAtribute] = useState(null);
-
-  // State untuk form dan properti di menu kanan
-  const [formData, setFormData] = useState({});
-  const [newSize, setNewSize] = useState({
-    desktop: 12,
-    tablet: 12,
-    mobile: 12,
-  });
-  const [newHeight, setNewHeight] = useState();
-  const [newMenuItem, setNewMenuItem] = useState({ label: "", path: "" });
-
-  // State untuk fungsionalitas UI (DND, menu, etc.)
-  const [activeId, setActiveId] = useState(null);
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const [selectedPageForMenu, setSelectedPageForMenu] = useState(null);
-  const [temp, setTemp] = useState();
-
-  const [notification, setNotification] = useState({
-    open: false,
-    message: "",
-    severity: "info", // 'success', 'error', 'warning', 'info'
-  });
-
-  const layoutContainerRef = useRef(null);
-
+  // Redux state management
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const generateRandomId = () => {
-    return Math.random().toString(36).substr(2, 8);
-  };
+  // Redux state selectors
+  const {
+    pages,
+    currentPage,
+    selectedLayout,
+    selectedLayoutIndex,
+    selectedGrid,
+    atribut,
+    formData,
+    newSize,
+    newHeight,
+    newMenuItem,
+    activeId,
+    menuAnchorEl,
+    selectedPageForMenu,
+    temp,
+  } = useSelector((state) => state.layout);
 
-  /**
-   * Applies a predefined layout template to the current page.
-   * It generates unique IDs for all nested elements within the template.
-   * @param {Array} templateLayout - The layout structure to apply.
-   */
-  const handleApplyLayoutTemplate = (templateLayout) => {
-    if (!currentPage) {
-      showNotification(
-        "Please select a page first to apply a template.",
-        "warning"
-      );
-      return;
-    }
+  const alerts = useSelector((state) => state.alert.alerts);
 
-    const pageIndex = pages.findIndex((p) => p.id === currentPage);
-    if (pageIndex === -1) return;
-
-    const generateUniqueIds = (items) => {
-      return items.map((item) => {
-        const newItem = {
-          ...item,
-          id: `${item.name
-            .toLowerCase()
-            .replace(/\s/g, "-")}-${generateRandomId()}`,
-        };
-        if (newItem.properties && !newItem.properties.size) {
-          newItem.properties.size = { desktop: 12, tablet: 12, mobile: 12 };
-        } else if (
-          newItem.properties &&
-          typeof newItem.properties.size === "number"
-        ) {
-          newItem.properties.size = {
-            desktop: newItem.properties.size,
-            tablet: 12,
-            mobile: 12,
-          };
-        }
-        if (newItem.children && newItem.children.length > 0) {
-          newItem.children = generateUniqueIds(newItem.children);
-        }
-        return newItem;
-      });
-    };
-
-    const newLayoutsToAdd = generateUniqueIds(templateLayout);
-
-    setPages((prevPages) => {
-      const updatedPages = [...prevPages];
-      updatedPages[pageIndex] = {
-        ...updatedPages[pageIndex],
-        layouts: [...newLayoutsToAdd],
-      };
-      return updatedPages;
-    });
-
-    setSelectedLayout(null);
-    setSelectedGrid(null);
-    setSelectedLayoutIndex(null);
-
-    showNotification("Layout template applied successfully!", "success");
-  };
-
-  // --- 2. Refs ---
+  // Hooks dan refs
+  const layoutContainerRef = useRef(null);
   const containerRefs = useRef({});
 
-  // --- 3. Konfigurasi Hooks (Sensors untuk DND Kit) ---
+  // Sensor configuration untuk DND
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -152,20 +96,7 @@ const Layout = () => {
     useSensor(KeyboardSensor)
   );
 
-  // --- 4. Side Effects (useEffect) ---
-  useEffect(() => {
-    const savedPages = localStorage.getItem("savedPages");
-    const currentpages = localStorage.getItem("curentPages");
-    if (savedPages) {
-      try {
-        setPages(JSON.parse(savedPages));
-        setCurrentPage(JSON.parse(currentpages));
-      } catch (e) {
-        console.error("Failed to parse pages from localStorage", e);
-      }
-    }
-  }, []);
-
+  // Utility functions
   const throttledSave = useCallback(
     debounce((pages, currentPage) => {
       localStorage.setItem("savedPages", JSON.stringify(pages));
@@ -173,6 +104,11 @@ const Layout = () => {
     }, 1000),
     []
   );
+
+  // Effects
+  useEffect(() => {
+    dispatch(loadFromStorage());
+  }, [dispatch]);
 
   useEffect(() => {
     throttledSave(pages, currentPage);
@@ -191,7 +127,7 @@ const Layout = () => {
       }
       containerEl.swapy = createSwapy(containerEl);
       containerEl.swapy.onSwap((event) => {
-        setTemp(event);
+        dispatch(setTemp(event));
       });
     });
 
@@ -202,175 +138,65 @@ const Layout = () => {
         }
       });
     };
-  }, [pages, currentPage]);
+  }, [pages, currentPage, dispatch]);
 
   useEffect(() => {
     if (atribut) {
-      setFormData(atribut.properties || {});
+      dispatch(setFormData(atribut.properties || {}));
     } else {
-      setFormData({});
+      dispatch(setFormData({}));
     }
     if (selectedGrid?.properties) {
       const currentSize = selectedGrid.properties.size;
       if (typeof currentSize === "object" && currentSize !== null) {
-        setNewSize(currentSize);
+        dispatch(setNewSize(currentSize));
       } else {
-        setNewSize({ desktop: currentSize || 12, tablet: 12, mobile: 12 });
+        dispatch(
+          setNewSize({ desktop: currentSize || 12, tablet: 12, mobile: 12 })
+        );
       }
-      setNewHeight(parseInt(selectedGrid.properties.height) || 0);
+      dispatch(setNewHeight(parseInt(selectedGrid.properties.height) || 0));
     }
-  }, [atribut?.id, selectedGrid?.id]);
+  }, [atribut?.id, selectedGrid?.id, dispatch]);
 
   useEffect(() => {
-    setSelectedLayout(null);
-    setSelectedGrid(null);
-    setAtribute(null);
-  }, [currentPage]);
+    dispatch(clearSelections());
+  }, [currentPage, dispatch]);
 
-  // --- 5. Helper Functions & Event Handlers ---
-
-  const addPage = () => {
-    const newPage = {
-      id: `pages${pages.length + 1}`,
-      name: `Page ${pages.length + 1}`,
-      layouts: [],
-    };
-    setPages([...pages, newPage]);
-    setCurrentPage(newPage.id);
+  // Page management handlers
+  const handleAddPage = () => {
+    dispatch(addPage());
   };
 
-  const deletePage = (pageIdToDelete) => {
-    const updatedPages = pages.filter((page) => page.id !== pageIdToDelete);
-    setPages(updatedPages);
-    if (currentPage === pageIdToDelete) {
-      setCurrentPage(updatedPages.length > 0 ? updatedPages[0].id : null);
-    }
-    handleMenuClose();
+  // const handleDeletePage = (pageIdToDelete) => {
+  //   dispatch(deletePage(pageIdToDelete));
+  //   handleMenuClose();
+  // };
+
+  // Layout management handlers
+  const handleAddLayout = () => {
+    dispatch(addLayout());
   };
 
-  const addLayout = () => {
-    if (!currentPage) {
-      showNotification("Please select a page first.", "warning");
-      return;
-    }
-    const pageIndex = pages.findIndex((p) => p.id === currentPage);
-    if (pageIndex === -1) return;
-
-    const newLayout = {
-      id: generateRandomId(),
-      name: "Container",
-      properties: {
-        size: { desktop: 12, tablet: 12, mobile: 12 },
-        height: "100%",
-      },
-      children: [],
-    };
-    const updatedPages = [...pages];
-    updatedPages[pageIndex].layouts.push(newLayout);
-    setPages(updatedPages);
-  };
-
-  const deleteLayout = () => {
+  const handleDeleteLayout = () => {
     if (!selectedLayout) return;
-
-    const removeFromLayout = (layouts) => {
-      return layouts
-        .filter((layout) => layout.id !== selectedLayout)
-        .map((layout) => {
-          if (layout.children && layout.children.length > 0) {
-            return { ...layout, children: removeFromLayout(layout.children) };
-          }
-          return layout;
-        });
-    };
-
-    setPages(
-      pages.map((p) =>
-        p.id === currentPage
-          ? { ...p, layouts: removeFromLayout(p.layouts) }
-          : p
-      )
-    );
-    setSelectedLayout(null);
+    dispatch(deleteLayout(selectedLayout));
   };
 
-  const addGrid = () => {
-    if (!selectedLayout) {
-      showNotification("Pilih layout terlebih dahulu.", "warning");
-      return;
-    }
-    const newGrid = {
-      id: generateRandomId(),
-      name: "Layout",
-      properties: {
-        size: { desktop: 12, tablet: 12, mobile: 12 },
-        height: "140px",
-      },
-      children: [],
-    };
-
-    const addToLayout = (layouts) => {
-      return layouts.map((layout) => {
-        if (layout.id === selectedLayout) {
-          return { ...layout, children: [...layout.children, newGrid] };
-        }
-        if (layout.children && layout.children.length > 0) {
-          return { ...layout, children: addToLayout(layout.children) };
-        }
-        return layout;
-      });
-    };
-
-    setPages(
-      pages.map((p) =>
-        p.id === currentPage ? { ...p, layouts: addToLayout(p.layouts) } : p
-      )
-    );
-  };
-
-  const showNotification = (message, severity = "info") => {
-    setNotification({ open: true, message, severity });
-  };
-
-  const handleCloseNotification = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setNotification((prev) => ({ ...prev, open: false }));
+  const handleAddGrid = () => {
+    dispatch(addGrid());
   };
 
   const handleDeleteGrid = () => {
     if (!selectedGrid) return;
-    const removeRecursive = (layouts, id) => {
-      return layouts
-        .filter((layout) => layout.id !== id)
-        .map((layout) => {
-          if (layout.children && layout.children.length > 0) {
-            return {
-              ...layout,
-              children: removeRecursive(layout.children, id),
-            };
-          }
-          return layout;
-        });
-    };
-
-    setPages(
-      pages.map((p) =>
-        p.id === currentPage
-          ? { ...p, layouts: removeRecursive(p.layouts, selectedGrid.id) }
-          : p
-      )
-    );
-    setSelectedGrid(null);
-    setAtribute(null);
+    dispatch(deleteGrid(selectedGrid.id));
   };
 
-  const addLayoutOrGrid = () => {
+  const handleAddLayoutOrGrid = () => {
     if (selectedLayout) {
-      addGrid();
+      handleAddGrid();
     } else {
-      addLayout();
+      handleAddLayout();
     }
   };
 
@@ -378,169 +204,36 @@ const Layout = () => {
     if (selectedGrid) {
       handleDeleteGrid();
     } else if (selectedLayout) {
-      deleteLayout();
+      handleDeleteLayout();
     } else {
-      showNotification("Please select a layout or grid to delete.", "warning");
+      dispatch(
+        showAlert("Please select a layout or grid to delete.", "warning")
+      );
     }
   };
 
-  /**
-   * Updates the properties of a specific component (layout or grid) within the current page.
-   * This is a core function for the right-side property panel.
-   * @param {string} componentId - The ID of the component to update.
-   * @param {object} newProperties - The new properties to merge with existing ones.
-   */
-  const updateComponentProperties = (componentId, newProperties) => {
-    setPages((prevPages) => {
-      const updatedPages = prevPages.map((p) => {
-        if (p.id !== currentPage) return p;
-
-        const updateRecursive = (layouts) => {
-          return layouts.map((layout) => {
-            if (layout.id === componentId) {
-              return {
-                ...layout,
-                properties: {
-                  ...layout.properties,
-                  ...newProperties,
-                },
-              };
-            }
-            if (layout.children?.length > 0) {
-              return { ...layout, children: updateRecursive(layout.children) };
-            }
-            return layout;
-          });
-        };
-
-        const newLayouts = updateRecursive(p.layouts);
-        return { ...p, layouts: newLayouts };
-      });
-      return updatedPages;
-    });
+  const handleApplyLayoutTemplate = (templateLayout) => {
+    dispatch(applyLayoutTemplate(templateLayout));
   };
 
-  // Debounced version of the property updater to prevent excessive re-renders.
-  const debouncedUpdateComponentProperties = useCallback(
-    debounce((id, props) => {
-      updateComponentProperties(id, props);
-    }, 500),
-    [currentPage]
-  );
-
-  const findComponentAndParent = (layouts, componentId, parent = null) => {
-    for (const layout of layouts) {
-      if (layout.id === componentId) {
-        return { component: layout, parent: parent };
-      }
-      if (layout.children && layout.children.length > 0) {
-        const found = findComponentAndParent(
-          layout.children,
-          componentId,
-          layout
-        );
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const updateSiblingHeights = (targetGridId, newHeightValue) => {
-    setPages((prevPages) => {
-      const updatedPages = prevPages.map((p) => {
-        if (p.id !== currentPage) return p;
-
-        const updateRecursive = (layouts) => {
-          const found = findComponentAndParent(layouts, targetGridId);
-
-          if (found && found.parent) {
-            const parentLayout = found.parent;
-            const updatedChildren = parentLayout.children.map((child) => {
-              if (child.name === "Layout" || child.name === "Container") {
-                return {
-                  ...child,
-                  properties: {
-                    ...child.properties,
-                    height: `${newHeightValue}px`,
-                  },
-                };
-              }
-              return child;
-            });
-
-            return layouts.map((layout) => {
-              if (layout.id === parentLayout.id) {
-                return { ...layout, children: updatedChildren };
-              }
-              if (layout.children && layout.children.length > 0) {
-                return {
-                  ...layout,
-                  children: updateRecursive(layout.children),
-                };
-              }
-              return layout;
-            });
-          } else if (found && !found.parent) {
-            return layouts.map((layout) => {
-              if (layout.id === targetGridId) {
-                return {
-                  ...layout,
-                  properties: {
-                    ...layout.properties,
-                    height: `${newHeightValue}px`,
-                  },
-                };
-              }
-              return layout;
-            });
-          }
-          if (layouts && layouts.length > 0) {
-            return layouts.map((layout) => {
-              if (layout.children && layout.children.length > 0) {
-                return {
-                  ...layout,
-                  children: updateRecursive(layout.children),
-                };
-              }
-              return layout;
-            });
-          }
-          return layouts;
-        };
-
-        const newLayouts = updateRecursive(p.layouts);
-        return { ...p, layouts: newLayouts };
-      });
-      return updatedPages;
-    });
-  };
-
+  // Property change handlers
   const handleRealtimeSizeChange = useCallback(
     (device, value) => {
       if (!selectedGrid) return;
 
+      // Logika validasi nilai tetap di sini (ini adalah UI logic)
       const numValue = value === "" ? "" : parseInt(value, 10);
-
       let finalValue = numValue;
-      if (numValue !== "" && (isNaN(numValue) || numValue < 1)) {
-        finalValue = 1;
-      } else if (numValue > 12) {
-        finalValue = 12;
-      }
+      if (numValue !== "" && (isNaN(numValue) || numValue < 1)) finalValue = 1;
+      else if (numValue > 12) finalValue = 12;
 
       const updatedSize = { ...newSize, [device]: finalValue };
-      setNewSize(updatedSize);
-      debouncedUpdateComponentProperties(selectedGrid.id, {
-        size: updatedSize,
-      });
+      dispatch(setNewSize(updatedSize)); // Tetap update UI lokal untuk responsivitas
+
+      // Gunakan debounced dispatcher dengan action baru
+      debouncedUpdateProperty(selectedGrid.id, "size", updatedSize);
     },
-    [selectedGrid, newSize, debouncedUpdateComponentProperties]
-  );
-  const debouncedUpdateSiblingHeights = useCallback(
-    debounce((id, height) => {
-      updateSiblingHeights(id, height);
-    }, 500),
-    [currentPage]
+    [selectedGrid, newSize, dispatch]
   );
 
   const handleRealtimeHeightChange = useCallback(
@@ -548,78 +241,42 @@ const Layout = () => {
       if (!selectedGrid) return;
       const finalHeight =
         newHeightValue === "" ? "" : parseInt(newHeightValue, 10);
-      setNewHeight(finalHeight);
+      dispatch(setNewHeight(finalHeight)); // Update UI lokal
 
-      debouncedUpdateSiblingHeights(selectedGrid.id, finalHeight);
+      // Gunakan debounced dispatcher dengan action baru
+      debouncedUpdateProperty(selectedGrid.id, "height", `${finalHeight}px`);
     },
-    [selectedGrid, debouncedUpdateSiblingHeights]
+    [selectedGrid, dispatch]
+  );
+
+  // Buat satu debounced function untuk semua properti
+  const debouncedUpdateProperty = useCallback(
+    debounce((id, path, value) => {
+      dispatch(updateComponentProperty(id, path, value));
+    }, 500), // delay 500ms
+    [dispatch]
   );
 
   const handlePropertyChange = useCallback(
     (path, value) => {
-      const updateNested = (obj, pathArr, val) => {
-        if (pathArr.length === 1) {
-          return { ...obj, [pathArr[0]]: val };
-        }
-        const [head, ...rest] = pathArr;
-        return {
-          ...obj,
-          [head]: updateNested(obj[head] || {}, rest, val),
-        };
-      };
+      const targetId = atribut?.id || selectedGrid?.id;
 
-      const pathArray = path.split(".");
-
-      setFormData((prev) => updateNested(prev, pathArray, value));
-
-      setPages((prevPages) => {
-        return prevPages.map((page) => {
-          if (page.id !== currentPage) return page;
-
-          const updatedLayouts = page.layouts.map((layout) => {
-            const findAndUpdateGrid = (currentLayouts) => {
-              return currentLayouts.map((l) => {
-                if (l.id === selectedGrid?.id) {
-                  return {
-                    ...l,
-                    children: l.children.map((child) => {
-                      if (child.id === atribut?.id) {
-                        return {
-                          ...child,
-                          properties: updateNested(
-                            child.properties,
-                            pathArray,
-                            value
-                          ),
-                        };
-                      }
-                      return child;
-                    }),
-                  };
-                }
-                if (l.children && l.children.length > 0) {
-                  return { ...l, children: findAndUpdateGrid(l.children) };
-                }
-                return l;
-              });
-            };
-            return findAndUpdateGrid([layout])[0];
-          });
-          return { ...page, layouts: updatedLayouts };
-        });
-      });
+      if (targetId) {
+        dispatch(updateComponentProperty(targetId, path, value));
+      }
     },
-    [currentPage, selectedGrid?.id, atribut?.id]
+    [dispatch, atribut, selectedGrid]
   );
 
   const handleSubmit = () => {
     if (!selectedGrid || !atribut) return;
-    showNotification("Properties have been saved.", "success");
+    dispatch(showAlert("Properties have been saved.", "success"));
   };
 
+  // Menu item handlers
   const handleAddMenuItem = () => {
     if (!newMenuItem.label || !newMenuItem.path) {
-      showNotification("Both label and path must be filled.", "warning");
+      dispatch(showAlert("Both label and path must be filled.", "warning"));
       return;
     }
 
@@ -628,7 +285,8 @@ const Layout = () => {
 
     handlePropertyChange("menuItems", updatedMenuItems);
 
-    setNewMenuItem({ label: "", path: "" });
+    dispatch(setNewMenuItem({ label: "", path: "" }));
+    dispatch(showAlert("Menu item added!", "success"));
   };
 
   const handleDeleteMenuItem = (indexToDelete) => {
@@ -638,100 +296,111 @@ const Layout = () => {
     );
 
     handlePropertyChange("menuItems", updatedMenuItems);
+    dispatch(showAlert("Menu item deleted!", "info"));
   };
 
+  // Click handlers
   const handleLayoutClick = (layoutId, layoutidx) => {
     if (selectedLayout === layoutId) {
-      setSelectedLayout(null);
-      setSelectedLayoutIndex(null);
-      setSelectedGrid(null);
-      setAtribute(null);
+      dispatch(clearSelections());
     } else {
-      setSelectedLayout(layoutId);
-      setSelectedLayoutIndex(layoutidx);
-      setSelectedGrid(null);
-      setAtribute(null);
+      dispatch(setSelectedLayout(layoutId));
+      dispatch(setSelectedLayoutIndex(layoutidx));
+      dispatch(setSelectedGrid(null));
+      dispatch(setAtribut(null));
     }
   };
 
   const handleGridClick = (layout, layoutId, layoutidx) => {
-    setSelectedLayout(layoutId);
-    setSelectedLayoutIndex(layoutidx);
-    setSelectedGrid(layout);
-    setAtribute(layout.children?.[0] || null);
+    dispatch(setSelectedLayout(layoutId));
+    dispatch(setSelectedLayoutIndex(layoutidx));
+    dispatch(setSelectedGrid(layout));
+    dispatch(setAtribut(layout.children?.[0] || null));
   };
 
-  const handleLayerSelectFromLeftMenu = (
-    layer,
-    parentLayoutId = null,
-    parentLayoutIndex = null
-  ) => {
-    if (layer.name === "Container") {
-      handleLayoutClick(layer.id, parentLayoutIndex); // Gunakan ID layer sebagai layoutId
-    } else if (layer.name === "Layout") {
-      handleGridClick(layer, parentLayoutId, parentLayoutIndex);
-    } else {
-      if (parentLayoutId && parentLayoutIndex !== null) {
-        // Cari objek layout/grid induk berdasarkan ID
-        const activePage = pages.find((p) => p.id === currentPage);
-        if (!activePage) return;
+  // const handleLayerSelectFromLeftMenu = (
+  //   layer,
+  //   parentLayoutId = null,
+  //   parentLayoutIndex = null
+  // ) => {
+  //   if (layer.name === "Container") {
+  //     handleLayoutClick(layer.id, parentLayoutIndex);
+  //   } else if (layer.name === "Layout") {
+  //     handleGridClick(layer, parentLayoutId, parentLayoutIndex);
+  //   } else {
+  //     if (parentLayoutId && parentLayoutIndex !== null) {
+  //       const activePage = pages.find((p) => p.id === currentPage);
+  //       if (!activePage) return;
 
-        const findParentGridOrLayout = (items, targetId) => {
-          for (const item of items) {
-            if (item.id === targetId) {
-              return item;
-            }
-            if (item.children && item.children.length > 0) {
-              const found = findParentGridOrLayout(item.children, targetId);
-              if (found) return item;
-            }
-          }
-          return null;
-        };
+  //       const findParentGridOrLayout = (items, targetId) => {
+  //         for (const item of items) {
+  //           if (item.id === targetId) {
+  //             return item;
+  //           }
+  //           if (item.children && item.children.length > 0) {
+  //             const found = findParentGridOrLayout(item.children, targetId);
+  //             if (found) return item;
+  //           }
+  //         }
+  //         return null;
+  //       };
 
-        const parentGridOrLayout = findParentGridOrLayout(
-          activePage.layouts,
-          layer.id
-        );
-        if (parentGridOrLayout) {
-          handleGridClick(
-            parentGridOrLayout,
-            parentLayoutId,
-            parentLayoutIndex
-          );
-        } else {
-          setSelectedLayout(null);
-          setSelectedGrid(null);
-          setAtribute(null);
-        }
-      } else {
-        setSelectedLayout(null);
-        setSelectedGrid(null);
-        setAtribute(null);
-      }
-    }
+  //       const parentGridOrLayout = findParentGridOrLayout(
+  //         activePage.layouts,
+  //         layer.id
+  //       );
+  //       if (parentGridOrLayout) {
+  //         handleGridClick(
+  //           parentGridOrLayout,
+  //           parentLayoutId,
+  //           parentLayoutIndex
+  //         );
+  //       } else {
+  //         dispatch(clearSelections());
+  //       }
+  //     } else {
+  //       dispatch(clearSelections());
+  //     }
+  //   }
+  // };
+
+  // Menu handlers
+  
+  
+  // const handleMenuOpen = (event, page) => {
+  //   event.stopPropagation();
+  //   dispatch(setMenuAnchorEl(event.currentTarget));
+  //   dispatch(setSelectedPageForMenu(page));
+  // };
+
+  // const handleMenuClose = () => {
+  //   dispatch(setMenuAnchorEl(null));
+  // };
+
+  const handleCloseReduxAlert = useCallback(
+    (id) => {
+      dispatch(hideAlert(id));
+    },
+    [dispatch]
+  );
+
+  // Drag and drop handlers
+  const handleDragStart = (event) => {
+    dispatch(setActiveId(event.active.id));
   };
 
-  const handleMenuOpen = (event, page) => {
-    event.stopPropagation();
-    setMenuAnchorEl(event.currentTarget);
-    setSelectedPageForMenu(page);
-  };
-
-  const handleMenuClose = () => setMenuAnchorEl(null);
-
-  const handleDragStart = (event) => setActiveId(event.active.id);
-
-  /**
-   * Handles the end of a drag-and-drop operation.
-   * It determines if the dragged item is a new component or a layout template
-   * and updates the page structure accordingly.
-   * @param {object} event - The drag-end event object from dnd-kit.
-   */
   const handleDragEnd = (event) => {
-    setActiveId(null);
+    dispatch(setActiveId(null));
     const { over, active } = event;
-    if (!over) return;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    if (pages.length === 0 || !currentPage) {
+      dispatch(showAlert("Cannot add component: No pages exist.", "warning"));
+      return;
+    }
 
     const draggedItemId = active.id;
     const dropTargetId = over.id;
@@ -752,7 +421,15 @@ const Layout = () => {
 
     const componentType = draggedItemId;
 
+    // Cek apakah grid sudah memiliki child
     let gridHasChild = false;
+    const activePage = pages.find((p) => p.id === currentPage);
+
+    if (!activePage) {
+      dispatch(showAlert("Active page not found.", "error"));
+      return;
+    }
+
     const checkGrid = (layouts) => {
       for (const layout of layouts) {
         if (layout.id === dropTargetId && layout.children.length > 0) {
@@ -762,235 +439,146 @@ const Layout = () => {
         if (layout.children) checkGrid(layout.children);
       }
     };
-    pages
-      .find((p) => p.id === currentPage)
-      ?.layouts.forEach((l) => checkGrid([l]));
+
+    activePage.layouts.forEach((l) => checkGrid([l]));
 
     if (gridHasChild) {
-      showNotification(
-        "This grid already contains a component. Only one component is allowed per grid.",
-        "warning"
+      dispatch(
+        showAlert(
+          "This grid already contains a component. Only one component is allowed per grid.",
+          "warning"
+        )
       );
       return;
     }
 
-    const componentAttributes = {
-      Navbar: {
-        id: `component${generateRandomId()}`,
-        name: "Navbar",
-        properties: {
-          title: "My Website",
-          height: 65,
-          backgroundColor: "#ffffff",
-          textColor: "#333333",
-          activeTextColor: "#007bff",
-        },
-      },
-      CustomCard: {
-        id: `component${generateRandomId()}`,
-        name: "CustomCard",
-        properties: {
-          mainTitle: "Card Title",
-          description: "Card description text",
-          buttonText: "Learn More",
-        },
-      },
-      ArsipCuti: {
-        id: `component${generateRandomId()}`,
-        name: "ArsipCuti",
-        properties: {},
-      },
-      KuotaCutiSaatIni: {
-        id: `component${generateRandomId()}`,
-        name: "KuotaCutiSaatIni",
-        properties: { config1: KuotaCuti1, config2: KuotaCuti2 },
-      },
-      ListDate: {
-        id: `component${generateRandomId()}`,
-        name: "ListDate",
-        properties: { config: DateData },
-      },
-      MonitoringKuota: {
-        id: `component${generateRandomId()}`,
-        name: "MonitoringKuota",
-        properties: { config: DataKuota },
-      },
-      StatusDokumenCutiDashboard: {
-        id: `component${generateRandomId()}`,
-        name: "StatusDokumenCutiDashboard",
-        properties: { config: DataCuti },
-      },
-    };
     const newComponent = componentAttributes[componentType] || {
-      id: `component${generateRandomId()}`,
-      name: "Unknown",
+      ...componentAttributes[componentType],
+      id: `${componentType}-${generateRandomId()}`,
+      name: componentType,
+      properties: {
+        ...componentAttributes[componentType]?.properties,
+      },
     };
 
-    const addComponentRecursive = (layouts) => {
-      return layouts.map((layout) => {
-        if (layout.id === dropTargetId) {
-          return { ...layout, children: [newComponent] };
-        }
-        if (layout.children?.length > 0) {
-          return {
-            ...layout,
-            children: addComponentRecursive(layout.children),
-          };
-        }
-        return layout;
-      });
-    };
-    setPages(
-      pages.map((p) =>
-        p.id === currentPage
-          ? { ...p, layouts: addComponentRecursive(p.layouts) }
-          : p
-      )
-    );
+    // Gunakan action creator yang baru
+    dispatch(addComponentToGrid(dropTargetId, newComponent));
   };
 
-  const handleLayerDragEnd = useCallback(
-    (event) => {
-      const { active, over } = event;
+  // const handleLayerDragEnd = useCallback(
+  //   (event) => {
+  //     const { active, over } = event;
 
-      if (!over || active.id === over.id) {
-        return;
-      }
+  //     if (!over || active.id === over.id) {
+  //       return;
+  //     }
 
-      setPages((prevPages) => {
-        const pageIndex = prevPages.findIndex((p) => p.id === currentPage);
-        if (pageIndex === -1) return prevPages;
+  //     const activePage = pages.find((p) => p.id === currentPage);
+  //     if (!activePage) return;
 
-        const layouts = prevPages[pageIndex].layouts;
+  //     // Helper function untuk mencari layer dan parent-nya
+  //     const findLayerAndParent = (layouts, targetId, parent = null) => {
+  //       for (let i = 0; i < layouts.length; i++) {
+  //         const layout = layouts[i];
+  //         if (layout.id === targetId) {
+  //           return { layer: layout, parent, index: i, siblings: layouts };
+  //         }
+  //         if (layout.children && layout.children.length > 0) {
+  //           const found = findLayerAndParent(layout.children, targetId, layout);
+  //           if (found) return found;
+  //         }
+  //       }
+  //       return null;
+  //     };
 
-        const findAndReorder = (items) => {
-          const oldIndex = items.findIndex((item) => item.id === active.id);
-          const newIndex = items.findIndex((item) => item.id === over.id);
+  //     const activeInfo = findLayerAndParent(activePage.layouts, active.id);
+  //     const overInfo = findLayerAndParent(activePage.layouts, over.id);
 
-          if (oldIndex !== -1 && newIndex !== -1) {
-            return arrayMove(items, oldIndex, newIndex);
-          }
+  //     if (!activeInfo || !overInfo) return;
 
-          for (const item of items) {
-            if (item.children && item.children.length > 0) {
-              const reorderedChildren = findAndReorder(item.children);
+  //     // Cek apakah active dan over berada di level yang sama
+  //     if (activeInfo.parent?.id !== overInfo.parent?.id) {
+  //       dispatch(
+  //         showAlert("Can only reorder items at the same level", "warning")
+  //       );
+  //       return;
+  //     }
 
-              if (reorderedChildren !== item.children) {
-                return items.map((i) =>
-                  i.id === item.id ? { ...i, children: reorderedChildren } : i
-                );
-              }
-            }
-          }
+  //     // Lakukan reorder menggunakan arrayMove
+  //     const siblings = activeInfo.siblings;
+  //     const oldIndex = activeInfo.index;
+  //     const newIndex = overInfo.index;
 
-          return items;
-        };
+  //     const reorderedSiblings = arrayMove(siblings, oldIndex, newIndex);
 
-        const newLayouts = findAndReorder(layouts);
+  //     // Dispatch action untuk update Redux store
+  //     dispatch({
+  //       type: "UPDATE_LAYER_ORDER",
+  //       payload: {
+  //         pageId: currentPage,
+  //         parentId: activeInfo.parent?.id || null, // null untuk root level
+  //         newOrder: reorderedSiblings,
+  //       },
+  //     });
 
-        const updatedPages = [...prevPages];
-        updatedPages[pageIndex] = {
-          ...updatedPages[pageIndex],
-          layouts: newLayouts,
-        };
+  //     dispatch(showAlert("Layer order updated!", "success"));
+  //   },
+  //   [dispatch, currentPage, pages]
+  // );
 
-        return updatedPages;
-      });
-    },
-    [currentPage]
-  );
-
-  const saveOrder = (layoutIndex) => {
-    if (layoutIndex === undefined || !temp) {
-      showNotification(
-        "Please select a layout and reorder items before saving.",
-        "warning"
-      );
-      return;
-    }
-
-    const updateOrder = (layouts) => {
-      return layouts.map((layout) => {
-        if (layout.id === selectedLayout) {
-          const childrenMap = new Map(layout.children.map((c) => [c.id, c]));
-          const newChildren = temp.newSlotItemMap.asArray
-            .map((item) => childrenMap.get(item.item))
-            .filter(Boolean);
-          return { ...layout, children: newChildren };
-        }
-        if (layout.children?.length > 0) {
-          return { ...layout, children: updateOrder(layout.children) };
-        }
-        return layout;
-      });
-    };
-
-    setPages(
-      pages.map((p) => {
-        if (p.id !== currentPage) return p;
-        return { ...p, layouts: updateOrder(p.layouts) };
-      })
-    );
-    showNotification("Order has been saved successfully.", "success");
-    setTemp(null);
+  const handleSaveOrder = (layoutIndex) => {
+    dispatch(saveOrder(layoutIndex, temp));
   };
 
-  // Handler untuk Global Actions (Navbar Editor)
+  // Global action handlers
   const handleSave = () => {
-    localStorage.setItem("savedPages", JSON.stringify(pages));
-    showNotification("Project saved!", "success");
+    dispatch(saveToStorage());
   };
 
-  // Ubah handlePreview untuk membuka modal
   const handlePreview = () => {
     localStorage.setItem("savedPages", JSON.stringify(pages));
-    localStorage.setItem("curentPages", JSON.stringify(currentPage)); // Still useful for direct access if needed
+    localStorage.setItem("curentPages", JSON.stringify(currentPage));
     if (currentPage) {
-      navigate(`/preview/${currentPage}`); // Navigate to the new preview page
+      navigate(`/preview/${currentPage}`);
     } else {
-      showNotification("Please select a page to preview.", "warning");
+      dispatch(showAlert("Please select a page to preview.", "warning"));
     }
   };
 
   const handlePublish = () => {
     if (!currentPage) {
-      showNotification("Please select a page to publish.", "warning");
+      dispatch(showAlert("Please select a page to publish.", "warning"));
       return;
     }
 
     const pageToPublish = pages.find((p) => p.id === currentPage);
     if (!pageToPublish) {
-      showNotification("Could not find the current page data.", "error");
+      dispatch(showAlert("Could not find the current page data.", "error"));
       return;
     }
 
-    // Get existing published pages from localStorage
     const existingPublished = JSON.parse(
       localStorage.getItem("publishedPages") || "[]"
     );
 
-    // Check if this page has already been published
     const pageIndex = existingPublished.findIndex(
       (p) => p.id === pageToPublish.id
     );
 
     if (pageIndex > -1) {
-      // Update existing published page
       existingPublished[pageIndex] = pageToPublish;
     } else {
-      // Add new page to the published list
       existingPublished.push(pageToPublish);
     }
 
-    // Save back to localStorage
     localStorage.setItem("publishedPages", JSON.stringify(existingPublished));
-
-    // Dispatch a custom event to notify other components like the Navbar
     window.dispatchEvent(new Event("storage"));
 
-    showNotification(
-      `Page '${pageToPublish.name}' published successfully!`,
-      "success"
+    dispatch(
+      showAlert(
+        `Page '${pageToPublish.name}' published successfully!`,
+        "success"
+      )
     );
   };
 
@@ -1032,59 +620,11 @@ const Layout = () => {
             justifyContent: "center",
           }}
         >
-          {/* Left Menu */}
-          <LeftMenu
-            pages={pages}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-            onAddPage={addPage}
-            menuAnchorEl={menuAnchorEl}
-            onMenuClose={handleMenuClose}
-            selectedPageForMenu={selectedPageForMenu}
-            onDeletePage={deletePage}
-            onMenuOpen={handleMenuOpen}
-            selectedGrid={selectedGrid}
-            selectedLayout={selectedLayout}
-            sectionComponents={SECTION_COMPONENTS}
-            onLayerReorder={handleLayerDragEnd}
-            onApplyLayoutTemplate={handleApplyLayoutTemplate}
-            onLayerSelect={handleLayerSelectFromLeftMenu}
-          />
-          {/* Main Content */}
+          <LeftMenu/>
           <MainContent
-            pages={pages}
-            currentPage={currentPage}
-            selectedLayout={selectedLayout}
-            selectedGrid={selectedGrid}
-            selectedLayoutIndex={selectedLayoutIndex}
             containerRefs={containerRefs}
-            onLayoutClick={handleLayoutClick}
-            onGridClick={handleGridClick}
-            onAddLayoutOrGrid={addLayoutOrGrid}
-            onSaveOrder={saveOrder}
-            onDelete={handleDelete}
-            activeId={activeId}
           />
-          {/* Right Menu */}
-          <RightMenu
-            selectedGrid={selectedGrid}
-            atribut={atribut}
-            formData={formData}
-            newSize={newSize}
-            newHeight={newHeight}
-            newMenuItem={newMenuItem}
-            onDelete={handleDelete}
-            onUpdateComponentSize={updateComponentProperties}
-            onInputChange={handlePropertyChange}
-            onSubmit={handleSubmit}
-            onSizeChange={handleRealtimeSizeChange}
-            onHeightChange={handleRealtimeHeightChange}
-            onMenuItemChange={(field, value) =>
-              setNewMenuItem((p) => ({ ...p, [field]: value }))
-            }
-            onAddMenuItem={handleAddMenuItem}
-            onDeleteMenuItem={handleDeleteMenuItem}
-          />
+          <RightMenu/>
         </Box>
       </Box>
       <DragOverlay>
@@ -1108,12 +648,16 @@ const Layout = () => {
           </Button>
         ) : null}
       </DragOverlay>
-      <AlertPopup
-        open={notification.open}
-        message={notification.message}
-        severity={notification.severity}
-        onClose={handleCloseNotification}
-      />
+
+      {alerts.map((alert) => (
+        <AlertPopup
+          key={alert.id}
+          open={true}
+          message={alert.message}
+          severity={alert.type}
+          onClose={() => handleCloseReduxAlert(alert.id)}
+        />
+      ))}
     </DndContext>
   );
 };

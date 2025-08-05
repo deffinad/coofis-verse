@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+export const generateRandomId = () => Math.random().toString(36).substr(2, 8);
+
 /**
  * Custom hook to dynamically calculate the height of a menu element.
  * It adjusts the height based on the element's position in the viewport,

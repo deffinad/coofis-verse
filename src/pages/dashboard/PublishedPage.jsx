@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Grid, Typography, Stack } from "@mui/material";
-import { COLOR, SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { Components } from "remoteApp/Components";
 
 const PublishedPage = () => {
@@ -33,10 +33,10 @@ const PublishedPage = () => {
     return components.map((grid) => {
       // Validasi struktur grid
       if (!grid.properties || !grid.children) return null;
-      
+
       // Cek apakah ini adalah komponen akhir (bukan layout)
       const isFinalComponent = grid.children[0]?.name;
-      
+
       return (
         <Grid item size={getResponsiveSize(grid)} key={grid.id}>
           <Box
@@ -82,11 +82,13 @@ const PublishedPage = () => {
   }
 
   return (
-    <Box sx={{ 
-      backgroundColor: COLOR.very_light_gray, 
-      minHeight: "100vh",
-      p: SPACING 
-    }}>
+    <Box
+      sx={{
+        backgroundColor: COLOR.very_light_gray,
+        minHeight: "100vh",
+        p: SPACING,
+      }}
+    >
       {pageData && pageData.layouts.length > 0 ? (
         // Render semua layout dalam page
         <Stack spacing={SPACING}>

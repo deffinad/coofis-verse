@@ -4,7 +4,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Box } from "@mui/material";
 import { useDroppable } from "@dnd-kit/core";
-import { COLOR, SPACING } from "../AppConst";
+import { COLOR, SPACING } from "../constants/AppConst";
 
 const DroppableGrid = ({
   id,

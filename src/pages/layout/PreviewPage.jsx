@@ -16,7 +16,7 @@ import TabletMacIcon from "@mui/icons-material/TabletAndroid";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PublishIcon from "@mui/icons-material/Publish";
-import { COLOR, SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { Components } from "remoteApp/Components";
 
 const PreviewPage = () => {
@@ -322,7 +322,7 @@ const PreviewPage = () => {
               border: "1px solid #ddd",
               borderRadius: "8px",
               boxSizing: "border-box",
-              p: SPACING, 
+              p: SPACING,
             }}
           >
             {activePage && activePage.layouts.length > 0 ? (

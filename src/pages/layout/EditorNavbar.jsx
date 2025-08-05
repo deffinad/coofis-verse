@@ -1,6 +1,6 @@
 import React from "react";
 import { AppBar, Toolbar, Box, Typography, Button } from "@mui/material";
-import { COLOR, SPACING } from "@/shared/AppConst";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 
 const EditorNavbar = ({
   projectName = "Project A",

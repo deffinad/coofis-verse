@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import { Box } from "@mui/material";
 import Navbar from "../shared/components/Navbar";
-import { COLOR } from "@/shared/AppConst";
+import { COLOR } from "@/shared/constants/AppConst";
 
 const MainLayout = () => {
   return (

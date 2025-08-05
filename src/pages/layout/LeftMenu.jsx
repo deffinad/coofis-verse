@@ -1,4 +1,24 @@
-import React, { useRef } from "react";
+import React, { useRef, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToParentElement } from "@dnd-kit/modifiers";
+
+// --- MUI Imports ---
 import {
   Accordion,
   AccordionDetails,
@@ -17,32 +37,35 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+
+// --- Local/Shared Imports ---
 import DividingLine from "../../shared/components/DividingLine";
 import MenuPages from "./MenuPages";
 import DraggableComponent from "@/shared/components/DraggableComponent";
-import { COLOR, SPACING } from "@/shared/AppConst";
-
-import {
-  DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { restrictToParentElement } from "@dnd-kit/modifiers";
-
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { LayoutTemplates } from "../../json/LayoutTemplates";
-import { useDynamicMenuHeight } from "@/utils/useDynamicMenuHeight";
-import { WIDGET_COMPONENTS } from "../../shared/editorConstants";
+import { useDynamicMenuHeight } from "@/shared/utils/utility";
+import {
+  WIDGET_COMPONENTS,
+  SECTION_COMPONENTS,
+} from "../../shared/constants/AppData";
 
+// --- Redux Actions ---
+import {
+  setCurrentPage,
+  addPage,
+  deletePage,
+  setMenuAnchorEl,
+  setSelectedPageForMenu,
+  setSelectedLayout,
+  setSelectedGrid,
+  setAtribut,
+  clearSelections,
+} from "../../redux/actions/layoutActions";
+
+import { showAlert } from "../../redux/actions/alertActions";
+
+// --- Sortable Layer Components (Tidak ada perubahan di sini) ---
 function SortableLayer({
   layer,
   selectedLayout,
@@ -54,7 +77,6 @@ function SortableLayer({
   const isStructural = layer.hasOwnProperty("children");
   const hasChildren =
     isStructural && layer.children && layer.children.length > 0;
-
   const isSelected =
     selectedLayout === layer.id ||
     (selectedGrid && selectedGrid.id === layer.id);
@@ -80,25 +102,18 @@ function SortableLayer({
   const [expanded, setExpanded] = React.useState(false);
 
   React.useEffect(() => {
-    if (isDragging) {
-      setExpanded(false);
-    }
+    if (isDragging) setExpanded(false);
   }, [isDragging]);
 
-  // Handler untuk toggle expanded state secara manual (klik expand icon)
   const handleAccordionChange = (event, isExpanded) => {
-    // Mencegah ekspansi jika tidak ada children
-    if (isExpanded && !hasChildren) {
-      return;
-    }
+    if (isExpanded && !hasChildren) return;
     setExpanded(isExpanded);
   };
 
   const handleLayerClick = (event) => {
     event.stopPropagation();
-    if (onLayerSelect) {
+    if (onLayerSelect)
       onLayerSelect(layer, currentLayoutId, currentLayoutIndex);
-    }
   };
 
   return (
@@ -111,7 +126,6 @@ function SortableLayer({
       onChange={handleAccordionChange}
       sx={{
         "&:before": { display: "none" },
-        backgroundColor: "transparent",
         ml: 1,
         boxShadow: isDragging ? "0px 4px 12px rgba(0,0,0,0.15)" : "none",
         position: "relative",
@@ -149,7 +163,6 @@ function SortableLayer({
             alignItems: "center",
           }}
         >
-          {/* Tampilkan handle drag yang sesuai: aktif atau non-aktif */}
           {isStructural ? (
             <span
               {...attributes}
@@ -214,37 +227,119 @@ function SortableLayerList({
     </SortableContext>
   );
 }
+// --- Komponen Utama LeftMenu (Refactored) ---
 
-/**
- * The LeftMenu component provides navigation for pages, a layer tree for the
- * current page's structure, and a list of draggable components and layouts.
- * @param {object} props - The props for the component.
- * (Props are documented via JSDoc in their respective call sites for clarity)
- */
-const LeftMenu = ({
-  pages,
-  currentPage,
-  onPageChange,
-  onAddPage,
-  menuAnchorEl,
-  onMenuClose,
-  selectedPageForMenu,
-  onDeletePage,
-  onMenuOpen,
-  sectionComponents,
-  onLayerReorder,
-  selectedLayout,
-  selectedGrid,
-  onLayerSelect,
-}) => {
+const LeftMenu = () => {
+  const dispatch = useDispatch();
+
+  // 1. Ambil semua state yang dibutuhkan dari Redux
+  const {
+    pages,
+    currentPage,
+    menuAnchorEl,
+    selectedPageForMenu,
+    selectedLayout,
+    selectedGrid,
+  } = useSelector((state) => state.layout);
+
+  // 2. State dan Ref lokal tetap di sini
   const menuRef = useRef(null);
   const menuHeight = useDynamicMenuHeight(menuRef);
-
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // 3. Pindahkan semua handler dari Index.jsx ke sini
+  const handleMenuOpen = (event, page) => {
+    event.stopPropagation();
+    dispatch(setMenuAnchorEl(event.currentTarget));
+    dispatch(setSelectedPageForMenu(page));
+  };
+
+  const handleMenuClose = () => {
+    dispatch(setMenuAnchorEl(null));
+  };
+
+  const handleDeletePageLocal = (pageIdToDelete) => {
+    dispatch(deletePage(pageIdToDelete));
+    handleMenuClose();
+  };
+
+  const handleLayerSelect = useCallback(
+    (layer, parentLayoutId = null, parentLayoutIndex = null) => {
+      if (layer.name === "Container") {
+        if (selectedLayout === layer.id) {
+          dispatch(clearSelections());
+        } else {
+          dispatch(setSelectedLayout(layer.id));
+          dispatch(setSelectedGrid(null));
+          dispatch(setAtribut(null));
+        }
+      } else if (layer.name === "Layout") {
+        dispatch(setSelectedLayout(parentLayoutId));
+        dispatch(setSelectedGrid(layer));
+        dispatch(setAtribut(layer.children?.[0] || null));
+      } else {
+        // Logic untuk memilih komponen di dalam grid jika diperlukan
+      }
+    },
+    [dispatch, pages, currentPage, selectedLayout]
+  );
+
+  const handleDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const activePage = pages.find((p) => p.id === currentPage);
+      if (!activePage) return;
+
+      const findLayerAndParent = (layouts, targetId, parent = null) => {
+        for (let i = 0; i < layouts.length; i++) {
+          const layout = layouts[i];
+          if (layout.id === targetId)
+            return { layer: layout, parent, index: i, siblings: layouts };
+          if (layout.children?.length > 0) {
+            const found = findLayerAndParent(layout.children, targetId, layout);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const activeInfo = findLayerAndParent(activePage.layouts, active.id);
+      const overInfo = findLayerAndParent(activePage.layouts, over.id);
+
+      if (
+        !activeInfo ||
+        !overInfo ||
+        activeInfo.parent?.id !== overInfo.parent?.id
+      ) {
+        dispatch(
+          showAlert("Can only reorder items at the same level", "warning")
+        );
+        return;
+      }
+
+      const reorderedSiblings = arrayMove(
+        activeInfo.siblings,
+        activeInfo.index,
+        overInfo.index
+      );
+
+      dispatch({
+        type: "UPDATE_LAYER_ORDER",
+        payload: {
+          pageId: currentPage,
+          parentId: activeInfo.parent?.id || null,
+          newOrder: reorderedSiblings,
+        },
+      });
+
+      dispatch(showAlert("Layer order updated!", "success"));
+    },
+    [dispatch, currentPage, pages]
   );
 
   return (
@@ -262,18 +357,12 @@ const LeftMenu = ({
         overflowY: "auto",
         overflowX: "hidden",
         transition: "height 0.1s ease-out",
-        "&::-webkit-scrollbar": {
-          width: "8px",
-        },
-        "&::-webkit-scrollbar-track": {
-          backgroundColor: "#f5f5f5",
-        },
+        "&::-webkit-scrollbar": { width: "8px" },
+        "&::-webkit-scrollbar-track": { backgroundColor: "#f5f5f5" },
         "&::-webkit-scrollbar-thumb": {
           backgroundColor: "#bdbdbd",
           borderRadius: "10px",
-          "&:hover": {
-            backgroundColor: "#8d8d8d",
-          },
+          "&:hover": { backgroundColor: "#8d8d8d" },
         },
       }}
     >
@@ -281,12 +370,10 @@ const LeftMenu = ({
       <Box sx={{ p: SPACING - 1 }}>
         <MenuPages
           anchorEl={menuAnchorEl}
-          onClose={onMenuClose}
+          onClose={handleMenuClose} // <-- Gunakan handler lokal
           selectedPage={selectedPageForMenu}
-          onDeletePage={onDeletePage}
+          onDeletePage={handleDeletePageLocal} // <-- Gunakan handler lokal
         />
-
-        {/* Pages Header */}
         <Box
           sx={{
             backgroundColor: COLOR.dark_gray,
@@ -308,19 +395,19 @@ const LeftMenu = ({
           <IconButton
             size="small"
             sx={{ color: COLOR.white }}
-            onClick={onAddPage}
+            onClick={() => dispatch(addPage())}
           >
+            {" "}
+            {/* <-- Dispatch langsung */}
             <AddIcon />
           </IconButton>
         </Box>
-
-        {/* Pages List */}
         <List sx={{ width: "100%", p: 0 }}>
           {pages.map((page) => (
             <ListItemButton
               key={page.id}
               selected={currentPage === page.id}
-              onClick={() => onPageChange(page.id)}
+              onClick={() => dispatch(setCurrentPage(page.id))} // <-- Dispatch langsung
               sx={{ mb: 0.5, borderRadius: 1 }}
             >
               <ListItemText
@@ -340,9 +427,11 @@ const LeftMenu = ({
               <IconButton
                 edge="end"
                 size="small"
-                onClick={(e) => onMenuOpen(e, page)}
+                onClick={(e) => handleMenuOpen(e, page)}
                 sx={{ color: "#1E1E1E" }}
               >
+                {" "}
+                {/* <-- Gunakan handler lokal */}
                 <MoreVertIcon />
               </IconButton>
             </ListItemButton>
@@ -354,7 +443,6 @@ const LeftMenu = ({
 
       {/* Layers Section */}
       <Box sx={{ p: 1 }}>
-        {/* Layers Header */}
         <Box
           sx={{
             backgroundColor: COLOR.dark_gray,
@@ -367,11 +455,10 @@ const LeftMenu = ({
         >
           <Typography variant="h6">Layers</Typography>
         </Box>
-
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={onLayerReorder}
+          onDragEnd={handleDragEnd}
           modifiers={[restrictToParentElement]}
         >
           {currentPage &&
@@ -380,7 +467,7 @@ const LeftMenu = ({
               layers={pages.find((p) => p.id === currentPage).layouts}
               selectedLayout={selectedLayout}
               selectedGrid={selectedGrid}
-              onLayerSelect={onLayerSelect}
+              onLayerSelect={handleLayerSelect} // <-- Gunakan handler lokal
               parentLayoutId={null}
               parentLayoutIndex={null}
             />
@@ -394,7 +481,6 @@ const LeftMenu = ({
 
       {/* Components Section */}
       <Box sx={{ p: 1 }}>
-        {/* Components Header */}
         <Box
           sx={{
             backgroundColor: COLOR.dark_gray,
@@ -407,8 +493,6 @@ const LeftMenu = ({
         >
           <Typography variant="h6">Components</Typography>
         </Box>
-
-        {/* Search Bar */}
         <Box sx={{ px: 1, mb: SPACING }}>
           <TextField
             fullWidth
@@ -424,17 +508,13 @@ const LeftMenu = ({
               sx: {
                 borderRadius: "30px",
                 backgroundColor: COLOR.light_gray,
-                "& .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
+                "& .MuiOutlinedInput-notchedOutline": { border: "none" },
               },
             }}
           />
         </Box>
-
-        {/* Components Tree */}
         <Box sx={{ p: 1 }}>
-          {sectionComponents.map((section, index) => (
+          {SECTION_COMPONENTS.map((section, index) => (
             <Accordion
               key={index}
               disableGutters
@@ -445,9 +525,7 @@ const LeftMenu = ({
                 backgroundColor: "transparent",
                 border: "none",
                 boxShadow: "none",
-                "&.Mui-expanded": {
-                  margin: 0,
-                },
+                "&.Mui-expanded": { margin: 0 },
                 p: 0,
               }}
             >

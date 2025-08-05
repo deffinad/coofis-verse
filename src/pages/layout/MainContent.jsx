@@ -81,7 +81,7 @@ const MainContent = ({ containerRefs }) => {
       dispatch(deleteLayout(selectedLayout));
     } else {
       dispatch(
-        showAlert("Please select a layout or grid to delete.", "warning")
+        showAlert("Please select a layout to delete.", "warning")
       );
     }
   }, [dispatch, selectedLayout, selectedGrid]);
@@ -130,7 +130,7 @@ const MainContent = ({ containerRefs }) => {
             })
           ) : (
             <Typography variant="body2" sx={{ color: "gray", p: 2 }}>
-              Empty Grid
+              Empty Layout
             </Typography>
           )}
         </DroppableGrid>
@@ -179,7 +179,7 @@ const MainContent = ({ containerRefs }) => {
               },
             }}
           >
-            {selectedLayout ? "Add New Grid" : "Add New Layout"}
+            Add New Layout
           </Button>
           <Button
             variant="contained"
@@ -197,7 +197,7 @@ const MainContent = ({ containerRefs }) => {
               },
             }}
           >
-            {selectedGrid ? "Delete Selected Grid" : "Delete Selected Layout"}
+           Delete Selected Layout
           </Button>
         </Box>
       </Box>

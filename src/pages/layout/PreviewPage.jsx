@@ -1,6 +1,7 @@
 // pages/preview/PreviewPage.jsx
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import {
   Box,
   Button,
@@ -16,80 +17,81 @@ import TabletMacIcon from "@mui/icons-material/TabletAndroid";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PublishIcon from "@mui/icons-material/Publish";
+
 import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { Components } from "remoteApp/Components";
 
-const PreviewPage = () => {
-  // Changed from Preview to PreviewPage
-  const { pageId } = useParams(); // Get pageId from URL
-  const navigate = useNavigate(); // For back navigation
+// --- Redux Actions ---
+import {
+  loadPreviewPage,
+  clearPreview,
+  setPreviewDevice,
+} from "../../redux/actions/previewActions";
 
-  const [pages, setPages] = useState([]); // State to hold all pages
-  const [activePage, setActivePage] = useState(null); // State for the current active page
+const PreviewPage = () => {
+  const { pageId } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // 1. Ambil state dari slice 'preview' di Redux
+  const { pageData, isLoading, error, device } = useSelector(
+    (state) => state.preview
+  );
+
+  // 2. State lokal hanya untuk UI preview
   const [previewSize, setPreviewSize] = useState({ width: "100%" });
   const [scale, setScale] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [deviceType, setDeviceType] = useState("Desktop");
   const previewAreaRef = useRef(null);
 
+  // 3. Effect untuk memuat data saat komponen dimuat atau pageId berubah
   useEffect(() => {
-    // Load all pages from localStorage
-    const savedPages = localStorage.getItem("savedPages");
-    if (savedPages) {
-      try {
-        const parsedPages = JSON.parse(savedPages);
-        setPages(parsedPages);
-        // Find the active page based on pageId from URL
-        const foundPage = parsedPages.find((p) => p.id === pageId);
-        setActivePage(foundPage);
-      } catch (e) {
-        console.error("Failed to parse pages from localStorage", e);
-        setActivePage(null);
-      }
-    } else {
-      setActivePage(null);
+    if (pageId) {
+      dispatch(loadPreviewPage(pageId));
     }
 
-    // Simulate loading
-    const loadPreviewData = async () => {
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setIsLoading(false);
+    // Cleanup effect saat komponen di-unmount
+    return () => {
+      dispatch(clearPreview());
     };
-    loadPreviewData();
-  }, [pageId]); // Re-run when pageId changes
+  }, [dispatch, pageId]);
 
+  // Effect untuk scaling (tidak berubah)
   useLayoutEffect(() => {
     if (previewAreaRef.current?.parentElement && !isLoading) {
       const availableWidth = previewAreaRef.current.parentElement.offsetWidth;
       const targetWidth = previewSize.width;
-      const calculatedScale = availableWidth / targetWidth;
-      setScale(Math.min(calculatedScale, 1));
+      if (typeof targetWidth === "number") {
+        const calculatedScale = availableWidth / targetWidth;
+        setScale(Math.min(calculatedScale, 1));
+      } else {
+        setScale(1);
+      }
     }
-  }, [previewSize.width, isLoading, activePage]);
+  }, [previewSize.width, isLoading, pageData]);
 
-  const handleResize = (width, type) => {
+  // 4. Handler untuk mengubah ukuran preview
+  const handleResize = (width, deviceType) => {
     setPreviewSize({ width });
-    setDeviceType(type);
+    dispatch(setPreviewDevice(deviceType)); // Dispatch aksi untuk mengubah device
   };
 
   const handleBackToEditor = () => {
-    navigate("/layout"); // Navigate back to the editor page
+    navigate("/layout");
   };
 
   const handlePublish = () => {
     console.log("Publishing page from preview...");
-    // You might want to dispatch an event or call an API here
+    // Di masa depan, ini bisa menjadi dispatch(publishPage(pageId))
   };
 
+  // 5. Fungsi render (menggunakan data dari Redux)
   const getResponsiveSize = (grid) => {
     const sizeProp = grid.properties?.size;
     if (typeof sizeProp === "object" && sizeProp !== null) {
-      return sizeProp[deviceType.toLowerCase()] || sizeProp.desktop || 12;
+      return sizeProp[device.toLowerCase()] || sizeProp.desktop || 12;
     }
     return sizeProp || 12;
   };
-
   const renderComponents = (components) => {
     return components.map((grid) => {
       if (!grid.properties || !grid.children) return null;
@@ -128,14 +130,8 @@ const PreviewPage = () => {
         backgroundColor: COLOR.very_light_gray,
       }}
     >
-      {/* Fullwidth Navbar */}
-      <Box
-        sx={{
-          width: "100%",
-          zIndex: 1000,
-          flexShrink: 0, // Prevent shrinking
-        }}
-      >
+      {/* Navbar (tidak berubah, tapi kini menggunakan 'device' dari Redux) */}
+      <Box sx={{ width: "100%", zIndex: 1000, flexShrink: 0 }}>
         <Box
           sx={{
             display: "flex",
@@ -151,7 +147,7 @@ const PreviewPage = () => {
           {/* Left Section */}
           <Box sx={{ display: "flex", alignItems: "center", gap: SPACING }}>
             <Button
-              onClick={handleBackToEditor} // Changed handler name
+              onClick={handleBackToEditor}
               startIcon={<ArrowBackIcon />}
               sx={{
                 color: COLOR.white_ice,
@@ -188,7 +184,7 @@ const PreviewPage = () => {
                 variant="body2"
                 sx={{ color: COLOR.medium_dark_gray }}
               >
-                {activePage?.name || "Untitled Page"}
+                {pageData?.name || "Untitled Page"}
               </Typography>
             </Box>
           </Box>
@@ -214,21 +210,21 @@ const PreviewPage = () => {
             <Button
               onClick={() => handleResize("100%", "Desktop")}
               startIcon={<DesktopWindowsIcon />}
-              className={deviceType === "Desktop" ? "active" : ""}
+              className={device === "Desktop" ? "active" : ""}
             >
               Desktop
             </Button>
             <Button
               onClick={() => handleResize(768, "Tablet")}
               startIcon={<TabletMacIcon />}
-              className={deviceType === "Tablet" ? "active" : ""}
+              className={device === "Tablet" ? "active" : ""}
             >
               Tablet
             </Button>
             <Button
               onClick={() => handleResize(481, "Mobile")}
               startIcon={<PhoneIphoneIcon />}
-              className={deviceType === "Mobile" ? "active" : ""}
+              className={device === "Mobile" ? "active" : ""}
             >
               Mobile
             </Button>
@@ -254,24 +250,23 @@ const PreviewPage = () => {
         </Box>
       </Box>
 
-      {/* Main Content Area for Preview */}
+      {/* Main Content Area */}
       <Box
         sx={{
-          flex: 1, // Takes remaining vertical space
+          flex: 1,
           width: "100%",
           pb: SPACING,
           backgroundColor: COLOR.very_light_gray,
           overflowY: "auto",
           overflowX: "hidden",
-          position: "relative", // For scoped loading overlay
-          minHeight: "calc(100vh - 120px)", // PERBAIKAN: Pastikan ada tinggi minimum
+          position: "relative",
+          minHeight: "calc(100vh - 120px)",
         }}
       >
-        {isLoading ? (
-          // Scoped Loading Indicator - FIXED
+        {isLoading && (
           <Box
             sx={{
-              position: "fixed", // PERBAIKAN: Fixed positioning untuk menghindari efek geser
+              position: "fixed",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
@@ -280,44 +275,53 @@ const PreviewPage = () => {
               alignItems: "center",
               justifyContent: "center",
               zIndex: 1000,
-              pointerEvents: "none",
             }}
           >
             <CircularProgress color="primary" size={60} />
             <Typography
               variant="h6"
-              sx={{
-                mt: SPACING,
-                color: COLOR.dark_gray,
-                textAlign: "center",
-              }}
+              sx={{ mt: SPACING, color: COLOR.dark_gray }}
             >
               Loading Preview...
             </Typography>
           </Box>
-        ) : null}
+        )}
 
-        {/* Content Area - Selalu ada, visibility diatur berdasarkan loading */}
+        {error && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              minHeight: "400px",
+            }}
+          >
+            <Typography variant="h5" color="error">
+              Error: {error}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Content Area */}
         <Box
           sx={{
-            width: "100%", // PERBAIKAN: Full width
+            width: "100%",
             minHeight: "100%",
-            opacity: isLoading ? 0 : 1,
-            visibility: isLoading ? "hidden" : "visible",
-            p: SPACING, // PERBAIKAN: Visibility control
+            opacity: isLoading || error ? 0 : 1,
+            visibility: isLoading || error ? "hidden" : "visible",
+            p: SPACING,
           }}
         >
           <Box
             ref={previewAreaRef}
             sx={{
-              width: "100%", // PERBAIKAN: Full width content
-              maxWidth: previewSize.width, // PERBAIKAN: Max width berdasarkan device
-              margin: "0 auto", // PERBAIKAN: Center alignment
-              transform: deviceType === "Desktop" ? "none" : `scale(${scale})`,
+              width: "100%",
+              maxWidth: previewSize.width,
+              margin: "0 auto",
+              transform: device === "Desktop" ? "none" : `scale(${scale})`,
               transformOrigin: "top center",
-              transition: isLoading
-                ? "none"
-                : "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               backgroundColor: COLOR.white,
               border: "1px solid #ddd",
               borderRadius: "8px",
@@ -325,9 +329,9 @@ const PreviewPage = () => {
               p: SPACING,
             }}
           >
-            {activePage && activePage.layouts.length > 0 ? (
+            {pageData && pageData.layouts.length > 0 ? (
               <Stack spacing={SPACING} sx={{ minHeight: "100%" }}>
-                {activePage.layouts.map((layout) => (
+                {pageData.layouts.map((layout) => (
                   <Box
                     key={layout.id}
                     sx={{ minHeight: layout.properties.height || "auto" }}
@@ -339,22 +343,21 @@ const PreviewPage = () => {
                 ))}
               </Stack>
             ) : (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
-                  minHeight: "400px",
-                  backgroundColor: COLOR.white,
-                }}
-              >
-                <Typography variant="h5" color="text.secondary">
-                  {activePage
-                    ? "No content on this page."
-                    : "No page selected or found."}
-                </Typography>
-              </Box>
+              !isLoading && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    minHeight: "400px",
+                  }}
+                >
+                  <Typography variant="h5" color="text.secondary">
+                    No content on this page.
+                  </Typography>
+                </Box>
+              )
             )}
           </Box>
         </Box>
@@ -376,7 +379,10 @@ const PreviewPage = () => {
           zIndex: 1001,
         }}
       >
-        {deviceType}: {previewSize.width}px
+        {device}:{" "}
+        {typeof previewSize.width === "number"
+          ? `${previewSize.width}px`
+          : "100%"}
       </Box>
     </Box>
   );

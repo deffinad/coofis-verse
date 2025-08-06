@@ -14,18 +14,7 @@ export const loadPreviewPage = (pageId) => async (dispatch, getState) => {
 
   try {
     const { pages } = getState().layout;
-
-    let pageToPreview = null;
-
-    if (pages && pages.length > 0) {
-      pageToPreview = pages.find((p) => p.id === pageId);
-    } else {
-      const savedPages = localStorage.getItem("savedPages");
-      if (savedPages) {
-        const parsedPages = JSON.parse(savedPages);
-        pageToPreview = parsedPages.find((p) => p.id === pageId);
-      }
-    }
+    const pageToPreview = pages.find((p) => p.id === pageId);
 
     // Hitung sisa waktu yang dibutuhkan untuk mencapai loading minimum
     const elapsedTime = Date.now() - startTime;

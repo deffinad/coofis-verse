@@ -1,23 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Grid, Typography, Stack } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
+import { Box, Grid, Typography, Stack, CircularProgress, Alert } from "@mui/material";
 import { COLOR, SPACING } from "@/shared/constants/AppConst";
 import { Components } from "remoteApp/Components";
+import { fetchPublishedPage } from "../../redux/actions/publishedPageActions";
 
 const PublishedPage = () => {
   const { pageId } = useParams();
-  const [pageData, setPageData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { loading, data: pageData, error } = useSelector((state) => state.publishedPage);
 
   useEffect(() => {
-    // Mengambil data dari publishedPages di localStorage
-    const publishedPages = JSON.parse(
-      localStorage.getItem("publishedPages") || "[]"
-    );
-    const currentPageData = publishedPages.find((p) => p.id === pageId);
-    setPageData(currentPageData);
-    setIsLoading(false);
-  }, [pageId]);
+    // Memanggil action untuk mengambil data halaman
+    dispatch(fetchPublishedPage(pageId));
+  }, [dispatch, pageId]);
 
   // Fungsi untuk mendapatkan ukuran responsive berdasarkan device
   const getResponsiveSize = (grid, deviceType = "desktop") => {
@@ -64,19 +61,19 @@ const PublishedPage = () => {
   };
 
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="h6">Loading...</Typography>
+        <CircularProgress />
       </Box>
     );
   }
 
   // Page not found state
-  if (!pageData) {
+  if (error || !pageData) {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="h6">Page not found</Typography>
+        <Alert severity="error">{error || "Page not found"}</Alert>
       </Box>
     );
   }

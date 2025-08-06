@@ -17,12 +17,11 @@ const AlertPopup = ({ open, message, severity = "info", onClose }) => {
   );
 };
 
-// --- PropTypes untuk validasi props ---
 AlertPopup.propTypes = {
-  open: PropTypes.bool.isRequired, // Menunjukkan apakah alert terlihat
-  message: PropTypes.string.isRequired, // Konten pesan alert
-  severity: PropTypes.oneOf(["success", "error", "warning", "info"]), // Tipe alert
-  onClose: PropTypes.func.isRequired, // Fungsi yang dipanggil saat alert ditutup
+  open: PropTypes.bool.isRequired,
+  message: PropTypes.string.isRequired,
+  severity: PropTypes.oneOf(["success", "error", "warning", "info"]),
+  onClose: PropTypes.func.isRequired,
 };
 
 export default AlertPopup;

@@ -355,37 +355,3 @@ export const saveOrder = (layoutIndex, tempData) => (dispatch, getState) => {
   dispatch(showAlert("Order has been saved successfully.", "success"));
 };
 
-// Storage Actions
-export const loadFromStorage = () => (dispatch) => {
-  try {
-    const savedPages = localStorage.getItem("savedPages");
-    const currentPages = localStorage.getItem("curentPages");
-
-    if (savedPages) {
-      const pages = JSON.parse(savedPages);
-      const currentPage = JSON.parse(currentPages);
-
-      dispatch(setPages(pages));
-      dispatch(setCurrentPage(currentPage));
-    }
-  } catch (error) {
-    console.error("Failed to parse pages from localStorage", error);
-    dispatch(
-      showAlert("Failed to load saved pages from local storage.", "error")
-    );
-  }
-};
-
-export const saveToStorage = () => (dispatch, getState) => {
-  try {
-    const { layout } = getState();
-    const { pages, currentPage } = layout;
-
-    localStorage.setItem("savedPages", JSON.stringify(pages));
-    localStorage.setItem("curentPages", JSON.stringify(currentPage));
-
-    dispatch(showAlert("Project saved successfully!", "success"));
-  } catch (error) {
-    dispatch(showAlert("Failed to save project. Please try again.", "error"));
-  }
-};

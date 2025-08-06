@@ -4,6 +4,7 @@ import DashboardPage from "./pages/dashboard/Dashboard"; // Halaman Dashboard
 import LayoutPage from "./pages/layout/Index"; // Halaman Layout
 import PublishedPage from "./pages/dashboard/PublishedPage"; 
 import PreviewPage from "./pages/layout/PreviewPage"; 
+import CreatePortal from './pages/dashboard/CreatePortal'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="dashboard/:pageId" element={<PublishedPage />} />
+        <Route path="dashboard/create-portal" element={<CreatePortal />} />
         <Route path="layout" element={<LayoutPage />} />
         <Route path="preview/:pageId" element={<PreviewPage />} />
       </Route>

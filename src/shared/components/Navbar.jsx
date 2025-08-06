@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   AppBar,
   Toolbar,
@@ -8,7 +9,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
-  Button,
+  Popover,
 } from "@mui/material";
 import {
   Home as HomeIcon,
@@ -16,9 +17,9 @@ import {
   HelpOutline as DefaultIcon,
   Logout as LogoutIcon,
 } from "@mui/icons-material";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
-import { routesConfig as baseRoutes } from "../../pages/RoutesConfig"; // Rename import
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { fetchNavbarRoutes } from "../../redux/actions/navbarActions";
 import { logoData } from "@/shared/constants/AppData";
 
 const iconComponents = {
@@ -26,25 +27,127 @@ const iconComponents = {
   Layout: <LayoutIcon />,
 };
 
+// ==================================================================
+// ======== Komponen RenderMenuItem yang Telah Diperbaiki ===========
+// ==================================================================
+const RenderMenuItem = ({ child, onLinkClick }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const timerRef = useRef(null);
+
+  const handlePopoverOpen = (event) => {
+    clearTimeout(timerRef.current);
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    timerRef.current = setTimeout(() => {
+      setAnchorEl(null);
+    }, 200); // Delay to allow moving mouse to popover
+  };
+
+  const handleChildClick = (url) => {
+    setAnchorEl(null);
+    if (onLinkClick) {
+      onLinkClick();
+    }
+    navigate(url);
+  };
+
+  const open = Boolean(anchorEl);
+  const isParentActive = location.pathname.startsWith(child.url);
+
+  if (child.type === "collapse") {
+    return (
+      <div onMouseEnter={handlePopoverOpen} onMouseLeave={handlePopoverClose}>
+        <MenuItem
+          component={Link}
+          to={child.url}
+          onClick={onLinkClick} // Close main menu on click
+          sx={{
+            justifyContent: "space-between",
+            color: isParentActive ? COLOR.white_smoke : COLOR.medium_dark_gray,
+            backgroundColor: isParentActive ? COLOR.sky_blue : "transparent",
+            "&:hover": {
+              backgroundColor: isParentActive
+                ? COLOR.sky_blue
+                : COLOR.white_smoke,
+              color: isParentActive
+                ? COLOR.white_smoke
+                : COLOR.medium_dark_gray,
+            },
+          }}
+        >
+          {child.title}
+          <ExpandMoreIcon />
+        </MenuItem>
+        <Popover
+          open={open}
+          anchorEl={anchorEl}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          onClose={() => setAnchorEl(null)}
+          disableRestoreFocus
+          PaperProps={{
+            onMouseEnter: () => clearTimeout(timerRef.current),
+            onMouseLeave: handlePopoverClose,
+          }}
+        >
+          {child.children.map((subChild) => (
+            <RenderMenuItem
+              key={subChild.id}
+              child={subChild}
+              onLinkClick={() => handleChildClick(subChild.url)}
+            />
+          ))}
+        </Popover>
+      </div>
+    );
+  }
+
+  // For regular menu items
+  return (
+    <MenuItem
+      onClick={() => handleChildClick(child.url)}
+      selected={location.pathname === child.url}
+      sx={{
+        "&.Mui-selected": {
+          backgroundColor: COLOR.sky_blue,
+          color: COLOR.white_smoke,
+          "&:hover": {
+            backgroundColor: COLOR.sky_blue,
+          },
+        },
+        "&:hover": {
+          backgroundColor: COLOR.white_smoke,
+        },
+      }}
+    >
+      {child.title}
+    </MenuItem>
+  );
+};
+
 const Navbar = () => {
   const location = useLocation();
+  const dispatch = useDispatch();
+  const { routes: dynamicRoutes } = useSelector((state) => state.navbar);
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
-  const [dynamicRoutes, setDynamicRoutes] = useState(baseRoutes);
+  const isUserMenuOpen = Boolean(userMenuAnchorEl);
 
-  // State for hover menu management
+  // State untuk manajemen menu hover
   const [hoverMenu, setHoverMenu] = useState({
     anchorEl: null,
     openId: null,
   });
   const hideMenuTimer = useRef(null);
 
-  const isUserMenuOpen = Boolean(userMenuAnchorEl);
-
   const handleUserMenuClick = (event) =>
     setUserMenuAnchorEl(event.currentTarget);
   const handleUserMenuClose = () => setUserMenuAnchorEl(null);
 
-  // Handlers for hover menu
+  // Handlers untuk menu hover
   const handleMenuMouseEnter = (event, menuId) => {
     clearTimeout(hideMenuTimer.current);
     setHoverMenu({
@@ -54,10 +157,14 @@ const Navbar = () => {
   };
 
   const handleMenuMouseLeave = () => {
-    setHoverMenu({ anchorEl: null, openId: null });
+    hideMenuTimer.current = setTimeout(() => {
+      setHoverMenu({ anchorEl: null, openId: null });
+    }, 200); // jeda 200ms
   };
 
+  // Fungsi ini dipanggil dari RenderMenuItem untuk menutup menu utama setelah klik
   const handleMenuItemClick = () => {
+    clearTimeout(hideMenuTimer.current);
     setHoverMenu({ anchorEl: null, openId: null });
   };
 
@@ -66,41 +173,19 @@ const Navbar = () => {
     handleUserMenuClose();
   };
 
-  const loadPublishedRoutes = () => {
-    const publishedPages = JSON.parse(
-      localStorage.getItem("publishedPages") || "[]"
-    );
-    const publishedRoutes = publishedPages.map((page) => ({
-      id: `published-${page.id}`,
-      title: page.name,
-      messageId: page.name,
-      type: "item",
-      url: `/dashboard/${page.id}`,
-    }));
-
-    const newRoutes = baseRoutes.map((route) => {
-      if (route.id === "dashboard" && route.type === "group") {
-        const staticChildren = route.children || [];
-        return { ...route, children: [...staticChildren, ...publishedRoutes] };
-      }
-      return route;
-    });
-
-    setDynamicRoutes(newRoutes);
-  };
-
   useEffect(() => {
-    loadPublishedRoutes();
-    window.addEventListener("storage", loadPublishedRoutes);
-    return () => {
-      window.removeEventListener("storage", loadPublishedRoutes);
-    };
-  }, []);
+    dispatch(fetchNavbarRoutes());
+  }, [dispatch]);
 
   const renderNavs = () => {
     return dynamicRoutes.map((route) => {
       const isActive =
-        (location.pathname.startsWith(route.url) && route.url !== "/") ||
+        ((location.pathname.startsWith(route.url) ||
+          (route.alsoActiveOn &&
+            route.alsoActiveOn.some((path) =>
+              location.pathname.startsWith(path)
+            ))) &&
+          route.url !== "/") ||
         (route.type === "group" && hoverMenu.openId === route.id);
 
       if (route.type === "group") {
@@ -126,7 +211,8 @@ const Navbar = () => {
                 borderRadius: SPACING,
                 textTransform: "none",
                 cursor: "pointer",
-                color: COLOR.medium_dark_gray,
+                color: isActive ? COLOR.white_smoke : COLOR.medium_dark_gray,
+                backgroundColor: isActive ? COLOR.sky_blue : COLOR.white_smoke,
               }}
             >
               {iconComponents[route.icon] || <DefaultIcon />}
@@ -144,6 +230,7 @@ const Navbar = () => {
               onClose={handleMenuMouseLeave}
               MenuListProps={{
                 "aria-labelledby": `button-${route.id}`,
+                onMouseEnter: () => clearTimeout(hideMenuTimer.current),
                 onMouseLeave: handleMenuMouseLeave,
               }}
               anchorOrigin={{
@@ -156,22 +243,18 @@ const Navbar = () => {
               }}
             >
               {route.children.map((child) => (
-                <MenuItem
+                <RenderMenuItem
                   key={child.id}
-                  component={Link}
-                  to={child.url}
-                  onClick={handleMenuItemClick}
-                  selected={location.pathname === child.url}
-                >
-                  {child.title}
-                </MenuItem>
+                  child={child}
+                  onLinkClick={handleMenuItemClick}
+                />
               ))}
             </Menu>
           </Box>
         );
       }
 
-      // Default rendering for non-group items
+      // Render untuk item non-group
       return (
         <Box
           key={route.id}
@@ -187,10 +270,14 @@ const Navbar = () => {
             mr: SPACING,
             borderRadius: SPACING,
             textTransform: "none",
-            color: isActive ? COLOR.light_gray : COLOR.medium_dark_gray,
+            color: isActive ? COLOR.white_smoke : COLOR.medium_dark_gray,
             backgroundColor: isActive ? COLOR.sky_blue : COLOR.white_smoke,
             textDecoration: "none",
             cursor: "pointer",
+            "&:hover": {
+              color: isActive ? COLOR.white_smoke : COLOR.medium_dark_gray,
+              backgroundColor: isActive ? COLOR.sky_blue : COLOR.white_smoke,
+            },
           }}
         >
           {iconComponents[route.icon] || <DefaultIcon />}
@@ -267,7 +354,14 @@ const Navbar = () => {
               MenuListProps={{ "aria-labelledby": "basic-button" }}
               sx={{ mt: 1 }}
             >
-              <MenuItem onClick={handleLogout}>
+              <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
                 <LogoutIcon sx={{ mr: 1 }} />
                 Logout
               </MenuItem>

@@ -3,16 +3,25 @@ export const routesConfig = [
     id: "dashboard",
     title: "Dashboard",
     messageId: "Dashboard",
-    type: "group", 
+    type: "group",
     url: "/dashboard",
     icon: "Dashboard",
     children: [
       {
-        id: "dashboard-main",
+        id: "dashboard-main-group", 
         title: "Main Dashboard",
         messageId: "Main Dashboard",
-        type: "item",
+        type: "collapse",
         url: "/dashboard",
+        children: [
+          {
+            id: "create-portal",
+            title: "Create Portal",
+            messageId: "Create Portal",
+            type: "item",
+            url: "/dashboard/create-portal",
+          },
+        ],
       },
       // Published pages will be dynamically added here by the Navbar
     ],
@@ -24,5 +33,6 @@ export const routesConfig = [
     type: "nonGroup",
     url: "/layout",
     icon: "Layout",
+    alsoActiveOn: ["/preview"],
   },
 ];

@@ -1,4 +1,3 @@
-// pages/preview/PreviewPage.jsx
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -33,29 +32,24 @@ const PreviewPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // 1. Ambil state dari slice 'preview' di Redux
   const { pageData, isLoading, error, device } = useSelector(
     (state) => state.preview
   );
 
-  // 2. State lokal hanya untuk UI preview
   const [previewSize, setPreviewSize] = useState({ width: "100%" });
   const [scale, setScale] = useState(1);
   const previewAreaRef = useRef(null);
 
-  // 3. Effect untuk memuat data saat komponen dimuat atau pageId berubah
   useEffect(() => {
     if (pageId) {
       dispatch(loadPreviewPage(pageId));
     }
 
-    // Cleanup effect saat komponen di-unmount
     return () => {
       dispatch(clearPreview());
     };
   }, [dispatch, pageId]);
 
-  // Effect untuk scaling (tidak berubah)
   useLayoutEffect(() => {
     if (previewAreaRef.current?.parentElement && !isLoading) {
       const availableWidth = previewAreaRef.current.parentElement.offsetWidth;
@@ -69,10 +63,9 @@ const PreviewPage = () => {
     }
   }, [previewSize.width, isLoading, pageData]);
 
-  // 4. Handler untuk mengubah ukuran preview
   const handleResize = (width, deviceType) => {
     setPreviewSize({ width });
-    dispatch(setPreviewDevice(deviceType)); // Dispatch aksi untuk mengubah device
+    dispatch(setPreviewDevice(deviceType));
   };
 
   const handleBackToEditor = () => {
@@ -81,10 +74,8 @@ const PreviewPage = () => {
 
   const handlePublish = () => {
     console.log("Publishing page from preview...");
-    // Di masa depan, ini bisa menjadi dispatch(publishPage(pageId))
   };
 
-  // 5. Fungsi render (menggunakan data dari Redux)
   const getResponsiveSize = (grid) => {
     const sizeProp = grid.properties?.size;
     if (typeof sizeProp === "object" && sizeProp !== null) {
@@ -98,8 +89,6 @@ const PreviewPage = () => {
       const isFinalComponent = grid.children[0]?.name;
       return (
         <Grid item size={getResponsiveSize(grid)} key={grid.id}>
-          {" "}
-          {/* Use xs for responsive grid */}
           <Box
             sx={{
               minHeight: grid.properties.height || "auto",
@@ -130,7 +119,6 @@ const PreviewPage = () => {
         backgroundColor: COLOR.very_light_gray,
       }}
     >
-      {/* Navbar (tidak berubah, tapi kini menggunakan 'device' dari Redux) */}
       <Box sx={{ width: "100%", zIndex: 1000, flexShrink: 0 }}>
         <Box
           sx={{

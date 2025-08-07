@@ -65,7 +65,6 @@ import {
 
 import { showAlert } from "../../redux/actions/alertActions";
 
-// --- Sortable Layer Components (Tidak ada perubahan di sini) ---
 function SortableLayer({
   layer,
   selectedLayout,
@@ -227,12 +226,10 @@ function SortableLayerList({
     </SortableContext>
   );
 }
-// --- Komponen Utama LeftMenu (Refactored) ---
 
 const LeftMenu = () => {
   const dispatch = useDispatch();
 
-  // 1. Ambil semua state yang dibutuhkan dari Redux
   const {
     pages,
     currentPage,
@@ -242,7 +239,6 @@ const LeftMenu = () => {
     selectedGrid,
   } = useSelector((state) => state.layout);
 
-  // 2. State dan Ref lokal tetap di sini
   const menuRef = useRef(null);
   const menuHeight = useDynamicMenuHeight(menuRef);
   const sensors = useSensors(
@@ -250,7 +246,6 @@ const LeftMenu = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // 3. Pindahkan semua handler dari Index.jsx ke sini
   const handleMenuOpen = (event, page) => {
     event.stopPropagation();
     dispatch(setMenuAnchorEl(event.currentTarget));
@@ -370,9 +365,9 @@ const LeftMenu = () => {
       <Box sx={{ p: SPACING - 1 }}>
         <MenuPages
           anchorEl={menuAnchorEl}
-          onClose={handleMenuClose} // <-- Gunakan handler lokal
+          onClose={handleMenuClose}
           selectedPage={selectedPageForMenu}
-          onDeletePage={handleDeletePageLocal} // <-- Gunakan handler lokal
+          onDeletePage={handleDeletePageLocal}
         />
         <Box
           sx={{
@@ -397,8 +392,6 @@ const LeftMenu = () => {
             sx={{ color: COLOR.white }}
             onClick={() => dispatch(addPage())}
           >
-            {" "}
-            {/* <-- Dispatch langsung */}
             <AddIcon />
           </IconButton>
         </Box>
@@ -407,7 +400,7 @@ const LeftMenu = () => {
             <ListItemButton
               key={page.id}
               selected={currentPage === page.id}
-              onClick={() => dispatch(setCurrentPage(page.id))} // <-- Dispatch langsung
+              onClick={() => dispatch(setCurrentPage(page.id))}
               sx={{ mb: 0.5, borderRadius: 1 }}
             >
               <ListItemText
@@ -430,8 +423,6 @@ const LeftMenu = () => {
                 onClick={(e) => handleMenuOpen(e, page)}
                 sx={{ color: "#1E1E1E" }}
               >
-                {" "}
-                {/* <-- Gunakan handler lokal */}
                 <MoreVertIcon />
               </IconButton>
             </ListItemButton>
@@ -467,7 +458,7 @@ const LeftMenu = () => {
               layers={pages.find((p) => p.id === currentPage).layouts}
               selectedLayout={selectedLayout}
               selectedGrid={selectedGrid}
-              onLayerSelect={handleLayerSelect} // <-- Gunakan handler lokal
+              onLayerSelect={handleLayerSelect}
               parentLayoutId={null}
               parentLayoutIndex={null}
             />

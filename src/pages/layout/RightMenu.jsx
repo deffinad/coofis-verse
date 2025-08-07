@@ -9,13 +9,11 @@ import {
   updateSiblingHeights,
 } from "../../redux/actions/layoutActions";
 
-const RightMenu = ({}) => {
+const RightMenu = () => {
   const dispatch = useDispatch();
 
-  // 1. Ambil data inti dari Redux
   const { selectedGrid, atribut } = useSelector((state) => state.layout);
 
-  // 2. State dan Ref lokal
   const menuRef = useRef(null);
   const menuHeight = useDynamicMenuHeight(menuRef);
   const [localSize, setLocalSize] = useState({
@@ -26,7 +24,6 @@ const RightMenu = ({}) => {
   const [localHeight, setLocalHeight] = useState("");
   const [localFormData, setLocalFormData] = useState({});
 
-  // 3. Sinkronkan state lokal dengan Redux saat selection berubah
   useEffect(() => {
     if (selectedGrid?.properties) {
       const { size, height } = selectedGrid.properties;
@@ -49,7 +46,6 @@ const RightMenu = ({}) => {
     }
   }, [selectedGrid, atribut]);
 
-  // 4. Buat handler dengan debounce untuk dispatch action
   const debouncedUpdate = useCallback(
     debounce((id, path, value) => {
       dispatch(updateComponentProperty(id, path, value));
@@ -60,7 +56,7 @@ const RightMenu = ({}) => {
   const debouncedUpdateSiblingsHeight = useCallback(
     debounce((gridId, height) => {
       dispatch(updateSiblingHeights(gridId, height));
-    }, 500), // Delay 500ms
+    }, 500),
     [dispatch]
   );
 
@@ -80,18 +76,25 @@ const RightMenu = ({}) => {
   );
 
   const handleHeightChange = useCallback(
-    (value) => {
-      if (!selectedGrid) return;
-      const finalHeight = value === "" ? "" : parseInt(value, 10);
+  (value) => {
+    if (!selectedGrid) return;
+    
+    // Pastikan nilai height dalam format yang benar
+    let finalHeight = value === "" ? "" : parseInt(value, 10);
+    
+    // Validasi nilai minimum (opsional)
+    if (finalHeight !== "" && finalHeight < 0) {
+      finalHeight = 0;
+    }
 
-      // 1. Update state lokal secara instan untuk UI yang responsif
-      setLocalHeight(finalHeight);
+    setLocalHeight(finalHeight);
 
-      // 2. Panggil fungsi debounced yang baru, bukan dispatch langsung
-      debouncedUpdateSiblingsHeight(selectedGrid.id, finalHeight);
-    },
-    [selectedGrid, debouncedUpdateSiblingsHeight] // <-- Ganti dependensi ke fungsi debounce
-  );
+    const heightValue = finalHeight === "" ? "" : `${finalHeight}px`;
+    
+    debouncedUpdate(selectedGrid.id, "height", heightValue);
+  },
+  [selectedGrid, debouncedUpdate]
+);
 
   const handleLocalInputChange = useCallback(
     (path, value) => {
@@ -111,7 +114,6 @@ const RightMenu = ({}) => {
     [atribut?.id, debouncedUpdate]
   );
 
-  // --- Helper dan fungsi render (tidak banyak berubah) ---
   const getNestedValue = (obj, pathArr) =>
     pathArr.reduce((acc, part) => acc && acc[part], obj);
 
@@ -139,7 +141,6 @@ const RightMenu = ({}) => {
       );
     }
 
-    // --- Penanganan untuk Boolean ---
     else if (typeof valueFromProps === "boolean") {
       return (
         <Box
@@ -171,7 +172,6 @@ const RightMenu = ({}) => {
       );
     }
 
-    // --- Penanganan untuk Object (rekursif) ---
     else if (typeof valueFromProps === "object" && valueFromProps !== null) {
       return (
         <Box
@@ -184,7 +184,6 @@ const RightMenu = ({}) => {
           {Object.entries(valueFromProps).map(([subKey, subValue]) =>
             renderPropertyField(
               subKey,
-              // Ambil nilai dari localFormData jika ada, jika tidak, gunakan subValue dari props
               getNestedValue(
                 localFormData,
                 pathArrayFromFullPath(`${fullPath}.${subKey}`)

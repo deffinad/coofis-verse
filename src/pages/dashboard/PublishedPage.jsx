@@ -38,8 +38,7 @@ const PublishedPage = () => {
         <Grid item size={getResponsiveSize(grid)} key={grid.id}>
           <Box
             sx={{
-              minHeight: grid.properties.height || "auto",
-              height: "100%",
+              height: grid.properties.height || "auto",
             }}
           >
             {isFinalComponent ? (

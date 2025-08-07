@@ -1,0 +1,75 @@
+import React from 'react';
+import { ListItem, ListItemText, Icon } from '@mui/material';
+import { NavLink } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import * as Icons from '@mui/icons-material';
+import { COLOR, SPACING } from '@/shared/constants/AppConst';
+
+const HorizontalItem = ({ item, dense, onClick }) => {
+  const IconComponent = Icons[item.icon || 'Article'];
+
+  return (
+    <ListItem
+      button="true"
+      onClick={onClick}
+      component={NavLink}
+      to={item.url}
+      end={item.exact}
+      sx={{
+        minHeight: 40,
+        padding: '4px 12px',
+        color: COLOR.medium_dark_gray,
+        backgroundColor: 'transparent',
+        textDecoration: 'none!important',
+        borderRadius: '4px',
+        mr: 1,
+        '&.active': {
+          color: COLOR.white_smoke,
+          backgroundColor: COLOR.sky_blue,
+          pointerEvents: 'none',
+          '& .list-item-text-primary': {
+            color: 'inherit',
+          },
+          '& .list-item-icon': {
+            color: 'inherit',
+          },
+        },
+        '&:hover': {
+          backgroundColor: 'transparent',
+        },
+        '& .list-item-text': {
+          padding: '0 0 0 16px',
+        },
+        ...(dense && {
+          padding: '4px 12px',
+          minHeight: 40,
+          '& .list-item-text': {
+            padding: '0 0 0 8px',
+          },
+        }),
+      }}
+    >
+      {item.icon && (
+        <Icon
+          sx={{
+            mr: 2,
+            fontSize: { xs: 16, xl: 18 },
+          }}
+        >
+          <IconComponent sx={{ fontSize: '20px' }} />
+        </Icon>
+      )}
+      <ListItemText
+        primary={item.title}
+      />
+    </ListItem>
+  );
+};
+
+HorizontalItem.propTypes = {
+  item: PropTypes.object.isRequired,
+  dense: PropTypes.bool,
+  onClick: PropTypes.func,
+};
+
+export default React.memo(HorizontalItem);

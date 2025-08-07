@@ -164,18 +164,53 @@ const updateNested = (obj, pathArr, val) => {
   };
 };
 
+const updateImmediateChildrenHeight = (children, newHeight) => {
+  return children.map((child) => ({
+    ...child,
+    properties: {
+      ...child.properties,
+      height: newHeight,
+    },
+  }));
+};
+
 const updateComponentInLayouts = (layouts, componentId, path, value) => {
   return layouts.map((item) => {
     // Jika ID ditemukan pada level ini
     if (item.id === componentId) {
       const pathArray = path.split(".");
-      return {
+      const updatedItem = {
         ...item,
         properties: updateNested(item.properties || {}, pathArray, value),
       };
+
+      // *** KUNCI PERBAIKAN: Update children height ketika parent height berubah ***
+      if (
+        path === "height" &&
+        updatedItem.children &&
+        updatedItem.children.length > 0
+      ) {
+        // Konversi value ke format yang konsisten
+        const normalizedHeight =
+          typeof value === "string" && value.includes("px")
+            ? value
+            : `${value}px`;
+
+        updatedItem.children = updateImmediateChildrenHeight(
+          updatedItem.children,
+          normalizedHeight
+        );
+
+        console.log(
+          `Updated parent ${componentId} height to ${normalizedHeight}, children updated:`,
+          updatedItem.children.length
+        );
+      }
+
+      return updatedItem;
     }
 
-    // Jika tidak ditemukan, cari di children (jika ada)
+    // *** PERBAIKAN BARU: Auto-sync container height ketika child height berubah ***
     if (item.children && item.children.length > 0) {
       const updatedChildren = updateComponentInLayouts(
         item.children,
@@ -183,13 +218,40 @@ const updateComponentInLayouts = (layouts, componentId, path, value) => {
         path,
         value
       );
-      // Jika ada perubahan di children, kembalikan item dengan children yang baru
-      if (updatedChildren !== item.children) {
-        return { ...item, children: updatedChildren };
+
+      // Cek apakah ada perubahan pada children
+      const hasChanges = updatedChildren !== item.children;
+
+      if (hasChanges) {
+        const updatedItem = { ...item, children: updatedChildren };
+
+        // Jika ini adalah Container dan ada child yang height-nya berubah, sync container height
+        if (item.name === "Container" && path === "height") {
+          const maxChildHeight = updatedChildren.reduce((max, child) => {
+            if (child.properties?.height) {
+              const heightValue = parseInt(
+                child.properties.height.replace("px", "")
+              );
+              return Math.max(max, heightValue);
+            }
+            return max;
+          }, 0);
+
+          if (maxChildHeight > 0) {
+            updatedItem.properties = {
+              ...updatedItem.properties,
+              height: `${maxChildHeight}px`, // Container height = max child height + padding
+            };
+            console.log(
+              `Auto-synced container ${item.id} to ${maxChildHeight}px`
+            );
+          }
+        }
+
+        return updatedItem;
       }
     }
 
-    // Jika tidak ada perubahan, kembalikan item seperti semula
     return item;
   });
 };
@@ -441,7 +503,6 @@ const layoutReducer = (state = initialState, action) => {
     case types.UPDATE_COMPONENT_PROPERTY: {
       const { componentId, path, value } = action.payload;
 
-      // Jika tidak ada componentId, jangan lakukan apa-apa
       if (!componentId) {
         return state;
       }
@@ -450,20 +511,59 @@ const layoutReducer = (state = initialState, action) => {
         ...state,
         pages: state.pages.map((page) => {
           if (page.id === state.currentPage) {
+            let layouts = page.layouts;
+
+            if (path === "height") {
+              const parentInfo = findComponentAndParent(layouts, componentId);
+              if (parentInfo && parentInfo.parent) {
+                const parentId = parentInfo.parent.id;
+                const siblings = parentInfo.parent.children || [];
+
+                const updatedSiblings = siblings.map((child) => ({
+                  ...child,
+                  properties: {
+                    ...child.properties,
+                    height: value,
+                  },
+                }));
+
+                layouts = recursivelyUpdateOrder(
+                  layouts,
+                  parentId,
+                  updatedSiblings
+                );
+              }
+            }
+            const finalLayouts = updateComponentInLayouts(
+              layouts,
+              componentId,
+              path,
+              value
+            );
+
             return {
               ...page,
-              layouts: updateComponentInLayouts(
-                page.layouts,
-                componentId,
-                path,
-                value
-              ),
+              layouts: finalLayouts,
             };
           }
           return page;
         }),
       };
     }
+
+    case types.AUTO_SYNC_CONTAINER_HEIGHT:
+      return {
+        ...state,
+        pages: state.pages.map((page) => {
+          if (page.id === action.payload.pageId) {
+            return {
+              ...page,
+              layouts: action.payload.layouts,
+            };
+          }
+          return page;
+        }),
+      };
 
     case types.UPDATE_SIBLING_HEIGHTS:
       {

@@ -316,6 +316,67 @@ export const updateSiblingHeights =
     });
   };
 
+export const autoSyncContainerHeight =
+  (containerId) => (dispatch, getState) => {
+    const { layout } = getState();
+    const { currentPage, pages } = layout;
+
+    if (!currentPage) return;
+
+    const currentPageData = pages.find((page) => page.id === currentPage);
+    if (!currentPageData) return;
+
+    // Fungsi rekursif untuk mencari container dan menghitung tinggi otomatis
+    const findAndUpdateContainer = (layouts) => {
+      return layouts.map((item) => {
+        if (item.id === containerId && item.name === "Container") {
+          // Hitung tinggi otomatis berdasarkan children
+          const maxChildHeight = item.children.reduce((max, child) => {
+            if (child.properties?.height) {
+              const heightValue = parseInt(
+                child.properties.height.replace("px", "")
+              );
+              return Math.max(max, heightValue);
+            }
+            return max;
+          }, 0);
+
+          const autoHeight =
+            maxChildHeight > 0 ? `${maxChildHeight}px` : "auto";
+
+          return {
+            ...item,
+            properties: {
+              ...item.properties,
+              height: autoHeight,
+            },
+          };
+        }
+
+        if (item.children && item.children.length > 0) {
+          return {
+            ...item,
+            children: findAndUpdateContainer(item.children),
+          };
+        }
+
+        return item;
+      });
+    };
+
+    const updatedLayouts = findAndUpdateContainer(currentPageData.layouts);
+
+    dispatch({
+      type: types.AUTO_SYNC_CONTAINER_HEIGHT,
+      payload: {
+        pageId: currentPage,
+        layouts: updatedLayouts,
+      },
+    });
+
+    console.log(`Auto-synced container ${containerId} height`);
+  };
+
 export const reorderLayouts =
   (sourceId, destinationId) => (dispatch, getState) => {
     const { layout } = getState();
@@ -354,4 +415,3 @@ export const saveOrder = (layoutIndex, tempData) => (dispatch, getState) => {
   dispatch(setTemp(null));
   dispatch(showAlert("Order has been saved successfully.", "success"));
 };
-

@@ -18,7 +18,6 @@ import LeftMenu from "./LeftMenu";
 import MainContent from "./MainContent";
 import RightMenu from "./RightMenu";
 import AlertPopup from "../../shared/components/AlertPopup";
-import { debounce } from "../../shared/utils/debounce";
 import { showAlert, hideAlert } from "../../redux/actions/alertActions";
 import { componentAttributes } from "@/shared/constants/AppData";
 
@@ -155,7 +154,6 @@ const Layout = () => {
 
     const componentType = draggedItemId;
 
-    // Cek apakah grid sudah memiliki child
     let gridHasChild = false;
     const activePage = pages.find((p) => p.id === currentPage);
 
@@ -195,12 +193,9 @@ const Layout = () => {
       },
     };
 
-    // Gunakan action creator yang baru
     dispatch(addComponentToGrid(dropTargetId, newComponent));
   };
 
-
-  // Global action handlers
   const handlePreview = () => {
     if (currentPage) {
       navigate(`/preview/${currentPage}`);

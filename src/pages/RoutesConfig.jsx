@@ -5,7 +5,7 @@ export const routesConfig = [
     messageId: "Dashboard",
     type: "group",
     url: "/dashboard",
-    icon: "Dashboard",
+    icon: "Home",
     children: [
       {
         id: "dashboard-main-group", 
@@ -14,6 +14,13 @@ export const routesConfig = [
         type: "collapse",
         url: "/dashboard",
         children: [
+          {
+            id: "default",
+            title: "Default",
+            messageId: "Default",
+            type: "item",
+            url: "/dashboard",
+          },
           {
             id: "create-portal",
             title: "Create Portal",
@@ -30,9 +37,9 @@ export const routesConfig = [
     id: "layout",
     title: "Layout",
     messageId: "page layout",
-    type: "nonGroup",
+    type: "item",
     url: "/layout",
-    icon: "Layout",
+    icon: "ViewQuilt",
     alsoActiveOn: ["/preview"],
   },
 ];

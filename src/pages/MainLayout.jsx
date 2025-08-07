@@ -1,19 +1,26 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { Box } from "@mui/material";
+import { Box, GlobalStyles } from "@mui/material";
 import Navbar from "../shared/components/Navbar";
 import { COLOR } from "@/shared/constants/AppConst";
 
 const MainLayout = () => {
   return (
-    // LEVEL 1: Main Container
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-      }}
-    >
+    <React.Fragment>
+      <GlobalStyles
+        styles={{
+          body: {
+            overflowY: "scroll",
+          },
+        }}
+      />
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+        }}
+      >
       {/* LEVEL 2A: Navbar Container */}
       <Box
         component="header"
@@ -35,7 +42,8 @@ const MainLayout = () => {
       >
         <Outlet />
       </Box>
-    </Box>
+      </Box>
+    </React.Fragment>
   );
 };
 

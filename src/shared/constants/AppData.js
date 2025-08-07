@@ -17,7 +17,6 @@ export const componentAttributes = {
     name: "Navbar",
     properties: {
       title: "My Website",
-      height: 65,
       backgroundColor: "#ffffff",
       textColor: "#333333",
       activeTextColor: "#007bff",

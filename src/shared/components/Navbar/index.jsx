@@ -1,3 +1,4 @@
+// SECTION: Component Imports
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,18 +26,22 @@ import HorizontalGroup from "./HorizontalGroup";
 import HorizontalCollapse from "./HorizontalCollapse";
 import HorizontalItem from "./HorizontalItem";
 
+// SECTION: Icon Definitions
 const iconComponents = {
   Dashboard: <HomeIcon />,
   Layout: <LayoutIcon />,
 };
 
+// SECTION: Main Navbar Component
 const Navbar = () => {
+  // ANCHOR: State Management
   const location = useLocation();
   const dispatch = useDispatch();
   const { routes: dynamicRoutes } = useSelector((state) => state.navbar);
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
   const isUserMenuOpen = Boolean(userMenuAnchorEl);
 
+  // ANCHOR: Event Handlers
   const handleUserMenuClick = (event) =>
     setUserMenuAnchorEl(event.currentTarget);
   const handleUserMenuClose = () => setUserMenuAnchorEl(null);
@@ -46,22 +51,27 @@ const Navbar = () => {
     handleUserMenuClose();
   };
 
+  // ANCHOR: Data Fetching
   useEffect(() => {
     dispatch(fetchNavbarRoutes());
   }, [dispatch]);
 
+  // ANCHOR: Navigation Rendering
   const renderNavs = () => {
     return (
-      <List sx={{ display: 'flex', flexDirection: 'row', p: 0 }}>
+      <List sx={{ display: "flex", flexDirection: "row", p: 0 }}>
         {dynamicRoutes.map((item) => (
           <React.Fragment key={item.id}>
-            {item.type === 'group' && (
+            {/* Render a group of navigation links */}
+            {item.type === "group" && (
               <HorizontalGroup item={item} nestedLevel={0} />
             )}
-            {item.type === 'collapse' && (
+            {/* Render a collapsible menu item */}
+            {item.type === "collapse" && (
               <HorizontalCollapse item={item} nestedLevel={0} />
             )}
-            {item.type === 'item' && (
+            {/* Render a single navigation item */}
+            {item.type === "item" && (
               <HorizontalItem item={item} nestedLevel={0} />
             )}
           </React.Fragment>
@@ -70,8 +80,10 @@ const Navbar = () => {
     );
   };
 
+  // ANCHOR: Main Render Method
   return (
     <Box sx={{ flexGrow: 1, backgroundColor: COLOR.very_light_gray }}>
+      {/* Top App Bar */}
       <AppBar
         position="static"
         color="transparent"
@@ -83,6 +95,7 @@ const Navbar = () => {
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
+          {/* Logo */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Avatar
               src={logoData.imageUrl}
@@ -90,6 +103,7 @@ const Navbar = () => {
               sx={{ width: 40, height: 40, mr: SPACING }}
             />
           </Box>
+          {/* User Menu */}
           <Box>
             <Box
               onClick={handleUserMenuClick}
@@ -124,6 +138,7 @@ const Navbar = () => {
               </Box>
               <ExpandMoreIcon sx={{ color: COLOR.dark_gray }} />
             </Box>
+            {/* User Menu Popover */}
             <Menu
               id="account-menu"
               anchorEl={userMenuAnchorEl}
@@ -131,14 +146,14 @@ const Navbar = () => {
               onClose={handleUserMenuClose}
               MenuListProps={{ "aria-labelledby": "basic-button" }}
               sx={{ mt: 1 }}
+              PaperProps={{
+                sx: {
+                  backgroundColor: COLOR.white_smoke,
+                },
+              }}
             >
               <MenuItem
                 onClick={handleLogout}
-                sx={{
-                  "&:hover": {
-                    backgroundColor: "transparent",
-                  },
-                }}
               >
                 <LogoutIcon sx={{ mr: 1 }} />
                 Logout
@@ -147,6 +162,7 @@ const Navbar = () => {
           </Box>
         </Toolbar>
       </AppBar>
+      {/* Main Navigation Bar */}
       <AppBar
         position="static"
         color="transparent"

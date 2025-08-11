@@ -1,5 +1,7 @@
 export const SPACING = 2
 
+export const BORDER_RADIUS = 4
+
 export const COLOR = {
     //white
     white: "#FFFFFF",

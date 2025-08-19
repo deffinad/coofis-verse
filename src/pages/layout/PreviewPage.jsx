@@ -15,9 +15,8 @@ import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import TabletMacIcon from "@mui/icons-material/TabletAndroid";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import PublishIcon from "@mui/icons-material/Publish";
 
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { Components } from "remoteApp/Components";
 
 // --- Redux Actions ---
@@ -70,10 +69,6 @@ const PreviewPage = () => {
 
   const handleBackToEditor = () => {
     navigate("/layout");
-  };
-
-  const handlePublish = () => {
-    console.log("Publishing page from preview...");
   };
 
   const getResponsiveSize = (grid) => {
@@ -140,7 +135,7 @@ const PreviewPage = () => {
               sx={{
                 color: COLOR.white_ice,
                 backgroundColor: COLOR.medium_dark_gray,
-                borderRadius: "8px",
+                borderRadius: BORDER_RADIUS,
                 px: SPACING,
                 py: 1,
                 textTransform: "none",
@@ -218,23 +213,6 @@ const PreviewPage = () => {
             </Button>
           </ButtonGroup>
 
-          {/* Right Section */}
-          <Button
-            onClick={handlePublish}
-            startIcon={<PublishIcon />}
-            sx={{
-              backgroundColor: COLOR.green_malachite,
-              color: COLOR.white_ice,
-              borderRadius: "8px",
-              px: 3,
-              py: 1,
-              textTransform: "none",
-              fontWeight: 600,
-              transition: "all 0.2s ease",
-            }}
-          >
-            Publish
-          </Button>
         </Box>
       </Box>
 
@@ -312,7 +290,7 @@ const PreviewPage = () => {
               transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               backgroundColor: COLOR.white,
               border: "1px solid #ddd",
-              borderRadius: "8px",
+              borderRadius: BORDER_RADIUS,
               boxSizing: "border-box",
               p: SPACING,
             }}
@@ -361,7 +339,7 @@ const PreviewPage = () => {
           color: COLOR.white_ice,
           px: SPACING,
           py: 1,
-          borderRadius: "20px",
+          borderRadius: BORDER_RADIUS,
           fontSize: "12px",
           fontWeight: 600,
           zIndex: 1001,

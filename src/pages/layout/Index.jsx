@@ -33,7 +33,7 @@ import {
 } from "../../redux/actions/layoutActions";
 import { fetchNavbarRoutes } from "../../redux/actions/navbarActions";
 
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 
 const Layout = () => {
@@ -198,7 +198,7 @@ const Layout = () => {
 
   const handlePreview = () => {
     if (currentPage) {
-      navigate(`/preview/${currentPage}`);
+      navigate(`/layout/preview/${currentPage}`);
     } else {
       dispatch(showAlert("Please select a page to preview.", "warning"));
     }
@@ -270,7 +270,7 @@ const Layout = () => {
               justifyContent: "flex-start",
               textTransform: "none",
               width: "100%",
-              borderRadius: SPACING,
+              borderRadius: BORDER_RADIUS,
               p: SPACING,
               mb: SPACING - 0.5,
               cursor: "grabbing",

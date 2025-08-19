@@ -1,6 +1,6 @@
 // SECTION: Component Imports
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   AppBar,
@@ -11,15 +11,17 @@ import {
   Menu,
   MenuItem,
   List,
+  Divider,
 } from "@mui/material";
 import {
   Home as HomeIcon,
   ViewQuilt as LayoutIcon,
   HelpOutline as DefaultIcon,
   Logout as LogoutIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { fetchNavbarRoutes } from "../../../redux/actions/navbarActions";
 import { logoData } from "@/shared/constants/AppData";
 import HorizontalGroup from "./HorizontalGroup";
@@ -36,6 +38,7 @@ const iconComponents = {
 const Navbar = () => {
   // ANCHOR: State Management
   const location = useLocation();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { routes: dynamicRoutes } = useSelector((state) => state.navbar);
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
@@ -48,6 +51,12 @@ const Navbar = () => {
 
   const handleLogout = () => {
     console.log("User logged out");
+    handleUserMenuClose();
+  };
+
+  const handleProfile = () => {
+    console.log("Opening user profile");
+    navigate("/profile");
     handleUserMenuClose();
   };
 
@@ -114,7 +123,7 @@ const Navbar = () => {
                 ml: SPACING,
                 cursor: "pointer",
                 p: 0.5,
-                borderRadius: SPACING,
+                borderRadius: BORDER_RADIUS,
               }}
               aria-controls={isUserMenuOpen ? "account-menu" : undefined}
               aria-haspopup="true"
@@ -147,14 +156,41 @@ const Navbar = () => {
               MenuListProps={{ "aria-labelledby": "basic-button" }}
               sx={{ mt: 1 }}
               PaperProps={{
+                elevation: 0,
                 sx: {
-                  backgroundColor: COLOR.white_smoke,
+                  overflow: "visible",
+                  filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
+                  mt: 1.5,
+                  "& .MuiAvatar-root": {
+                    width: 32,
+                    height: 32,
+                    ml: -0.5,
+                    mr: 1,
+                  },
+                  "&:before": {
+                    content: '""',
+                    display: "block",
+                    position: "absolute",
+                    top: 0,
+                    right: 14,
+                    width: 10,
+                    height: 10,
+                    bgcolor: "background.paper",
+                    transform: "translateY(-50%) rotate(45deg)",
+                    zIndex: 0,
+                  },
+                  width: "200px",
                 },
               }}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             >
-              <MenuItem
-                onClick={handleLogout}
-              >
+              <MenuItem onClick={handleProfile}>
+                <PersonIcon sx={{ mr: 1 }} />
+                Profile
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={handleLogout}>
                 <LogoutIcon sx={{ mr: 1 }} />
                 Logout
               </MenuItem>

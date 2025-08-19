@@ -6,7 +6,7 @@ import { useDroppable } from "@dnd-kit/core";
 // --- Local/Shared Imports ---
 import DroppableGrid from "@/shared/components/DroppableGrid";
 import { Components } from "remoteApp/Components";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 
 import {
@@ -172,7 +172,7 @@ const MainContent = ({ containerRefs }) => {
           backgroundColor: COLOR.dark_gray,
           color: COLOR.white_ice,
           p: "18px",
-          borderRadius: SPACING,
+          borderRadius: BORDER_RADIUS,
           mb: SPACING,
           position: "sticky",
           top: "105px",
@@ -190,7 +190,7 @@ const MainContent = ({ containerRefs }) => {
             sx={{
               backgroundColor: COLOR.light_gray,
               color: COLOR.dark_gray,
-              borderRadius: SPACING,
+              borderRadius: BORDER_RADIUS,
               textTransform: "none",
               "&:hover": {
                 backgroundColor: "#e0e0e0",
@@ -207,7 +207,7 @@ const MainContent = ({ containerRefs }) => {
             sx={{
               backgroundColor: COLOR.red_rojo,
               color: COLOR.white_ice,
-              borderRadius: SPACING,
+              borderRadius: BORDER_RADIUS,
               textTransform: "none",
               display: selectedLayout || selectedGrid ? "block" : "none",
               "&:hover": {
@@ -227,7 +227,7 @@ const MainContent = ({ containerRefs }) => {
         sx={{
           p: SPACING,
           backgroundColor: COLOR.white_winter,
-          borderRadius: SPACING,
+          borderRadius: BORDER_RADIUS,
           border:
             isMainContentOver && isLayoutTemplateDragging
               ? `2px dashed ${COLOR.honolulu_blue}`
@@ -251,7 +251,7 @@ const MainContent = ({ containerRefs }) => {
                           : "1px dashed black",
                       padding: SPACING,
                       cursor: "pointer",
-                      borderRadius: SPACING,
+                      borderRadius: BORDER_RADIUS,
                       height: "fit-content",
                       minHeight:
                         layout.children?.length === 0 ? "80vh" : "auto",

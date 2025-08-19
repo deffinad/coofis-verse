@@ -1,3 +1,5 @@
+// HorizontalCollapse.jsx
+
 // SECTION: Component Imports
 import React, { useState, useRef } from "react";
 import {
@@ -17,31 +19,41 @@ import * as Icons from "@mui/icons-material";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import Box from "@mui/material/Box";
 import HorizontalItem from "./HorizontalItem";
+import HorizontalGroup from "./HorizontalGroup";
 import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 
 // SECTION: Main HorizontalCollapse Component
 const HorizontalCollapse = ({ item, nestedLevel, dense, onClose }) => {
   // ANCHOR: State Management
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [opened, setOpened] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const anchorRef = useRef(null);
+  const popoverRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   // ANCHOR: Event Handlers
-  const handlePopoverOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleEnter = () => {
+    clearTimeout(timeoutRef.current);
+    setOpened(true);
   };
 
-  const handlePopoverClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleChildClick = (url) => {
-    setAnchorEl(null);
-    navigate(url);
+  const handleLeave = (event) => {
+    // Check if the mouse is moving to the popover or the trigger element
+    if (
+      popoverRef.current?.contains(event.relatedTarget) ||
+      anchorRef.current?.contains(event.relatedTarget)
+    ) {
+      return;
+    }
+    // If not, set a timeout to close the menu
+    timeoutRef.current = setTimeout(() => {
+      setOpened(false);
+    }, 200);
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
+    setOpened(false);
     if (onClose) {
       onClose();
     }
@@ -65,15 +77,14 @@ const HorizontalCollapse = ({ item, nestedLevel, dense, onClose }) => {
 
   // ANCHOR: Component State
   const IconComponent = Icons[item.icon || "Article"];
-  const open = Boolean(anchorEl);
+  const open = opened;
   const active = isUrlInChildren(item, location.pathname);
 
   // ANCHOR: Main Render Method
   return (
-    <div onMouseEnter={handlePopoverOpen} onMouseLeave={handlePopoverClose}>
+    <div ref={anchorRef} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       {/* Collapsible Menu Item */}
       <ListItem
-        // FIX: Removed redundant onMouseLeave event
         component="div"
         sx={{
           color: active ? COLOR.sky_blue : COLOR.medium_dark_gray,
@@ -92,13 +103,13 @@ const HorizontalCollapse = ({ item, nestedLevel, dense, onClose }) => {
             color: active ? COLOR.sky_blue : COLOR.medium_dark_gray,
           },
 
+          "&.open": {
+            backgroundColor: "rgba(0,0,0,.08)",
+          },
+
           "&.active, &.active:hover, &.active:focus": {
             color: COLOR.sky_blue,
             backgroundColor: COLOR.white_smoke,
-          },
-
-          "&.open": {
-            backgroundColor: "rgba(0,0,0,.08)",
           },
 
           ...(dense && {
@@ -130,23 +141,30 @@ const HorizontalCollapse = ({ item, nestedLevel, dense, onClose }) => {
       </ListItem>
       {/* Sub-menu Popover */}
       <Popover
-        open={open}
-        anchorEl={anchorEl}
+        open={opened}
+        anchorEl={anchorRef.current}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "left" }}
-        onClose={handlePopoverClose}
+        onClose={handleClose}
         disableRestoreFocus
         disableEnforceFocus
         disableScrollLock
-        slotProps={{
-          paper: {
-            onMouseLeave: handlePopoverClose,
-            sx: {
-              ml: 0.5,
-              borderRadius: BORDER_RADIUS,
-              backgroundColor: COLOR.white_smoke,
-            },
+        PaperProps={{
+          // <-- UBAH DARI slotProps KE PaperProps
+          ref: popoverRef,
+          onMouseEnter: handleEnter,
+          onMouseLeave: handleLeave,
+          sx: {
+            ml: 0,
+            borderRadius: BORDER_RADIUS,
+            backgroundColor: COLOR.white_smoke,
+            pointerEvents: "auto",
+            boxShadow: "none",
           },
+        }}
+        sx={{
+          // <-- TAMBAHKAN BLOK INI
+          pointerEvents: "none",
         }}
       >
         <Grow in={open} timeout={0} style={{ transformOrigin: "0 0 0" }}>
@@ -154,6 +172,14 @@ const HorizontalCollapse = ({ item, nestedLevel, dense, onClose }) => {
             <List sx={{ px: 0, borderRadius: BORDER_RADIUS }}>
               {item.children.map((child) => (
                 <React.Fragment key={child.id}>
+                  {/* Render child group */}
+                  {child.type === "group" && (
+                    <HorizontalGroup
+                      item={child}
+                      nestedLevel={nestedLevel + 1}
+                      onClose={handleClose}
+                    />
+                  )}
                   {/* Render child collapse */}
                   {child.type === "collapse" && (
                     <HorizontalCollapse

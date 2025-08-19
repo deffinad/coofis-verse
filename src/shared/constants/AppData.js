@@ -31,41 +31,38 @@ export const componentAttributes = {
       buttonText: "Learn More",
     },
   },
-  ArsipCuti: {
-    id: `component${generateRandomId()}`,
-    name: "ArsipCuti",
-    properties: {},
-  },
-  KuotaCutiSaatIni: {
-    id: `component${generateRandomId()}`,
-    name: "KuotaCutiSaatIni",
-    properties: { config1: KuotaCuti1, config2: KuotaCuti2 },
-  },
-  ListDate: {
-    id: `component${generateRandomId()}`,
-    name: "ListDate",
-    properties: { config: DateData },
-  },
-  MonitoringKuota: {
-    id: `component${generateRandomId()}`,
-    name: "MonitoringKuota",
-    properties: { config: DataKuota },
-  },
-  StatusDokumenCutiDashboard: {
-    id: `component${generateRandomId()}`,
-    name: "StatusDokumenCutiDashboard",
-    properties: { config: DataCuti },
-  },
+  // ArsipCuti: {
+  //   id: `component${generateRandomId()}`,
+  //   name: "ArsipCuti",
+  //   properties: {},
+  // },
+  // KuotaCutiSaatIni: {
+  //   id: `component${generateRandomId()}`,
+  //   name: "KuotaCutiSaatIni",
+  //   properties: { config1: KuotaCuti1, config2: KuotaCuti2 },
+  // },
+  // ListDate: {
+  //   id: `component${generateRandomId()}`,
+  //   name: "ListDate",
+  //   properties: { config: DateData },
+  // },
+  // MonitoringKuota: {
+  //   id: `component${generateRandomId()}`,
+  //   name: "MonitoringKuota",
+  //   properties: { config: DataKuota },
+  // },
+  // StatusDokumenCutiDashboard: {
+  //   id: `component${generateRandomId()}`,
+  //   name: "StatusDokumenCutiDashboard",
+  //   properties: { config: DataCuti },
+  // },
 };
 
 /**
  * Sections for the components accordion in the LeftMenu.
  */
 export const SECTION_COMPONENTS = [
-  { title: "Page" },
   { title: "Layout" },
-  { title: "Menu" },
-  { title: "Form" },
   { title: "Widget" },
 ];
 
@@ -75,9 +72,9 @@ export const SECTION_COMPONENTS = [
 export const WIDGET_COMPONENTS = [
   "CustomCard",
   "Navbar",
-  "ArsipCuti",
-  "KuotaCutiSaatIni",
-  "ListDate",
-  "MonitoringKuota",
-  "StatusDokumenCutiDashboard",
+  // "ArsipCuti",
+  // "KuotaCutiSaatIni",
+  // "ListDate",
+  // "MonitoringKuota",
+  // "StatusDokumenCutiDashboard",
 ];

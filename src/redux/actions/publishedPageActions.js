@@ -1,4 +1,5 @@
 import * as actionTypes from "../../shared/constants/ActionTypes";
+import { fetchNavbarRoutes } from "./navbarActions"; // Import the action to refresh navbar routes
 
 export const fetchPublishedPage = (pageId) => (dispatch, getState) => {
   dispatch({ type: actionTypes.FETCH_PUBLISHED_PAGE_START });
@@ -24,4 +25,13 @@ export const fetchPublishedPage = (pageId) => (dispatch, getState) => {
       payload: error.message,
     });
   }
+};
+
+export const publishPage = () => (dispatch, getState) => {
+  const { pages, currentPage } = getState().layout;
+  dispatch({
+    type: actionTypes.PUBLISH_PAGE,
+    payload: { pages, currentPage },
+  });
+  dispatch(fetchNavbarRoutes());
 };

@@ -1,3 +1,5 @@
+// HorizontalGroup.jsx
+
 // SECTION: Component Imports
 import React, { useState, useRef } from "react";
 import {
@@ -21,20 +23,32 @@ import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 // SECTION: Main HorizontalGroup Component
 const HorizontalGroup = ({ item, nestedLevel, onClose }) => {
   // ANCHOR: State Management
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [opened, setOpened] = useState(false);
   const location = useLocation();
+  const anchorRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   // ANCHOR: Event Handlers
-  const handlePopoverOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleEnter = () => {
+    clearTimeout(timeoutRef.current);
+    setOpened(true);
   };
 
-  const handlePopoverClose = () => {
-    setAnchorEl(null);
+  const handleLeave = (event) => {
+    // Check if the mouse is moving to the popover or the trigger element
+    if (
+      anchorRef.current?.contains(event.relatedTarget)
+    ) {
+      return;
+    }
+    // If not, set a timeout to close the menu
+    timeoutRef.current = setTimeout(() => {
+      setOpened(false);
+    }, 200);
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
+    setOpened(false);
     if (onClose) {
       onClose();
     }
@@ -58,16 +72,18 @@ const HorizontalGroup = ({ item, nestedLevel, onClose }) => {
 
   // ANCHOR: Component State
   const IconComponent = Icons[item.icon || "Article"];
-  const open = Boolean(anchorEl);
   const active = isUrlInChildren(item, location.pathname);
 
   // ANCHOR: Main Render Method
   return (
-    // FIX: Wrapped ListItem in a div to handle mouse events consistently
-    <div onMouseEnter={handlePopoverOpen} onMouseLeave={handlePopoverClose}>
+    <div
+      ref={anchorRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave} // Handler utama untuk trigger dan popover
+    >
       {/* Navigation Group Item */}
       <ListItem
-        className={clsx("navItem", active && "active")}
+        className={clsx("navItem", active && "active", opened && "open")}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -83,7 +99,7 @@ const HorizontalGroup = ({ item, nestedLevel, onClose }) => {
           backgroundColor: active ? COLOR.sky_blue : COLOR.white_smoke,
           mr: 1,
           "&:hover": {
-            color: COLOR.medium_dark_gray,
+            color: active ? COLOR.white_smoke : COLOR.medium_dark_gray,
             backgroundColor: active ? COLOR.sky_blue : COLOR.white_smoke,
           },
         }}
@@ -108,8 +124,8 @@ const HorizontalGroup = ({ item, nestedLevel, onClose }) => {
       </ListItem>
       {/* Sub-menu Popover */}
       <Popover
-        open={open}
-        anchorEl={anchorEl}
+        open={opened}
+        anchorEl={anchorRef.current}
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "left",
@@ -118,20 +134,30 @@ const HorizontalGroup = ({ item, nestedLevel, onClose }) => {
           vertical: "top",
           horizontal: "left",
         }}
-        onClose={handleClose}
+        onClose={handleClose} // onClose tetap untuk menutup saat ada klik di luar
         disableRestoreFocus
         disableEnforceFocus
         disableScrollLock
         PaperProps={{
-          onMouseLeave: handlePopoverClose,
+          onMouseEnter: handleEnter, // Tetap gunakan handleEnter untuk membatalkan penutupan
+          onMouseLeave: handleLeave, // Gunakan handleLeave yang sama
           sx: {
-            mt: 0,
+            mt: 0.5,
+            p: 0,
             backgroundColor: COLOR.white_smoke,
             borderRadius: BORDER_RADIUS,
+            pointerEvents: "auto", // Pastikan popover menerima event mouse
+            boxShadow: "none",
+            border: `1px solid ${COLOR.light_gray}`,
+            color: COLOR.dark_gray,
           },
         }}
+        sx={{
+          // Pastikan wrapper Popover tidak memblokir event
+          pointerEvents: "none",
+        }}
       >
-        <Grow in={open} style={{ transformOrigin: "0 0 0" }}>
+        <Grow in={opened} style={{ transformOrigin: "0 0 0" }}>
           {item.children && (
             <List sx={{ px: 0 }}>
               {item.children.map((child) => (

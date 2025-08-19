@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Box, TextField, Typography, Switch } from "@mui/material";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { useDynamicMenuHeight } from "@/shared/utils/utility";
 import { debounce } from "@/shared/utils/debounce";
 import {
@@ -209,7 +209,7 @@ const RightMenu = () => {
       sx={{
         width: 300,
         backgroundColor: COLOR.white_winter,
-        borderRadius: SPACING,
+        borderRadius: BORDER_RADIUS,
         border: `1px solid ${COLOR.light_gray}`,
         flexShrink: 0,
         position: "sticky",
@@ -226,7 +226,7 @@ const RightMenu = () => {
         },
         "&::-webkit-scrollbar-thumb": {
           backgroundColor: "#bdbdbd",
-          borderRadius: "10px",
+          borderRadius: BORDER_RADIUS,
           "&:hover": {
             backgroundColor: "#8d8d8d",
           },
@@ -239,7 +239,7 @@ const RightMenu = () => {
           sx={{
             backgroundColor: COLOR.dark_gray,
             color: COLOR.white_ice,
-            borderRadius: SPACING,
+            borderRadius: BORDER_RADIUS,
             p: 1.5,
             mb: SPACING,
             display: "flex",
@@ -308,7 +308,7 @@ const RightMenu = () => {
                   sx={{
                     backgroundColor: COLOR.dark_gray,
                     color: COLOR.white_ice,
-                    borderRadius: SPACING,
+                    borderRadius: BORDER_RADIUS,
                     p: 1.5,
                     mb: SPACING,
                   }}

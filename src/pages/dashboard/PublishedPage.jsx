@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Grid, Typography, Stack, CircularProgress, Alert } from "@mui/material";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { Components } from "remoteApp/Components";
 import { fetchPublishedPage } from "../../redux/actions/publishedPageActions";
 
@@ -108,7 +108,7 @@ const PublishedPage = () => {
             justifyContent: "center",
             minHeight: "400px",
             backgroundColor: COLOR.white,
-            borderRadius: "8px",
+            borderRadius: BORDER_RADIUS,
           }}
         >
           <Typography variant="h5" color="text.secondary">

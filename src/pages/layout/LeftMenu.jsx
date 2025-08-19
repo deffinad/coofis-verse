@@ -42,7 +42,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DividingLine from "../../shared/components/DividingLine";
 import MenuPages from "./MenuPages";
 import DraggableComponent from "@/shared/components/DraggableComponent";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
 import { LayoutTemplates } from "../../json/LayoutTemplates";
 import { useDynamicMenuHeight } from "@/shared/utils/utility";
 import {
@@ -62,6 +62,7 @@ import {
   setAtribut,
   clearSelections,
 } from "../../redux/actions/layoutActions";
+import { showModal } from "../../redux/actions/modalActions";
 
 import { showAlert } from "../../redux/actions/alertActions";
 
@@ -131,7 +132,7 @@ function SortableLayer({
         zIndex: isDragging ? 1 : "auto",
         border: isSelected ? `1px solid ${COLOR.dark_gray}` : "none",
         backgroundColor: isSelected ? COLOR.light_green_tint : "transparent",
-        borderRadius: SPACING,
+        borderRadius: BORDER_RADIUS,
         transition: "background-color 0.2s ease, border 0.2s ease",
       }}
     >
@@ -143,7 +144,7 @@ function SortableLayer({
           p: "2px 5px",
           minHeight: "48px",
           mb: 0.5,
-          borderRadius: 1,
+          borderRadius: BORDER_RADIUS,
           "&:hover": {
             backgroundColor: isSelected
               ? COLOR.light_green_tint
@@ -257,7 +258,15 @@ const LeftMenu = () => {
   };
 
   const handleDeletePageLocal = (pageIdToDelete) => {
-    dispatch(deletePage(pageIdToDelete));
+    const page = pages.find((p) => p.id === pageIdToDelete);
+    dispatch(
+      showModal({
+        title: `Delete ${page ? `"${page.name}"` : "Page"}`,
+        content: "Apakah Anda yakin ingin menghapus halaman ini? Tindakan ini tidak dapat dibatalkan.",
+        confirmAction: () => deletePage(pageIdToDelete),
+        modalType: "delete",
+      })
+    );
     handleMenuClose();
   };
 
@@ -343,7 +352,7 @@ const LeftMenu = () => {
       sx={{
         width: 300,
         backgroundColor: COLOR.white_winter,
-        borderRadius: SPACING,
+        borderRadius: BORDER_RADIUS,
         border: "1px solid #D9D9D9",
         flexShrink: 0,
         position: "sticky",
@@ -356,7 +365,7 @@ const LeftMenu = () => {
         "&::-webkit-scrollbar-track": { backgroundColor: "#f5f5f5" },
         "&::-webkit-scrollbar-thumb": {
           backgroundColor: "#bdbdbd",
-          borderRadius: "10px",
+          borderRadius: BORDER_RADIUS,
           "&:hover": { backgroundColor: "#8d8d8d" },
         },
       }}
@@ -373,7 +382,7 @@ const LeftMenu = () => {
           sx={{
             backgroundColor: COLOR.dark_gray,
             color: COLOR.white_ice,
-            borderRadius: SPACING,
+            borderRadius: BORDER_RADIUS,
             p: SPACING,
             mb: SPACING - 0.5,
             display: "flex",
@@ -401,7 +410,7 @@ const LeftMenu = () => {
               key={page.id}
               selected={currentPage === page.id}
               onClick={() => dispatch(setCurrentPage(page.id))}
-              sx={{ mb: 0.5, borderRadius: 1 }}
+              sx={{ mb: 0.5, borderRadius: BORDER_RADIUS }}
             >
               <ListItemText
                 primary={
@@ -438,7 +447,7 @@ const LeftMenu = () => {
           sx={{
             backgroundColor: COLOR.dark_gray,
             color: COLOR.white_ice,
-            borderRadius: SPACING,
+            borderRadius: BORDER_RADIUS,
             p: SPACING,
             mb: SPACING - 0.5,
             display: "flex",
@@ -476,7 +485,7 @@ const LeftMenu = () => {
           sx={{
             backgroundColor: COLOR.dark_gray,
             color: COLOR.white_ice,
-            borderRadius: SPACING,
+            borderRadius: BORDER_RADIUS,
             p: SPACING,
             mb: SPACING - 0.5,
             display: "flex",
@@ -497,14 +506,14 @@ const LeftMenu = () => {
                 </InputAdornment>
               ),
               sx: {
-                borderRadius: "30px",
+                borderRadius: BORDER_RADIUS,
                 backgroundColor: COLOR.light_gray,
                 "& .MuiOutlinedInput-notchedOutline": { border: "none" },
               },
             }}
           />
         </Box>
-        <Box sx={{ p: 1 }}>
+        <Box sx={{ px: 1, py: 0 }}>
           {SECTION_COMPONENTS.map((section, index) => (
             <Accordion
               key={index}
@@ -526,7 +535,7 @@ const LeftMenu = () => {
                   p: "2px 5px",
                   minHeight: "48px",
                   mb: 0.5,
-                  borderRadius: 1,
+                  borderRadius: BORDER_RADIUS,
                 }}
               >
                 <Typography
@@ -547,7 +556,7 @@ const LeftMenu = () => {
                       <DraggableComponent key={id} id={id}>
                         <ListItemButton
                           sx={{
-                            borderRadius: SPACING,
+                            borderRadius: BORDER_RADIUS,
                             p: "15px 5px",
                             mb: SPACING - 0.5,
                             cursor: "grab",
@@ -588,7 +597,7 @@ const LeftMenu = () => {
                       <DraggableComponent key={template.id} id={template.id}>
                         <ListItemButton
                           sx={{
-                            borderRadius: SPACING,
+                            borderRadius: BORDER_RADIUS,
                             p: "15px 5px",
                             mb: SPACING - 0.5,
                             cursor: "grab",

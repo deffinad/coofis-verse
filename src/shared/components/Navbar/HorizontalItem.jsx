@@ -19,7 +19,6 @@ const HorizontalItem = ({ item, dense, onClick, nestedLevel }) => {
       onClick={onClick}
       component={NavLink}
       to={item.url}
-      end
       sx={{
         minHeight: 40,
         padding: "4px 12px",

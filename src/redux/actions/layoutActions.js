@@ -61,6 +61,7 @@ export const setCurrentPage = (pageId) => ({
   payload: pageId,
 });
 
+
 // Layout Structure Actions
 export const addLayout = () => (dispatch, getState) => {
   const { layout } = getState();

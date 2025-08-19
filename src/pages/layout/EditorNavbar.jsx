@@ -1,14 +1,34 @@
 import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { AppBar, Toolbar, Box, Typography, Button } from "@mui/material";
-import { COLOR, SPACING } from "@/shared/constants/AppConst";
+import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
+import { showModal } from "../../redux/actions/modalActions";
+import { publishPage } from "../../redux/actions/publishedPageActions";
 
 const EditorNavbar = ({
   projectName = "Project A",
   lastEdited = "Edited 1 hour ago",
   onSave,
   onPreview,
-  onPublish,
 }) => {
+  const dispatch = useDispatch();
+  const { pages, currentPage } = useSelector((state) => state.layout);
+
+  const handlePublish = () => {
+    const page = pages.find((p) => p.id === currentPage);
+    dispatch(
+      showModal({
+        title: `Publish ${page ? `"${page.name}"` : "Page"}`,
+        content:
+          "Apakah Anda yakin ingin mempublikasikan halaman ini? Halaman ini akan muncul di dashboard.",
+        confirmAction: () => {
+          dispatch(publishPage());
+        },
+        modalType: "publish",
+      })
+    );
+  };
+
   return (
     <AppBar
       position="sticky"
@@ -60,24 +80,11 @@ const EditorNavbar = ({
           <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Button
-                variant="text"
-                color="inherit"
-                onClick={onSave}
-                sx={{
-                  width: 79,
-                  height: 40,
-                  borderRadius: SPACING,
-                  textTransform: "none",
-                }}
-              >
-                Save
-              </Button>
-              <Button
                 variant="contained"
                 disableElevation
                 onClick={onPreview}
                 sx={{
-                  borderRadius: SPACING,
+                  borderRadius: BORDER_RADIUS,
                   width: 79,
                   height: 40,
                   color: COLOR.dark_gray,
@@ -91,9 +98,9 @@ const EditorNavbar = ({
               <Button
                 variant="contained"
                 disableElevation
-                onClick={onPublish}
+                onClick={handlePublish}
                 sx={{
-                  borderRadius: SPACING,
+                  borderRadius: BORDER_RADIUS,
                   backgroundColor: COLOR.dark_gray,
                   color: COLOR.white_ice,
                   width: 79,

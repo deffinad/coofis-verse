@@ -5,6 +5,7 @@ import previewReducer from "./previewReducer";
 import dashboardReducer from "./dashboardReducer";
 import publishedPageReducer from "./publishedPageReducer";
 import navbarReducer from "./navbarReducer";
+import modalReducer from "./modalReducer";
 
 const rootReducer = combineReducers({
   alert: alertReducer,
@@ -13,6 +14,7 @@ const rootReducer = combineReducers({
   dashboard: dashboardReducer,
   publishedPage: publishedPageReducer,
   navbar: navbarReducer,
+  modal: modalReducer,
 });
 
 export default rootReducer;

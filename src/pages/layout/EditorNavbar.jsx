@@ -2,20 +2,31 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppBar, Toolbar, Box, Typography, Button } from "@mui/material";
 import { BORDER_RADIUS, COLOR, SPACING } from "@/shared/constants/AppConst";
-import { showModal } from "../../redux/actions/modalActions";
+import { showModal, hideModal } from "../../redux/actions/modalActions";
 import { publishPage } from "../../redux/actions/publishedPageActions";
+import { showAlert } from "../../redux/actions/alertActions";
 
 const EditorNavbar = ({
   projectName = "Project A",
   lastEdited = "Edited 1 hour ago",
-  onSave,
   onPreview,
 }) => {
   const dispatch = useDispatch();
   const { pages, currentPage } = useSelector((state) => state.layout);
 
   const handlePublish = () => {
+    if (!currentPage) {
+      dispatch(showAlert("Please select a page to publish.", "warning"));
+      return;
+    }
+
     const page = pages.find((p) => p.id === currentPage);
+
+    if (!page || page.layouts.length === 0) {
+      dispatch(showAlert("Please add at least one layout to the page before publishing.", "warning"));
+      return;
+    }
+
     dispatch(
       showModal({
         title: `Publish ${page ? `"${page.name}"` : "Page"}`,
@@ -23,6 +34,8 @@ const EditorNavbar = ({
           "Apakah Anda yakin ingin mempublikasikan halaman ini? Halaman ini akan muncul di dashboard.",
         confirmAction: () => {
           dispatch(publishPage());
+          dispatch(hideModal()); // Close modal after publishing
+          dispatch(showAlert(` ${page ? `${page.name}` : "Page"} is published`, "success"));
         },
         modalType: "publish",
       })
@@ -84,6 +97,14 @@ const EditorNavbar = ({
                 disableElevation
                 onClick={onPreview}
                 sx={{
+                  "&:focus": {
+                    outline: "none",
+                    border: "none",
+                  },
+                  "&:active": {
+                    outline: "none",
+                    border: "none",
+                  },
                   borderRadius: BORDER_RADIUS,
                   width: 79,
                   height: 40,
@@ -91,6 +112,7 @@ const EditorNavbar = ({
                   backgroundColor: COLOR.light_gray,
                   borderColor: COLOR.light_gray,
                   textTransform: "none",
+                  
                 }}
               >
                 Preview
@@ -100,6 +122,14 @@ const EditorNavbar = ({
                 disableElevation
                 onClick={handlePublish}
                 sx={{
+                  "&:focus": {
+                    outline: "none",
+                    border: "none",
+                  },
+                  "&:active": {
+                    outline: "none",
+                    border: "none",
+                  },
                   borderRadius: BORDER_RADIUS,
                   backgroundColor: COLOR.dark_gray,
                   color: COLOR.white_ice,

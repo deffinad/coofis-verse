@@ -195,6 +195,14 @@ const MainContent = ({ containerRefs }) => {
               "&:hover": {
                 backgroundColor: "#e0e0e0",
               },
+              "&:focus": {
+                outline: "none",
+                border: "none",
+              },
+              "&:active": {
+                outline: "none",
+                border: "none",
+              },
             }}
           >
             Add New Layout
@@ -212,6 +220,14 @@ const MainContent = ({ containerRefs }) => {
               display: selectedLayout || selectedGrid ? "block" : "none",
               "&:hover": {
                 backgroundColor: "#d32f2f",
+              },
+              "&:focus": {
+                outline: "none",
+                border: "none",
+              },
+              "&:active": {
+                outline: "none",
+                border: "none",
               },
             }}
           >
@@ -247,7 +263,7 @@ const MainContent = ({ containerRefs }) => {
                     sx={{
                       border:
                         selectedLayout === layout.id && !selectedGrid
-                          ? `2px solid ${COLOR.green_malachite}`
+                          ? `2px solid black`
                           : "1px dashed black",
                       padding: SPACING,
                       cursor: "pointer",

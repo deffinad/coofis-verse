@@ -274,6 +274,14 @@ const Layout = () => {
               p: SPACING,
               mb: SPACING - 0.5,
               cursor: "grabbing",
+              "&:focus": {
+                outline: "none",
+                border: "none",
+              },
+              "&:active": {
+                outline: "none",
+                border: "none",
+              },
             }}
           >
             {activeId}

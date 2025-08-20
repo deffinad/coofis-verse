@@ -142,6 +142,14 @@ const PreviewPage = () => {
                 fontSize: "14px",
                 fontWeight: 600,
                 transition: "all 0.2s ease",
+                "&:focus": {
+                  outline: "none",
+                  border: "none",
+                },
+                "&:active": {
+                  outline: "none",
+                  border: "none",
+                },
               }}
             >
               Back to Editor
@@ -186,6 +194,14 @@ const PreviewPage = () => {
                 "&.active": {
                   backgroundColor: "#007FFF",
                   "&:hover": { backgroundColor: "#0066CC" },
+                },
+                "& .MuiButton-root:focus": {
+                  outline: "none",
+                  border: "none",
+                },
+                "& .MuiButton-root:active": {
+                  outline: "none",
+                  border: "none",
                 },
               },
             }}

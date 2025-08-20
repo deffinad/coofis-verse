@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Grid, Typography, Stack, CircularProgress, Alert } from "@mui/material";
@@ -10,6 +10,37 @@ const PublishedPage = () => {
   const { pageId } = useParams();
   const dispatch = useDispatch();
   const { loading, data: pageData, error } = useSelector((state) => state.publishedPage);
+  const [device, setDevice] = useState("desktop"); // Default device type
+  const previewAreaRef = useRef(null);
+
+  const getDeviceType = useCallback(() => {
+    const width = window.innerWidth;
+    if (width >= 992) {
+      return "desktop";
+    } else if (width >= 768) {
+      return "tablet";
+    } else {
+      return "mobile";
+    }
+  }, []);
+
+  useEffect(() => {
+    // Set initial device type
+    setDevice(getDeviceType());
+
+    // Event listener for window resize
+    const handleResize = () => {
+      setDevice(getDeviceType());
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [getDeviceType]);
+
 
   useEffect(() => {
     // Memanggil action untuk mengambil data halaman
@@ -17,13 +48,13 @@ const PublishedPage = () => {
   }, [dispatch, pageId]);
 
   // Fungsi untuk mendapatkan ukuran responsive berdasarkan device
-  const getResponsiveSize = (grid, deviceType = "desktop") => {
+  const getResponsiveSize = useCallback((grid) => {
     const sizeProp = grid.properties?.size;
     if (typeof sizeProp === "object" && sizeProp !== null) {
-      return sizeProp[deviceType] || sizeProp.desktop || 12;
+      return sizeProp[device] || sizeProp.desktop || 12;
     }
     return sizeProp || 12;
-  };
+  }, [device]);
 
   // Fungsi rekursif untuk me-render komponen
   const renderComponents = (components) => {
@@ -49,7 +80,7 @@ const PublishedPage = () => {
               })
             ) : (
               // Render layout dalam (nested grid)
-              <Grid container spacing={SPACING}>
+              <Grid container spacing={SPACING} sx={{ p: 0 }}>
                 {renderComponents(grid.children)}
               </Grid>
             )}
@@ -85,39 +116,54 @@ const PublishedPage = () => {
         p: SPACING,
       }}
     >
-      {pageData && pageData.layouts.length > 0 ? (
-        // Render semua layout dalam page
-        <Stack spacing={SPACING}>
-          {pageData.layouts.map((layout) => (
-            <Box
-              key={layout.id}
-              sx={{ minHeight: layout.properties?.height || "auto" }}
-            >
-              <Grid container spacing={SPACING}>
-                {renderComponents(layout.children)}
-              </Grid>
-            </Box>
-          ))}
-        </Stack>
-      ) : (
-        // Empty state
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "400px",
-            backgroundColor: COLOR.white,
-            borderRadius: BORDER_RADIUS,
-          }}
-        >
-          <Typography variant="h5" color="text.secondary">
-            No content available on this page.
-          </Typography>
+      <Box
+        ref={previewAreaRef}
+        sx={{
+          width: "100%",
+          maxWidth: "100%",
+          margin: "0 auto",
+          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          backgroundColor: COLOR.white,
+          border: "1px solid #ddd",
+          borderRadius: BORDER_RADIUS,
+          boxSizing: "border-box",
+          p: SPACING,
+        }}
+      >
+        {pageData && pageData.layouts.length > 0 ? (
+          // Render semua layout dalam page
+          <Stack spacing={SPACING}>
+            {pageData.layouts.map((layout) => (
+              <Box
+                key={layout.id}
+                sx={{ minHeight: layout.properties?.height || "auto" }}
+              >
+                <Grid container spacing={SPACING} sx={{ p: 0 }}>
+                  {renderComponents(layout.children)}
+                </Grid>
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          // Empty state
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "400px",
+              backgroundColor: COLOR.white,
+              borderRadius: BORDER_RADIUS,
+            }}
+          >
+            <Typography variant="h5" color="text.secondary">
+              No content available on this page.
+            </Typography>
+          </Box>
+        )}
         </Box>
-      )}
-    </Box>
-  );
-};
-
-export default PublishedPage;
+      </Box>
+    );
+  };
+  
+  export default PublishedPage;

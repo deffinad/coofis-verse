@@ -262,7 +262,8 @@ const LeftMenu = () => {
     dispatch(
       showModal({
         title: `Delete ${page ? `"${page.name}"` : "Page"}`,
-        content: "Apakah Anda yakin ingin menghapus halaman ini? Tindakan ini tidak dapat dibatalkan.",
+        content:
+          "Apakah Anda yakin ingin menghapus halaman ini? Tindakan ini tidak dapat dibatalkan.",
         confirmAction: () => deletePage(pageIdToDelete),
         modalType: "delete",
       })
@@ -398,7 +399,17 @@ const LeftMenu = () => {
           </Box>
           <IconButton
             size="small"
-            sx={{ color: COLOR.white }}
+            sx={{
+              color: COLOR.white,
+              "&:focus": {
+                outline: "none",
+                border: "none",
+              },
+              "&:active": {
+                outline: "none",
+                border: "none",
+              },
+            }}
             onClick={() => dispatch(addPage())}
           >
             <AddIcon />
@@ -410,7 +421,18 @@ const LeftMenu = () => {
               key={page.id}
               selected={currentPage === page.id}
               onClick={() => dispatch(setCurrentPage(page.id))}
-              sx={{ mb: 0.5, borderRadius: BORDER_RADIUS }}
+              sx={{
+                mb: 0.5,
+                borderRadius: BORDER_RADIUS,
+                "&:focus": {
+                  outline: "none",
+                  border: "none",
+                },
+                "&:active": {
+                  outline: "none",
+                  border: "none",
+                },
+              }}
             >
               <ListItemText
                 primary={
@@ -430,7 +452,17 @@ const LeftMenu = () => {
                 edge="end"
                 size="small"
                 onClick={(e) => handleMenuOpen(e, page)}
-                sx={{ color: "#1E1E1E" }}
+                sx={{
+                  color: "#1E1E1E",
+                  "&:focus": {
+                    outline: "none",
+                    border: "none",
+                  },
+                  "&:active": {
+                    outline: "none",
+                    border: "none",
+                  },
+                }}
               >
                 <MoreVertIcon />
               </IconButton>
@@ -565,6 +597,12 @@ const LeftMenu = () => {
                             },
                             "&:active": {
                               backgroundColor: "rgba(0, 0, 0, 0.08)",
+                              outline: "none",
+                              border: "none",
+                            },
+                            "&:focus": {
+                              outline: "none",
+                              border: "none",
                             },
                           }}
                         >
@@ -606,6 +644,12 @@ const LeftMenu = () => {
                             },
                             "&:active": {
                               backgroundColor: "rgba(0, 0, 0, 0.08)",
+                              outline: "none",
+                              border: "none",
+                            },
+                            "&:focus": {
+                              outline: "none",
+                              border: "none",
                             },
                           }}
                         >

@@ -32,7 +32,7 @@ const DroppableGrid = ({
         border: isOver
           ? `2px dashed ${COLOR.honolulu_blue}`
           : selectedGrid?.id === id
-          ? `2px solid ${COLOR.green_malachite}`
+          ? `2px solid black`
           : "1px dashed grey",
         borderRadius: SPACING,
         minHeight: "50px",
